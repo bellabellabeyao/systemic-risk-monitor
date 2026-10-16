@@ -2,8 +2,8 @@ name: Daily refresh
 
 on:
   schedule:
-    - cron: "45 23 * * 0-4"   # 07:45 Singapore time, Mon-Fri
-  workflow_dispatch:
+    - cron: "45 23 * * 0-4"   # 07:45 Singapore time, Mon-Fri (23:45 UTC Sun-Thu)
+  workflow_dispatch:           # "Run workflow" button for a manual refresh
 
 permissions:
   contents: read
@@ -20,18 +20,24 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
+
       - name: Install
         run: pip install -r requirements-ci.txt
+
       - name: Run models (FRED + Yahoo)
         run: python -m sysrisk.pipeline --source free --out output
+
       - name: Build page
         run: python -m sysrisk.report --results output/results.pkl --out site/index.html --standalone
+
       - name: Keep the data alongside the page
         run: cp output/*.csv site/ 2>/dev/null || true
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

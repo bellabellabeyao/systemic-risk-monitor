@@ -56,7 +56,7 @@ def get_provider(source: str):
 
 def run(provider, p: Params = Params(), log=print) -> dict:
     t0 = time.time()
-    R = {"meta": {"source": provider.name, "run_at": pd.Timestamp.now(), "params": dict(vars(p))}}
+    R = {"meta": {"source": provider.name, "run_at": pd.Timestamp.now(tz="Asia/Singapore"), "params": dict(vars(p))}}
 
     # ---------------------------------------------------------------- data
     fin_tickers = sorted({t for s in p.sectors for t in FIN_UNIVERSE[s]})
@@ -194,8 +194,8 @@ def run(provider, p: Params = Params(), log=print) -> dict:
         "hh_debt": _weekly(fred["HDTGPDUSQ163N"].dropna(), 120, None),
         "corp_debt": _weekly(corp, 120, None),
         "srisk_gdp": _weekly(R["srisk_gdp"]),
-        "dcovar_max": _weekly(R["dcovar"].max(axis=1)),
-        "dcovar_private": _weekly(R["dcovar_pc"]),
+        "dcovar_max": _weekly(R["dcovar"].max(axis=1)).rolling(4, min_periods=2).mean(),   # 4-wk avg: weekly dCoVaR is noisy
+        "dcovar_private": _weekly(R["dcovar_pc"]).rolling(4, min_periods=2).mean(),
         "dy_total": _weekly(R["dy"]["total"]),
         "absorption": _weekly(R["ar"]["AR"]),
         "granger_dgc": _weekly(R["granger"]["dgc"], 0, 6),
@@ -230,7 +230,9 @@ def run(provider, p: Params = Params(), log=print) -> dict:
         "curve": _weekly(fred["T10Y3M"].dropna()),
     }
     # keep full history (FRED series go back decades) so percentiles are judged against more than one cycle
-    panel = pd.DataFrame({k: v for k, v in raw.items() if v is not None}).loc["1975":close.index[-1]]
+    # include the current, partly finished week (labelled by its Friday) so a daily run shows today's data
+    panel = pd.DataFrame({k: v for k, v in raw.items() if v is not None}).loc["1975":close.index[-1] + pd.Timedelta(days=6)]
+    R["meta"]["last_data"] = close.index[-1]
     # carry each series to the latest week: quarterly ones up to 45 weeks, the rest up to 4
     slow = {"credit_gap", "rzone", "hh_debt", "corp_debt", "gar_5", "gov_debt", "granger_dgc",
             "hh_dsr", "dealer_lev", "sloos_ci", "cre_delinq", "house_gap", "eq_val", "margin", "fiscal"}

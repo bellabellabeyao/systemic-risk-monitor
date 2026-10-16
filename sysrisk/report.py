@@ -196,7 +196,7 @@ class Story:
         self.sc = self.scores.iloc[-1]
         self.sc13 = self.scores.iloc[-1] - self.scores.iloc[-14]
         self.since = {c: self.panel[c].first_valid_index().year for c in self.panel if self.panel[c].notna().any()}
-        dco = R["dcovar"].loc[:self.asof].dropna(how="all").iloc[-1]   # same week as everything else
+        dco = R["dcovar"].rolling(4, min_periods=2).mean().loc[:self.asof].dropna(how="all").iloc[-1]   # same week as everything else
         self.worst_sector = dco.idxmax() if len(dco) else "n/a"
 
     # ------------------------------------------------------------- plain-English reading per indicator
@@ -412,7 +412,7 @@ class Story:
     def chart_titles(self):
         R, v, sc = self.R, self.v, self.sc
         net = R["dy"]["latest"]["net"].sort_values()
-        dco = R["dcovar"].loc[:self.asof].dropna(how="all").iloc[-1].sort_values(ascending=False)
+        dco = R["dcovar"].rolling(4, min_periods=2).mean().loc[:self.asof].dropna(how="all").iloc[-1].sort_values(ascending=False)
         sr_sec = R["srisk_sector"].loc[:self.asof].dropna(how="all").iloc[-1].sort_values(ascending=False)
         res_tn = v["reserves_gdp"] / 1e6
         return {
@@ -461,10 +461,12 @@ def payload(R: dict) -> dict:
     idx = R["index"].loc[:asof]
     ctx = [{"name": i.name, "owner": i.owner, "why": i.why} for i in REGISTRY if i.pillar == "context"]
     firm = R["srisk_firm"].head(10).reset_index().rename(columns={"index": "ticker"})
-    dco_now = R["dcovar"].loc[:asof].dropna(how="all").iloc[-1].sort_values()
+    dco_now = R["dcovar"].rolling(4, min_periods=2).mean().loc[:asof].dropna(how="all").iloc[-1].sort_values()
     return {
-        "meta": {"source": R["meta"]["source"], "asof": asof.strftime("%d %b %Y"),
-                 "run": pd.Timestamp(R["meta"]["run_at"]).strftime("%d %b %Y %H:%M"),
+        "meta": {"source": R["meta"]["source"],
+                 "asof": pd.Timestamp(R["meta"].get("last_data", asof)).strftime("%d %b %Y"),
+                 "run": (lambda t: (t.tz_localize("Asia/Singapore") if t.tzinfo is None else t.tz_convert("Asia/Singapore"))
+                         .strftime("%d %b %Y %H:%M") + " SGT")(pd.Timestamp(R["meta"]["run_at"])),
                  "demo": "SYNTHETIC" in R["meta"]["source"].upper(),
                  "srisk_start": R["srisk_total"].first_valid_index().strftime("%b %Y"),
                  "levels": LEVELS},

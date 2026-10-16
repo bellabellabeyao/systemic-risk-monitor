@@ -155,7 +155,7 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
       <p class="eyebrow">Top-of-house financial stability · United States</p>
       <h1>Systemic Risk Monitor</h1>
     </div>
-    <div class="meta"><span>Week ending <b class="num" id="asof"></b></span><span id="src"></span><span>Run <span class="num" id="run"></span></span></div>
+    <div class="meta"><span>Data to <b class="num" id="asof"></b></span><span id="src"></span><span>Run <span class="num" id="run"></span></span></div>
   </header>
   <div class="demo" id="demo" hidden>Synthetic demo data: these readings come from simulated markets and only show how the page behaves.</div>
 
@@ -259,7 +259,7 @@ const SECTIONS = {
                     "Borio & Lowe (2002) on asset-price gaps; Jordà, Schularick & Taylor (2015) on why credit-fuelled housing booms are costlier than equity booms. Data: Fed Financial Accounts via FRED NCBEILQ027S, GDP; BIS via FRED QUSR628BIS (one-sided HP)."]]},
   "Contagion": {charts:[["srisk","srisk","Capital US financials would need to raise after a 40% equity fall, by sector, $bn. Starts when free balance-sheet data begins.",
                            "Brownlees & Engle (2017, RFS); Acharya, Engle & Richardson (2012, AER P&P). k = 8%, LRMES = 1 − exp(ln(0.6)·β) (NYU V-Lab approximation), EWMA β in place of GARCH-DCC. Data: Yahoo prices and balance sheets."],
-                          ["dcovar","dcovar","Extra loss in the financial system's worst 5% of weeks when each sector is in distress, % per week, latest.",
+                          ["dcovar","dcovar","Extra loss in the financial system's worst 5% of weeks when each sector is in distress, % per week, 4-week average.",
                            "Adrian & Brunnermeier (2016, AER). 5% quantile regressions on VIX, term spread, Baa−10y and S&P return; expanding window, refit yearly. Data: Yahoo weekly returns, FRED."],
                           ["dy","dy","Net spillover of volatility: positive = sends shocks to other assets, negative = receives them. Last 200 trading days.",
                            "Diebold & Yilmaz (2012, IJF; 2014, JoE). VAR(2) on log Parkinson range volatility, 10-day generalised variance decomposition (Pesaran & Shin 1998). Data: Yahoo ETFs."],
