@@ -263,6 +263,8 @@ const SECTIONS = {
                            "Adrian & Brunnermeier (2016, AER). 5% quantile regressions on VIX, term spread, Baa−10y and S&P return; expanding window, refit yearly. Data: Yahoo weekly returns, FRED."],
                           ["dy","dy","Net spillover of volatility: positive = sends shocks to other assets, negative = receives them. Last 200 trading days.",
                            "Diebold & Yilmaz (2012, IJF; 2014, JoE). VAR(2) on log Parkinson range volatility, 10-day generalised variance decomposition (Pesaran & Shin 1998). Data: Yahoo ETFs."],
+                          ["hf","hf","Hedge funds' repo borrowing (quarterly, Form PF) and leveraged funds' net short position in Treasury futures (weekly, CFTC), $tn. Together they size the cash-futures basis trade.",
+                           "Barth & Kahn (2021, OFR WP 21-01); Schrimpf, Shin & Sushko (2020, BIS Bulletin 2) on the March 2020 unwind; Fed Financial Stability Report. Data: OFR Hedge Fund Monitor (FPF-BORROW_REPO_SUM, TFF-LF_TREAS_NET_POSITION)."],
                           ["stockbond","stockbond","3-month correlation of daily S&P 500 and 7-10y Treasury returns. Above zero = bonds no longer hedge stocks.",
                            "Campbell, Pflueger & Viceira (2020, JPE) on why the stock-bond correlation flips with the inflation regime. Data: Yahoo SPY, IEF."]], cols:2},
   "Shock absorbers": {charts:[["plumb","plumb","Bank reserves and ON RRP balances ($tn, right axis) and the overnight repo rate minus the Fed's interest on reserves (bp, left axis).",
@@ -353,7 +355,8 @@ function renderStatic(){
     const dd = D.validation.drawdown, gap = dd[0].r2 - Math.max(...dd.slice(1).map(r=>r.r2));
     const read = {drawdown: gap > 0.03 ? `The index beats both Fed stress indices at flagging deep financial-sector drawdowns, by ${gap.toFixed(2)} on this sample. The edge is modest and depends on the sample window.`
                  : gap > -0.03 ? "The index forecasts deep financial-sector drawdowns about as well as the Chicago Fed NFCI and better than the St. Louis index. Its value is in showing where risk sits, not in beating the NFCI on a single number. A narrower earlier version scored higher, but choosing indicators on this test would be data snooping."
-                 : "The index does worse than the Fed stress indices at flagging deep financial-sector drawdowns on this sample; treat its level with caution.",
+                 : (()=>{ const better = dd.slice(1).filter(r=>r.r2 < dd[0].r2).map(r=>r.name.replace(" alone","")), worse = dd.slice(1).filter(r=>r.r2 >= dd[0].r2).map(r=>r.name.replace(" alone",""));
+                     return `On this sample the index trails ${worse.join(" and ")} at flagging deep financial-sector drawdowns (${dd[0].r2.toFixed(2)} vs ${Math.max(...dd.slice(1).map(r=>r.r2)).toFixed(2)})${better.length?`, but beats ${better.join(" and ")}`:""}. Each indicator added at equal weight has diluted this one test a little; the test window holds only two crises (Covid and SVB), so read it as a check, not a ranking.`; })(),
                   ip:"No measure beats history at predicting the growth tail out of sample, the same result Giglio, Kelly & Pruitt found for most published measures. The index is a financial-stability gauge, not a recession model."};
     const beats = rows => rows[0].r2 > Math.max(...rows.slice(1).map(r=>r.r2));
     if (D.validation.ip[0].r2 > 0) read.ip = "The index beats the historical distribution at predicting the growth tail out of sample on the current sample.";
@@ -427,6 +430,9 @@ function renderCharts(){
     base({margin:{l:120,r:14,t:6,b:28}, xaxis:{ticksuffix:"%", gridcolor:rule}, yaxis:{gridcolor:"rgba(0,0,0,0)", tickfont:{color:ink}}}), CFG);
   const dy = hbar(D.dy_net); dy.marker = {color:dy.x.map(v=>v>0?bad:acc)};
   Plotly.react("c_dy", [dy], base({margin:{l:84,r:14,t:6,b:28}, xaxis:{gridcolor:rule, zeroline:true, zerolinecolor:mut}, yaxis:{gridcolor:"rgba(0,0,0,0)", tickfont:{color:ink}}}), CFG);
+  if (D.hf) Plotly.react("c_hf", [ln(D.hf.repo,"Hedge fund repo borrowing",vio,{line:{width:2,color:vio}, hovertemplate:"%{x|%b %Y}: $%{y:.2f}tn<extra>Repo borrowing</extra>"}),
+    ln(D.hf.short,"Leveraged funds' net short, Treasury futures",acc,{line:{width:1.2,color:acc}, hovertemplate:"%{x|%b %Y}: $%{y:.2f}tn<extra>Net short</extra>"})],
+    base({showlegend:true, yaxis:{tickprefix:"$", ticksuffix:"tn"}, legend:{orientation:"h", y:-0.2, font:{size:10,color:ink}}}), CFG);
   Plotly.react("c_stockbond", [ln(D.stockbond,"Stock-bond correlation",acc,{fill:"tozeroy", fillcolor:"rgba(127,127,127,.08)"})],
     base({yaxis:{range:[-1,1], zeroline:true, zerolinecolor:mut}, shapes:[hrect(0,1,bad,.06)]}), CFG);
   // absorbers

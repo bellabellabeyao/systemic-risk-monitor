@@ -340,3 +340,48 @@ class SyntheticProvider:
         out["RPONTSYD"] = srf
         df = pd.DataFrame({k: v for k, v in out.items() if k in series})
         return df.loc[start:]
+
+
+# ------------------------------------------------------------------ extra public sources (v4)
+def _get_json(url, timeout=60, tries=3):
+    import json, time
+    for k in range(tries):
+        try:
+            with urllib.request.urlopen(url, timeout=timeout) as r:
+                return json.load(r)
+        except Exception:
+            if k == tries - 1:
+                raise
+            time.sleep(5 * (k + 1))
+
+
+def fetch_ofr(mnemonics: list[str]) -> pd.DataFrame:
+    """OFR Hedge Fund Monitor (Form PF, CFTC TFF, SCOOS). https://www.financialresearch.gov/hedge-fund-monitor/"""
+    out = {}
+    for m in mnemonics:
+        try:
+            d = _get_json(f"https://data.financialresearch.gov/hf/v1/series/timeseries?mnemonic={m}")
+            s = pd.Series({pd.Timestamp(a): b for a, b in d if b is not None}, dtype=float)
+            out[m] = s.sort_index()
+        except Exception as e:
+            warnings.warn(f"OFR {m} failed: {e}")
+    return pd.DataFrame(out)
+
+
+def fetch_finra_margin() -> pd.DataFrame:
+    """FINRA customer margin balances (monthly, $mn). Net margin debt = debit balances - free credit balances."""
+    url = "https://www.finra.org/sites/default/files/2021-03/margin-statistics.xlsx"
+    with urllib.request.urlopen(url, timeout=60) as r:
+        x = pd.read_excel(io.BytesIO(r.read()))
+    x.columns = ["month", "debit", "free_cash", "free_margin"]
+    x["month"] = pd.to_datetime(x["month"]) + pd.offsets.MonthEnd(0)
+    x = x.set_index("month").sort_index().astype(float)
+    x["net"] = x["debit"] - x["free_cash"] - x["free_margin"].fillna(0)
+    return x
+
+
+def fetch_nyfed_rate(rate: str = "tgcr", start: str = "2018-04-02") -> pd.Series:
+    """NY Fed reference rate (sofr, tgcr, bgcr) history, percent."""
+    end = pd.Timestamp.today().strftime("%Y-%m-%d")
+    d = _get_json(f"https://markets.newyorkfed.org/api/rates/secured/{rate}/search.json?startDate={start}&endDate={end}")
+    return pd.Series({pd.Timestamp(r["effectiveDate"]): float(r["percentRate"]) for r in d["refRates"]}).sort_index()

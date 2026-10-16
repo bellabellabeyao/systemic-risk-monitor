@@ -60,7 +60,7 @@ def run(provider, p: Params = Params(), log=print) -> dict:
 
     # ---------------------------------------------------------------- data
     fin_tickers = sorted({t for s in p.sectors for t in FIN_UNIVERSE[s]})
-    eq_tickers = sorted(set(fin_tickers) | set(DY_PANEL.values()) | {MARKET_PROXY, SYSTEM_PROXY, "^VIX"})
+    eq_tickers = sorted(set(fin_tickers) | set(DY_PANEL.values()) | {MARKET_PROXY, SYSTEM_PROXY, "^VIX", "RSP"})
     log(f"[data] {len(eq_tickers)} equities/ETFs from {provider.name}")
     px = provider.ohlc(eq_tickers, p.start)
     last_day = px["close"][MARKET_PROXY].last_valid_index()          # drop today's partial row
@@ -173,7 +173,37 @@ def run(provider, p: Params = Params(), log=print) -> dict:
     gdp_q = fred["GDP"].dropna()
     eqv = fred["NCBEILQ027S"].dropna()
     eq_val = (eqv / 1e3 / gdp_q.reindex(eqv.index) * 100).dropna()
-    margin = (fred["BOGZ1FL663067003Q"].dropna() / eqv * 100).dropna()
+    # v4 (colleague's charts): FINRA net margin debt, OFR hedge fund data, NY Fed tri-party rate, H.8 / H.4.1 series
+    from . import data as _d
+    def _try(f, *a):
+        try:
+            return f(*a)
+        except Exception as e:
+            log(f"   optional source failed: {e}")
+            return None
+    finra = _try(_d.fetch_finra_margin)
+    eqv_m = eqv.resample("ME").last().ffill()
+    margin = (finra["net"] / eqv_m.reindex(finra.index, method="ffill") * 100).dropna() if finra is not None else \
+        pd.Series(dtype=float)
+    ofr = _try(_d.fetch_ofr, ["FPF-BORROW_REPO_SUM", "FPF-STRATEGY_RV_LEVERAGERATIO_NAVWMEAN", "TFF-LF_TREAS_NET_POSITION"])
+    ofr = ofr if ofr is not None else pd.DataFrame(columns=["FPF-BORROW_REPO_SUM", "FPF-STRATEGY_RV_LEVERAGERATIO_NAVWMEAN",
+                                                            "TFF-LF_TREAS_NET_POSITION"])
+    hf_repo = ofr["FPF-BORROW_REPO_SUM"].dropna() / 1e12                       # $tn
+    hf_rv_lev = ofr["FPF-STRATEGY_RV_LEVERAGERATIO_NAVWMEAN"].dropna()
+    lf_short = -ofr["TFF-LF_TREAS_NET_POSITION"].dropna() / 1e12                # net short, $tn notional
+    tgcr = _try(_d.fetch_nyfed_rate, "tgcr")
+    tgcr_iorb = ((tgcr - ior.reindex(tgcr.index, method="ffill")) * 100).rolling(5).mean() if tgcr is not None else \
+        pd.Series(dtype=float)
+    res_assets = (fred["WRESBAL"].dropna() / 1e3 / fred["TLAACBW027SBOG"].dropna().reindex(
+        fred["WRESBAL"].dropna().index, method="ffill") * 100).dropna()          # $mn -> $bn over $bn
+    bank_nbfi = fred["LNFACBW027SBOG"].dropna().pct_change(52) * 100
+    ci_draw = ((fred["TOTCI"].dropna() / fred["TOTCI"].dropna().shift(4)) ** 13 - 1) * 100
+    a2p2 = ((fred["RIFSPPNA2P2D30NB"] - fred["RIFSPPNAAD30NB"]).dropna() * 100).rolling(5).mean()
+    fin_cp = fred["FINCP"].dropna().pct_change(13) * 100
+    swap_lines = (fred["SWPT"].fillna(0) + fred["H41RESPPALGTRFNWW"].fillna(0)).dropna() / 1e3   # $mn -> $bn
+    swap_lines = swap_lines[fred["SWPT"].notna()]
+    rel = (close["SPY"] / close["RSP"]).dropna() if "RSP" in close else pd.Series(dtype=float)
+    concentration = (rel / rel.shift(756) - 1) * 100
     r_sb = close[["SPY", "IEF"]].pct_change(fill_method=None)
     sb_corr = r_sb["SPY"].rolling(63).corr(r_sb["IEF"])
     credit_widen = fred["BAA10Y"].dropna().resample("W-FRI").last().diff(13)
@@ -182,7 +212,8 @@ def run(provider, p: Params = Params(), log=print) -> dict:
     em_stress = -(emrel / emrel.rolling(252, min_periods=60).max() - 1) * 100
     t10y3m_m = fred["T10Y3M"].dropna().resample("ME").mean()
     rec_prob = pd.Series(norm.cdf(-0.5333 - 0.6330 * t10y3m_m) * 100, index=t10y3m_m.index)
-    R["extra"] = {"rv": rv, "low_vol": low_vol, "dealer_lev": dealer_lev, "usd6m": usd6m, "pc_mark": pc_mark,
+    R["extra"] = {"hf": pd.concat({"repo": hf_repo, "short": lf_short}, axis=1), "res_assets": res_assets,
+                  "rv": rv, "low_vol": low_vol, "dealer_lev": dealer_lev, "usd6m": usd6m, "pc_mark": pc_mark,
                   "house_gap": hp, "eq_val": eq_val, "move": xt["^MOVE"].dropna(), "rec_prob": rec_prob}
 
     # ---------------------------------------------------------------- weekly panel
@@ -200,7 +231,7 @@ def run(provider, p: Params = Params(), log=print) -> dict:
         "absorption": _weekly(R["ar"]["AR"]),
         "granger_dgc": _weekly(R["granger"]["dgc"], 0, 6),
         "sofr_iorb": _weekly(sofr_iorb.rolling(5).mean()),
-        "reserves_gdp": _weekly(fred["WRESBAL"].loc["2009":].dropna()),        # ample-reserves regime only
+        "reserves_gdp": _weekly(res_assets.loc["2009":]),                    # ample-reserves regime only
         "rrp_buffer": _weekly(fred["RRPONTSYD"].loc["2021-03":].dropna()),     # RRP as a buffer: 2021+
         "srf_usage": _weekly(fred["RPONTSYD"].loc["2021-07-29":].dropna().rolling(5).mean()),  # SRF era only
         "cp_spread": _weekly(cp.rolling(5).mean()),
@@ -217,7 +248,17 @@ def run(provider, p: Params = Params(), log=print) -> dict:
         "pc_mark": _weekly(pc_mark.dropna()),
         "house_gap": _weekly(hp.dropna(), 90, None),
         "eq_val": _weekly(eq_val, 75, None),
-        "margin": _weekly(margin, 75, None),
+        "margin": _weekly(margin, 30, None),
+        "hf_repo": _weekly(hf_repo, 200, None),
+        "hf_rv_lev": _weekly(hf_rv_lev, 200, None),
+        "lf_ust_short": _weekly(lf_short, 4, 4),
+        "bank_nbfi": _weekly(bank_nbfi.dropna()),
+        "concentration": _weekly(concentration.dropna()),
+        "tgcr_iorb": _weekly(tgcr_iorb.dropna()),
+        "a2p2": _weekly(a2p2.dropna()),
+        "fin_cp": _weekly(fin_cp.dropna()),
+        "swap_lines": _weekly(swap_lines),
+        "ci_draw": _weekly(ci_draw.dropna()),
         "stock_bond": _weekly(sb_corr.dropna()),
         "fiscal": _weekly(fred["GFDEGDQ188S"].dropna(), 90, None),
         "credit_widen": credit_widen.ffill(limit=4),
@@ -234,7 +275,8 @@ def run(provider, p: Params = Params(), log=print) -> dict:
     panel = pd.DataFrame({k: v for k, v in raw.items() if v is not None}).loc["1975":close.index[-1] + pd.Timedelta(days=6)]
     R["meta"]["last_data"] = close.index[-1]
     # carry each series to the latest week: quarterly ones up to 45 weeks, the rest up to 4
-    slow = {"credit_gap", "rzone", "hh_debt", "corp_debt", "gar_5", "gov_debt", "granger_dgc",
+    slow = {"credit_gap", "rzone", "hh_debt", "corp_debt", "gar_5", "gov_debt", "granger_dgc", "margin",
+            "hf_repo", "hf_rv_lev",
             "hh_dsr", "dealer_lev", "sloos_ci", "cre_delinq", "house_gap", "eq_val", "margin", "fiscal"}
     for c in panel:
         panel[c] = panel[c].ffill(limit=45 if c in slow else 4)   # BIS credit data lands ~2 quarters late
@@ -278,7 +320,10 @@ def score(panel: pd.DataFrame, p: Params) -> dict:
         ind = reg.get(c)
         if ind is None or ind.pillar not in PILLARS:
             continue
-        x = panel[c] * ind.direction
+        x = panel[c]
+        if c in ZERO_FLOOR:                      # mostly-zero facility usage: treat noise below the floor as zero
+            x = x.where(x.isna() | (x >= ZERO_FLOOR[c]), 0.0)
+        x = x * ind.direction
         sc = x.expanding(min_periods=p.pct_min_weeks).rank(pct=True) * 100
         scores[c] = sc
         if ind.abs_thresholds:
@@ -303,6 +348,8 @@ def score(panel: pd.DataFrame, p: Params) -> dict:
 
 # Bands calibrated on the index's own history (weekly peaks, v2 indicator set): GFC 88, Covid 66,
 # Euro 2011 / 2015-16 / Dec-2018 56, SVB 53, Apr-2025 51.
+ZERO_FLOOR = {"srf_usage": 1.0, "swap_lines": 1.0}   # $bn
+
 LEVELS = [(40, "Moderate"), (52, "Elevated"), (65, "High")]
 
 

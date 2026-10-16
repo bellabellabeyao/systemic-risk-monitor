@@ -113,9 +113,10 @@ REGISTRY = [
               why="Equity valuation stretch. Equity bubbles without leverage tend to end in recessions rather than "
                   "banking crises (Jordà, Schularick & Taylor 2015), so it is context for the size of a wealth shock.",
               transmits="Wealth effect on spending; margin and collateral calls on leveraged holders."),
-    Indicator("margin", "Margin credit / equity market value", "A", "model", "margin", lag_days=75,
-              why="Borrowing against securities at broker-dealers relative to the size of the equity market.",
-              transmits="Price falls trigger margin calls -> forced selling into a falling market."),
+    Indicator("margin", "Net margin debt / equity market value", "A", "model", "margin", lag_days=30,
+              why="Investors' borrowing against stocks (FINRA debit balances minus free credit balances) relative to "
+                  "the size of the US equity market. High margin debt turns a sell-off into forced selling.",
+              transmits="Price falls -> margin calls -> forced selling into a falling market."),
     Indicator("hh_debt", "Household debt / GDP", "A", "fred", "HDTGPDUSQ163N", lag_days=120,
               why="The 2008 fuel. Low and falling household leverage means mortgages are unlikely to start the fire.",
               transmits="Mortgage and consumer losses hit banks and securitised credit."),
@@ -141,6 +142,28 @@ REGISTRY = [
               why="3-month correlation of S&P 500 and Treasury returns. When it turns positive, the hedge that most "
                   "balanced and risk-parity portfolios rely on stops working (Campbell, Pflueger & Viceira 2020).",
               transmits="Diversified portfolios lose on both legs -> deleveraging across asset classes."),
+    Indicator("hf_repo", "Hedge fund repo borrowing", "B", "model", "hf_repo", lag_days=200,
+              why="Hedge funds' repo borrowing from the SEC Form PF filings. Most of it funds the Treasury cash-futures "
+                  "basis trade; a funding shock forces it to unwind (March 2020).",
+              transmits="Repo haircuts rise -> basis trades unwind -> Treasury market dysfunction."),
+    Indicator("hf_rv_lev", "Relative-value hedge fund leverage", "B", "model", "hf_rv_lev", lag_days=200,
+              why="Gross assets per dollar of NAV for relative-value funds, the strategy behind the basis trade "
+                  "(Form PF, NAV-weighted).",
+              transmits="High leverage -> small price moves trigger margin calls -> forced selling."),
+    Indicator("lf_ust_short", "Leveraged funds' net short in Treasury futures", "B", "model", "lf_ust_short",
+              lag_days=4,
+              why="The futures leg of the basis trade: hedge funds short futures and hold cash bonds financed in repo. "
+                  "Its size shows how much Treasury trading rests on repo funding.",
+              transmits="A forced unwind dumps cash Treasuries onto dealers' balance sheets."),
+    Indicator("bank_nbfi", "Bank lending to non-banks (yoy growth)", "B", "model", "bank_nbfi",
+              why="Banks' loans to private credit funds, BDCs, PE, brokers and other non-banks (Fed H.8). The fastest "
+                  "growing bank exposure since 2015; ties bank capital to non-bank losses.",
+              transmits="Non-bank losses -> draws on bank credit lines -> bank losses and tighter credit."),
+    Indicator("concentration", "Market concentration (cap-weighted vs equal-weighted S&P 500)", "B", "model",
+              "concentration",
+              why="How far the cap-weighted S&P 500 has beaten the equal-weighted index over 3 years. A high value "
+                  "means a few mega-caps drive the market, so a repricing of those names moves everything.",
+              transmits="A few lead names fall -> passive and factor flows reverse together -> correlations rise."),
     Indicator("fire_sale", "Fire-sale exposure (common asset holdings)", "B", "bbg", None, bbg="needs holdings data",
               why="Losses from forced sales of assets that many institutions hold; empirically the largest "
                   "amplification channel (Greenwood, Landier & Thesmar 2015; Duarte & Eisenbach 2021). Needs "
@@ -163,9 +186,9 @@ REGISTRY = [
               why="Money funds' idle cash parked at the Fed. It cushions repo markets: when it is near zero, "
                   "every further drain hits bank reserves directly.",
               transmits="No cushion -> quarter-end repo spikes -> dealers pull back from Treasury and basis trades."),
-    Indicator("reserves_gdp", "Bank reserves", "C", "fred", "WRESBAL", direction=-1,
-              why="Banks' liquidity at the Fed. Below roughly $2.8-3tn the 2019 repo squeeze showed reserves stop "
-                  "being 'ample'.",
+    Indicator("reserves_gdp", "Bank reserves / bank assets", "C", "model", "res_assets", direction=-1,
+              why="Reserves as a share of commercial bank assets. Repo rates spiked when this ratio fell to "
+                  "about 8% (Sept 2019); the level of reserves alone grows with the banking system.",
               transmits="Scarce reserves -> banks hoard liquidity -> funding rates jump."),
     Indicator("sofr_iorb", "Repo rate vs Fed floor (SOFR - IORB)", "C", "model", "sofr_iorb",
               abs_thresholds=(0.0, 10.0),
@@ -191,6 +214,24 @@ REGISTRY = [
     Indicator("bank_capital", "Bank capital ratios (CET1)", "C", "manual", None, bbg="manual: Fed / FDIC",
               why="Better-capitalised banking systems recover faster from crises, though capital does not predict "
                   "them (Jordà, Richter, Schularick & Taylor 2021). FRED's bank equity series ended in 2020."),
+    Indicator("tgcr_iorb", "Tri-party repo rate vs Fed floor (TGCR - IORB)", "C", "model", "tgcr_iorb",
+              why="The tri-party general collateral rate, where money funds lend cash, relative to interest on "
+                  "reserves. Moves with SOFR-IORB but excludes cleared bilateral repo.",
+              transmits="Repo above the floor -> cash is scarce -> dealers ration balance sheet."),
+    Indicator("a2p2", "Lower-rated company funding premium (A2/P2 - AA CP)", "C", "model", "a2p2",
+              why="Extra cost for lower-rated companies to issue 30-day commercial paper. Firms use CP for working "
+                  "capital, so a jump shows short-term credit drying up for weaker borrowers.",
+              transmits="CP market closes for weaker firms -> they draw bank credit lines."),
+    Indicator("fin_cp", "Financial commercial paper outstanding (13-week change)", "C", "model", "fin_cp",
+              direction=-1,
+              why="Short-term unsecured funding of banks and finance companies, including foreign banks' US "
+                  "branches. It shrank sharply in 2008, 2011 and 2020 as money funds pulled back.",
+              transmits="Money funds stop rolling CP -> banks lose dollar funding -> sell assets or tap the Fed."),
+    Indicator("swap_lines", "Fed swap lines and FIMA repo usage", "C", "model", "swap_lines",
+              abs_thresholds=(5.0, 50.0),
+              why="Dollars the Fed lends to foreign central banks (swap lines) and foreign officials (FIMA repo). "
+                  "Usage jumps only when offshore dollar funding breaks down (2008, 2020).",
+              transmits="Offshore dollar shortage -> foreign banks sell US assets -> global funding stress."),
     Indicator("xccy_basis", "Offshore dollar funding (xccy basis)", "C", "bbg", None, direction=-1,
               bbg="Bloomberg only",
               why="Premium non-US banks pay to borrow dollars.", transmits="Global dollar squeeze."),
@@ -205,6 +246,10 @@ REGISTRY = [
               why="How far regional bank stocks have lagged the S&P 500 from their 1-year high. It caught the "
                   "2023 deposit run first.", transmits="Deposit flight -> forced asset sales -> credit tightening."),
 
+    Indicator("ci_draw", "Companies drawing bank credit lines (C&I loan growth)", "D", "model", "ci_draw",
+              why="4-week annualised growth in bank C&I loans. A surge means companies are drawing credit lines in a "
+                  "dash for cash (2008, March 2020).",
+              transmits="Credit-line draws drain bank liquidity and capital just when markets are stressed."),
     Indicator("sloos_ci", "Banks tightening lending standards (SLOOS)", "D", "fred", "DRTSCILM", lag_days=30,
               why="Net share of US banks tightening C&I loan standards. Credit-supply tightening predicts slower "
                   "lending and output (Lown & Morgan 2006; Bassett, Chosak, Driscoll & Zakrajsek 2014).",
@@ -244,7 +289,13 @@ REGISTRY = [
     Indicator("gsib", "G-SIB systemic footprint (BCBS score)", "context", "manual", None, owner="manual"),
     Indicator("hf_basis", "Hedge-fund Treasury basis-trade leverage (OFR Hedge Fund Monitor)", "context", "manual", None, owner="manual"),
     Indicator("private_credit", "Private credit AUM, BDC non-accruals, NAV-loan leverage", "context", "manual", None, owner="manual"),
-    Indicator("positioning", "Crowded positioning (CFTC futures, fund flows)", "context", "manual", None, owner="manual"),
+    Indicator("positioning", "Credit fund flows (EPFR) and broader CFTC positioning", "context", "manual", None, owner="manual"),
+    Indicator("xccy_jpy", "USD/JPY and EUR/USD cross-currency basis (Bloomberg)", "context", "manual", None, owner="manual"),
+    Indicator("bond_liq", "Bloomberg government bond and IG liquidity indices", "context", "manual", None, owner="manual"),
+    Indicator("bdc_nav", "BDC discount to NAV, PIK income, redemption requests", "context", "manual", None, owner="manual"),
+    Indicator("xborder", "BIS cross-border USD claims; TIC Cayman Treasury holdings", "context", "manual", None, owner="manual"),
+    Indicator("repo_mmf", "NY Fed repo volumes by segment; prime vs government MMF assets (ICI)", "context", "manual", None, owner="manual"),
+    Indicator("ai_obs", "AI hyperscaler off-balance-sheet obligations (company filings)", "context", "manual", None, owner="manual"),
     Indicator("unrealised", "Bank unrealised securities losses and uninsured deposits (FDIC QBP)", "context", "manual", None, owner="manual"),
 ]
 
@@ -278,6 +329,7 @@ _SRC = {'ebp_sentiment': "López-Salido, Stein & Zakrajšek (2017, QJE); Gilchri
     'pc_mark': 'Practitioner proxy (listed BDCs vs high yield); see Fed FSR (2024-25) on private credit opacity. Data: Yahoo BIZD / HYG.',
     'gar_5': 'Adrian, Boyarchenko & Giannone (2019, AER). Data: FRED GDPC1, NFCI.'}
 _SRC.update({'house_gap': "Borio & Lowe (2002, BIS WP 114); Jordà, Schularick & Taylor (2015, JIE 'Leveraged bubbles'). One-sided HP gap, λ = 400,000. Data: BIS via FRED QUSR628BIS.", 'eq_val': 'Shiller (2000); Jordà, Schularick & Taylor (2015). Data: Fed Financial Accounts via FRED NCBEILQ027S / GDP.', 'margin': 'Adrian & Shin (2010). Data: Fed Financial Accounts via FRED BOGZ1FL663067003Q (dealer margin loans) / NCBEILQ027S.', 'stock_bond': 'Campbell, Pflueger & Viceira (2020, JPE). Data: Yahoo SPY and IEF daily returns, 63-day correlation.', 'fiscal': 'Romer & Romer (2018, Economica); Jordà, Schularick & Taylor (2016, Econ Policy). Data: FRED GFDEGDQ188S.', 'bank_capital': "Jordà, Richter, Schularick & Taylor (2021, RFS 'Bank capital redux').", 'credit_widen': 'Gilchrist & Zakrajšek (2012, AER). Data: FRED BAA10Y, 13-week change.', 'vix': 'Whaley (2000); Bekaert & Hoerova (2014). Data: FRED VIXCLS. Already a component of the St. Louis Fed index.', 'move': 'Data: ICE BofA MOVE index via Yahoo ^MOVE. Already a component of the St. Louis Fed index.', 'fx_vol': 'Menkhoff, Sarno, Schmeling & Schrimpf (2012, JF) on FX volatility risk. Data: Yahoo DX-Y.NYB, 21-day realised.', 'em_stress': 'Forbes & Warnock (2012, JIE). Data: Yahoo EMB / IEF.', 'rec_prob': "Estrella & Mishkin (1998, REStat); Estrella & Trubin (2006, NY Fed CIEF). Probit P = Φ(−0.5333 − 0.6330 × spread) on the monthly 10y−3m spread. Uses FRED T10Y3M, not the NY Fed's bond-equivalent 3m yield, so readings differ slightly from the NY Fed's (approximate)."})
+_SRC.update({'margin': 'FINRA margin statistics; Adrian & Shin (2010) on procyclical leverage. Data: FINRA (debit minus free credits) / Fed Financial Accounts NCBEILQ027S.', 'hf_repo': 'Barth & Kahn (2021, OFR WP); Schrimpf, Shin & Sushko (2020, BIS Bulletin 2); Fed FSR. Data: OFR Hedge Fund Monitor, SEC Form PF (FPF-BORROW_REPO_SUM), quarterly, ~6-month lag.', 'hf_rv_lev': 'Fed FSR hedge fund leverage; OFR Hedge Fund Monitor. Data: Form PF (FPF-STRATEGY_RV_LEVERAGERATIO_NAVWMEAN).', 'lf_ust_short': 'Barth & Kahn (2021); Banegas, Monin & Petrasek (2021, FEDS Note). Data: CFTC Traders in Financial Futures via OFR (TFF-LF_TREAS_NET_POSITION), weekly.', 'bank_nbfi': 'Acharya, Cetorelli & Tuckman (2024, NY Fed SR 1111) on the bank-nonbank nexus; Fed FSR. Data: Fed H.8 via FRED LNFACBW027SBOG (from 2015).', 'concentration': 'Practitioner measure of index concentration. Data: Yahoo SPY (cap-weighted) and RSP (equal-weighted), 3-year relative total return.', 'reserves_gdp': 'Copeland, Duffie & Yang (2021, NY Fed SR 974); Afonso et al. (2022, NY Fed SR 1019). Data: FRED WRESBAL / TLAACBW027SBOG.', 'tgcr_iorb': 'NY Fed tri-party general collateral rate; Afonso et al. (2022). Data: NY Fed Markets API (TGCR), FRED IORB/IOER.', 'a2p2': 'Kacperczyk & Schnabl (2010, JEP) on the CP market in 2007-09. Data: FRED RIFSPPNA2P2D30NB - RIFSPPNAAD30NB.', 'fin_cp': 'Kacperczyk & Schnabl (2010); Ivashina, Scharfstein & Stein (2015, QJE) on dollar funding of foreign banks. Data: FRED FINCP.', 'swap_lines': 'Goldberg, Kennedy & Miu (2011, FRBNY EPR); Bahaj & Reis (2022, REStud). Data: Fed H.4.1 via FRED SWPT + H41RESPPALGTRFNWW, $bn.', 'ci_draw': "Ivashina & Scharfstein (2010, JFE); Acharya & Steffen (2020, RCFS 'dash for cash'). Data: Fed H.8 via FRED TOTCI, weekly."})
 for _i in REGISTRY:
     _i.src = _SRC.get(_i.id, _i.src)
 
@@ -292,7 +344,16 @@ _NOT_SCORED = {
     "cre_delinq": "Lags the cycle: delinquencies confirm losses already under way.",
     "pc_mark": "Practitioner proxy with history only from 2013; not a published measure.",
     "eq_val": "Trends up over decades (non-stationary), and equity bubbles without leverage rarely cause banking crises.",
-    "margin": "No published evidence that margin credit predicts crises on its own.",
+    "margin": "No published evidence that margin debt predicts crises on its own.",
+    "hf_repo": "Quarterly with a ~6-month reporting lag, and history only from 2013.",
+    "hf_rv_lev": "Quarterly with a ~6-month reporting lag, and history only from 2013.",
+    "lf_ust_short": "History only from 2013; no published crisis-prediction evidence.",
+    "bank_nbfi": "History only from 2015 (H.8 reclassification).",
+    "concentration": "No published evidence that concentration predicts crises.",
+    "tgcr_iorb": "Moves with SOFR-IORB, which is already scored; scoring both would double count.",
+    "a2p2": "Overlaps the bank CP-bill spread, which is already scored.",
+    "fin_cp": "Overlaps the bank CP-bill spread; outstanding amounts also shift with regulation (2016 MMF reform).",
+    "swap_lines": "Coincident: usage only appears once a crisis is under way.",
     "stock_bond": "A regime indicator for diversification, not a published crisis predictor.",
     "fiscal": "Trends up over decades (non-stationary): its percentile is near 100 regardless of risk.",
     "vix": "Already inside the St. Louis Fed stress index; scoring it again would double count.",
@@ -303,7 +364,9 @@ _NOT_SCORED = {
 _NS_TAG = {"dealer_lev": "structural break", "usd_6m": "global", "sloos_ci": "lags", "cre_delinq": "lags",
            "pc_mark": "short history", "eq_val": "trends up", "margin": "no evidence", "stock_bond": "no evidence",
            "fiscal": "trends up", "vix": "double counts", "move": "double counts", "fx_vol": "double counts",
-           "em_stress": "global"}
+           "em_stress": "global", "hf_repo": "lagged data", "hf_rv_lev": "lagged data",
+           "lf_ust_short": "short history", "bank_nbfi": "short history", "concentration": "no evidence",
+           "tgcr_iorb": "double counts", "a2p2": "double counts", "fin_cp": "double counts", "swap_lines": "coincident"}
 for _i in REGISTRY:
     if _i.id in _NOT_SCORED:
         _i.scored, _i.not_scored_why, _i.ns_tag = False, _NOT_SCORED[_i.id], _NS_TAG.get(_i.id, "")
@@ -313,7 +376,8 @@ FRED_SERIES = sorted({i.series for i in REGISTRY if i.source in ("fred",) and i.
                      {"QUSPAM770A", "BAMLH0A0HYM2", "BCNSDODNS", "GDP", "GDPC1", "SOFR", "IORB",
                       "DCPF3M", "DTB3", "T10Y3M", "NFCI", "IOER", "CSUSHPINSA", "BAA10Y",
                       "TDSP", "DRTSCILM", "DRCRELEXFACBS", "DTWEXBGS", "INDPRO", "QUSR628BIS", "NCBEILQ027S",
-                      "BOGZ1FL663067003Q", "VIXCLS",
+                      "BOGZ1FL663067003Q", "VIXCLS", "WRESBAL", "TLAACBW027SBOG", "LNFACBW027SBOG", "TOTCI",
+                      "RIFSPPNA2P2D30NB", "RIFSPPNAAD30NB", "FINCP", "SWPT", "H41RESPPALGTRFNWW",
                       "BOGZ1FL664090005Q", "BOGZ1FL665080003Q"})
 
 # The story: a systemic event needs FUEL (an excess to unwind), FAULT LINES (a way for losses to spread),
