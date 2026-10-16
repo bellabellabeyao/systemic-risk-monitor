@@ -37,6 +37,7 @@ class Params:
     hp_lambda: float = 400_000
     pct_min_weeks: int = 156        # 3y of history before a percentile score is reported
     regime_cut: float = 60.0
+    bbg_dir: str | None = None       # folder of Bloomberg extracts -> private build
     sectors: list = field(default_factory=lambda: list(FIN_UNIVERSE))
 
 
@@ -73,6 +74,19 @@ def run(provider, p: Params = Params(), log=print) -> dict:
     fred = provider.fred(FRED_SERIES, "1960-01-01")
     R["fred"] = fred
     cap, liab = provider.fundamentals(fin_tickers, p.start)
+    BBG = {}
+    if p.bbg_dir:
+        from .data import load_bbg
+        BBG = load_bbg(p.bbg_dir)
+        R["meta"]["bloomberg"] = True
+        R["meta"]["source"] = provider.name + " + Bloomberg (private build)"
+        if "srisk_fund" in BBG:   # Bloomberg balance sheets back to 2002 replace Yahoo's ~6 quarters
+            bl = BBG["srisk_fund"].xs("BS_TOT_LIAB2", axis=1, level=1) * 1e6
+            bl.columns = [c.replace(" US Equity", "") for c in bl.columns]
+            bl.index = bl.index + pd.Timedelta(days=45)                        # filing lag
+            bl = bl.groupby(level=0).last()
+            liab = bl.combine_first(liab).sort_index()
+            log(f"[bbg] liabilities from Bloomberg for {bl.notna().any().sum()} firms, from {bl.index[0].date()}")
 
     # ---------------------------------------------------------------- B. amplifiers
     # sector baskets: equal-weight daily returns
@@ -205,6 +219,40 @@ def run(provider, p: Params = Params(), log=print) -> dict:
     swap_lines = (fred["SWPT"].fillna(0) + fred["H41RESPPALGTRFNWW"].fillna(0)).dropna() / 1e3   # $mn -> $bn
     swap_lines = swap_lines[fred["SWPT"].notna()]
     rel = (close["SPY"] / close["RSP"]).dropna() if "RSP" in close else pd.Series(dtype=float)
+    # ---- Bloomberg-only series (empty in the public build)
+    E = pd.Series(dtype=float)
+    bb_hy = bb_ig = bb_cet1 = bb_hkm = bb_bdc = bb_ust = bb_intl = bb_jpy = bb_eur = E
+    bbg_extra = {}
+    if BBG:
+        def col(name, t, f="PX_LAST"):
+            try:
+                return BBG[name][(t, f)].dropna()
+            except KeyError:
+                return E
+        bb_hy, bb_ig = col("spreads", "LF98OAS Index"), col("spreads", "LUACOAS Index")
+        c1 = BBG["cet1"].xs("BS_TIER1_COM_EQUITY_RATIO", axis=1, level=1) if "cet1" in BBG else pd.DataFrame()
+        bb_cet1 = c1.resample("QE").last().median(axis=1).dropna() if len(c1) else E
+        if "dealers" in BBG:
+            us = ["JPM US Equity", "BAC US Equity", "C US Equity", "GS US Equity", "MS US Equity", "WFC US Equity",
+                  "JEF US Equity"]
+            dl = BBG["dealers"].resample("QE").last()
+            mc = dl.xs("CUR_MKT_CAP", axis=1, level=1).reindex(columns=us)
+            db = dl.xs("BS_TOT_LIAB2", axis=1, level=1).reindex(columns=us)
+            ok = mc.notna() & db.notna()
+            bb_hkm = (mc.where(ok).sum(axis=1) / (mc.where(ok).sum(axis=1) + db.where(ok).sum(axis=1)) * 100)
+            bb_hkm = bb_hkm[ok.sum(axis=1) >= 4]
+        if "bdc_nav" in BBG:
+            pb = BBG["bdc_nav"].xs("PX_TO_BOOK_RATIO", axis=1, level=1)
+            bb_bdc = ((1 - pb.where(pb.notna().sum(axis=1) >= 4).median(axis=1)) * 100).dropna()   # discount, %
+        bb_ust = col("xccy_liq", "GVLQUSD Index")
+        bb_intl = pd.concat([col("xccy_liq", "GVLQJPY Index"), col("xccy_liq", "GVLQGBP Index")], axis=1).mean(axis=1).dropna()
+        bb_jpy = col("xccy_liq", ".JYCCBS3M G Index").rolling(5).mean().dropna()
+        eur_new, eur_old = col("xccy_liq", "EUXOQQ1 Curncy"), col("xccy", "EUBS1 Curncy")
+        bb_eur = pd.concat([eur_old[eur_old.index < (eur_new.index[0] if len(eur_new) else eur_old.index[-1])], eur_new]).sort_index()
+        bbg_extra = {"xccy": pd.concat({"USD/JPY 3m OIS basis": bb_jpy, "EUR/USD 1y basis": bb_eur}, axis=1),
+                             "liq": pd.concat({"Treasuries": bb_ust, "JGBs": col("xccy_liq", "GVLQJPY Index"),
+                                               "Gilts": col("xccy_liq", "GVLQGBP Index"),
+                                               "Bunds": col("xccy_liq", "GVLQDE Index")}, axis=1)}
     concentration = (rel / rel.shift(756) - 1) * 100
     r_sb = close[["SPY", "IEF"]].pct_change(fill_method=None)
     sb_corr = r_sb["SPY"].rolling(63).corr(r_sb["IEF"])
@@ -218,6 +266,7 @@ def run(provider, p: Params = Params(), log=print) -> dict:
                   "rv": rv, "low_vol": low_vol, "dealer_lev": dealer_lev, "usd6m": usd6m, "pc_mark": pc_mark,
                   "house_gap": hp, "eq_val": eq_val, "move": xt["^MOVE"].dropna(), "rec_prob": rec_prob}
 
+    R["extra"]["bbg"] = bbg_extra
     # ---------------------------------------------------------------- weekly panel
     raw = {
         "credit_gap": _weekly(R["credit_gap"]["gap"], 120, None),
@@ -261,6 +310,14 @@ def run(provider, p: Params = Params(), log=print) -> dict:
         "fin_cp": _weekly(fin_cp.dropna()),
         "swap_lines": _weekly(swap_lines),
         "ci_draw": _weekly(ci_draw.dropna()),
+        "hy_oas": _weekly(bb_hy),
+        "bank_capital": _weekly(bb_cet1, 45, None),
+        "hkm": _weekly(bb_hkm, 45, None),
+        "bdc_pb": _weekly(bb_bdc, 0, 6),
+        "ust_liq": _weekly(bb_ust),
+        "intl_liq": _weekly(bb_intl),
+        "xccy_basis": _weekly(bb_jpy.loc["2010":]),          # post-2010 regime only (structural break)
+        "eur_basis": _weekly(bb_eur),
         "stock_bond": _weekly(sb_corr.dropna()),
         "fiscal": _weekly(fred["GFDEGDQ188S"].dropna(), 90, None),
         "credit_widen": credit_widen.ffill(limit=4),
@@ -278,7 +335,7 @@ def run(provider, p: Params = Params(), log=print) -> dict:
     R["meta"]["last_data"] = close.index[-1]
     # carry each series to the latest week: quarterly ones up to 45 weeks, the rest up to 4
     slow = {"credit_gap", "rzone", "hh_debt", "corp_debt", "gar_5", "gov_debt", "granger_dgc", "margin",
-            "hf_repo", "hf_rv_lev",
+            "hf_repo", "hf_rv_lev", "bank_capital", "hkm",
             "hh_dsr", "dealer_lev", "sloos_ci", "cre_delinq", "house_gap", "eq_val", "margin", "fiscal"}
     for c in panel:
         panel[c] = panel[c].ffill(limit=45 if c in slow else 4)   # BIS credit data lands ~2 quarters late
@@ -371,8 +428,9 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", choices=["free", "bbg", "demo"], default="free")
     ap.add_argument("--out", default="output")
+    ap.add_argument("--bbg", default=None, help="folder of Bloomberg extracts (private build)")
     a = ap.parse_args()
-    R = run(get_provider(a.source))
+    R = run(get_provider(a.source), Params(bbg_dir=a.bbg))
     save(R, Path(a.out))
     last = R["pillars"].dropna().index[-1]
     print(R["pillars"].loc[last].round(0).to_string())

@@ -51,7 +51,11 @@ HIST_UNITS = {
     "lf_ust_short": (1, "tn", "$", "Net short, Treasury futures notional"), "bank_nbfi": (1, "%", "", "Year-on-year growth"),
     "concentration": (1, "%", "", "Cap-weighted minus equal-weighted, 3y"), "tgcr_iorb": (1, "bp", "", "TGCR minus IORB, 5-day avg"),
     "a2p2": (1, "bp", "", "A2/P2 minus AA 30-day CP"), "fin_cp": (1, "%", "", "13-week change"),
-    "swap_lines": (1, "bn", "$", "Swap lines + FIMA repo"), "ci_draw": (1, "%", "", "4-week growth, annualised"), "em_stress": (1, "%", "", "% behind Treasuries from 1y high"),
+    "swap_lines": (1, "bn", "$", "Swap lines + FIMA repo"),
+    "hy_oas": (100, "bp", "", "HY option-adjusted spread"), "bank_capital": (1, "%", "", "Median CET1 ratio"),
+    "hkm": (1, "%", "", "Equity / (equity + debt), US dealers"), "bdc_pb": (1, "%", "", "Discount to NAV (negative = premium)"),
+    "ust_liq": (1, "bp", "", "Avg pricing error vs fitted curve"), "intl_liq": (1, "bp", "", "JGB and Gilt average"),
+    "xccy_basis": (1, "bp", "", "USD/JPY 3m OIS basis"), "eur_basis": (1, "bp", "", "EUR/USD 1y basis"), "ci_draw": (1, "%", "", "4-week growth, annualised"), "em_stress": (1, "%", "", "% behind Treasuries from 1y high"),
 }
 
 
@@ -82,7 +86,7 @@ def hist_payload(R, asof, ids):
 
 
 # indicators drawn in a chart above each link's table (so the table can mark them)
-CHARTED = {"hf_repo", "lf_ust_short", "ebp_sentiment", "credit_gap", "eq_val", "house_gap", "srisk_gdp", "dcovar_max", "dcovar_private",
+CHARTED = {"xccy_basis", "eur_basis", "ust_liq", "intl_liq", "hf_repo", "lf_ust_short", "ebp_sentiment", "credit_gap", "eq_val", "house_gap", "srisk_gdp", "dcovar_max", "dcovar_private",
            "dy_total", "stock_bond", "rrp_buffer", "reserves_gdp", "sofr_iorb", "stlfsi", "bank_rel_dd",
            "vix", "move", "credit_widen"}
 
@@ -116,7 +120,7 @@ LITMAP = [
      "here": "Spillover index, Granger network, absorption ratio"},
     {"strand": "Intermediary leverage and capital", "link": "Contagion", "status": "context",
      "papers": "Adrian & Shin (2010); Adrian, Etula & Muir (2014); He, Kelly & Manela (2017)",
-     "here": "Broker-dealer leverage (new, not scored: post-2008 structural break). Gap: He-Kelly-Manela capital ratio needs long balance-sheet history (Bloomberg)."},
+     "here": "Broker-dealer leverage (Fed Financial Accounts) and He-Kelly-Manela dealer capital ratio (Bloomberg build), both context."},
     {"strand": "Diversification breakdown", "link": "Contagion", "status": "context",
      "papers": "Campbell, Pflueger & Viceira (2020)", "here": "Stock-bond correlation (context)"},
     {"strand": "Crowding and positioning", "link": "Contagion", "status": "context",
@@ -135,10 +139,10 @@ LITMAP = [
      "here": "Reserves / bank assets, ON RRP, SOFR-IORB, Standing Repo Facility, CP-bill spread (scored); tri-party repo, A2/P2 CP spread, financial CP outstanding, Fed swap lines (context). Gap: NY Fed repo volumes by segment, prime vs government MMF assets (ICI)."},
     {"strand": "Fiscal space and bank capital", "link": "Shock absorbers", "status": "context",
      "papers": "Romer & Romer (2018); Jordà, Schularick & Taylor (2016); Jordà, Richter, Schularick & Taylor (2021)",
-     "here": "Federal debt/GDP (context: non-stationary). Gap: bank CET1 (FRED series discontinued 2020; manual)."},
+     "here": "Federal debt/GDP (context: non-stationary); bank CET1 ratios (context, Bloomberg build)."},
     {"strand": "Global dollar funding", "link": "Shock absorbers", "status": "context",
      "papers": "Rey (2013); Bruno & Shin (2015); Du, Tepper & Verdelhan (2018); Avdjiev, Du, Koch & Shin (2019)",
-     "here": "Broad dollar 6m change, Fed swap line and FIMA usage (context). Gap: USD/JPY and EUR/USD basis (Bloomberg), BIS cross-border USD claims, TIC holdings by country."},
+     "here": "USD/JPY OIS basis (scored, Bloomberg build); EUR/USD basis, broad dollar, Fed swap lines and FIMA usage (context). Gap: BIS cross-border USD claims, TIC holdings by country."},
     {"strand": "Bank interest-rate risk and deposit runs", "link": "Trigger", "status": "context",
      "papers": "Drechsler, Savov & Schnabl (2021); Jiang, Matvos, Piskorski & Seru (2024)",
      "here": "Regional banks vs market (scored). Gap: unrealised securities losses and uninsured deposits (FDIC Quarterly Banking Profile)."},
@@ -155,6 +159,9 @@ LITMAP = [
      "here": "VIX, MOVE, dollar volatility (context: already inside the St. Louis Fed index)"},
     {"strand": "Capital-flow reversals", "link": "Trigger", "status": "context",
      "papers": "Forbes & Warnock (2012); Rey (2013)", "here": "EM dollar bonds vs Treasuries (context)"},
+    {"strand": "Market liquidity", "link": "Trigger", "status": "in",
+     "papers": "Brunnermeier & Pedersen (2009); Hu, Pan & Wang (2013); Pinter (2023) on the 2022 gilt crisis",
+     "here": "Bloomberg Treasury liquidity index (scored, Bloomberg build); JGB and gilt liquidity (context). Gap: IG corporate bond liquidity."},
     {"strand": "Composite stress indices", "link": "Trigger", "status": "in",
      "papers": "Holló, Kremer & Lo Duca (2012, CISS); Kliesen & Smith (2010); Brave & Butters (2011)",
      "here": "St. Louis Fed FSI, Chicago Fed NFCI"},
@@ -240,6 +247,14 @@ class Story:
             "fin_cp": lambda: f"{v:+.1f}% over 13 weeks",
             "swap_lines": lambda: f"${v:.1f}bn",
             "ci_draw": lambda: f"{v:+.1f}% annualised over 4 weeks",
+            "hy_oas": lambda: f"HY {v * 100:.0f}bp, tighter than {100 - self.sc.get(i, 0):.0f}% of weeks since 2002",
+            "bank_capital": lambda: f"{v:.1f}% median CET1",
+            "hkm": lambda: f"{v:.1f}% (2008 low: {self.panel[i].loc['2008':'2009'].min():.1f}%)",
+            "bdc_pb": lambda: (f"{v:.0f}% below NAV" if v >= 0 else f"{-v:.0f}% above NAV"),
+            "ust_liq": lambda: f"{v:.2f}bp off the fitted curve (March 2020: {self.panel[i].loc['2020-03'].max():.1f}bp)",
+            "intl_liq": lambda: f"{v:.1f}bp off the fitted curve",
+            "xccy_basis": lambda: f"{v:.0f}bp (March 2020: {self.panel[i].loc['2020-03'].min():.0f}bp)",
+            "eur_basis": lambda: f"{v:.1f}bp",
             "sofr_iorb": lambda: f"{v:+.1f}bp " + ("(repo still below the Fed floor)" if v < 0 else "(repo trading above the Fed floor)"),
             "srf_usage": lambda: f"${v:.1f}bn a day (5-day average)",
             "cp_spread": lambda: f"{v:.0f}bp",
@@ -376,19 +391,28 @@ class Story:
             if g("cp_spread") <= 30:
                 add("Bank funding cheap", f"3-month financial CP costs {v['cp_spread']:.0f}bp over bills, "
                     f"lower than {100 - g('cp_spread'):.0f}% of weeks.", "cp_spread")
+            if pd.notna(v.get("xccy_basis", np.nan)):
+                add("Offshore dollars", f"The USD/JPY basis is {v['xccy_basis']:.0f}bp, "
+                    f"{'wider' if g('xccy_basis') >= 70 else 'no wider'} than usual since 2010 "
+                    f"({ordn(g('xccy_basis'))} percentile); March 2020 reached "
+                    f"{self.panel['xccy_basis'].loc['2020-03'].min():.0f}bp.", "xccy_basis")
             if v.get("srf_usage", 0) >= 1:
                 add("Backstop in use", f"Standing Repo Facility take-up is {self.reading('srf_usage')}.", "srf_usage")
         else:  # Trigger
             tested = score >= 65
             cracks = []
+            if g("intl_liq") >= 90:
+                cracks.append("foreign bond liquidity")
+            if g("bdc_pb") >= 80:
+                cracks.append("private-credit marks")
             if g("move") >= 65 and g("vix", 100) < 50:
                 cracks.append("Treasury volatility")
-            if g("pc_mark") >= 75:
+            if g("pc_mark") >= 75 and "private-credit marks" not in cracks:
                 cracks.append("private-credit marks")
             if g("bank_rel_dd") >= 75:
                 cracks.append("regional banks")
             head = ("The system is being tested" if tested else "Nothing is testing the system yet") + \
-                   (f"; {' and '.join(cracks)} {'are' if len(cracks) > 1 else 'is'} the "
+                   (f"; {(', '.join(cracks[:-1]) + ' and ' + cracks[-1]) if len(cracks) > 1 else cracks[0]} {'are' if len(cracks) > 1 else 'is'} the "
                     f"crack{'s' if len(cracks) > 1 else ''} to watch." if cracks else ".")
             add("Stress below normal" if v["stlfsi"] < 0 else "Stress above normal",
                 f"St. Louis Fed index {v['stlfsi']:+.2f}, Chicago Fed NFCI {v['nfci']:+.2f}; spreads "
@@ -396,12 +420,18 @@ class Story:
             if "Treasury volatility" in cracks:
                 add("Treasury volatility", f"MOVE {v['move']:.0f} ({ordn(g('move'))} percentile) while VIX is "
                     f"{v['vix']:.0f}: the collateral market is less calm than equities.", "move")
-            if "private-credit marks" in cracks:
+            if "private-credit marks" in cracks and g("bdc_pb") < 80:
                 add("Private credit", f"Listed BDCs are {v['pc_mark']:.0f}% behind HY bonds from their 1-year high; "
                     "the market is marking direct loans down faster than reported NAVs.", "pc_mark")
+            if g("intl_liq") >= 90:
+                add("Foreign bond markets", f"JGB and gilt markets are less liquid than {g('intl_liq'):.0f}% of weeks since "
+                    f"2007, while Treasuries are {'normal' if g('ust_liq', 50) < 70 else 'also strained'}.", "intl_liq")
+            if g("bdc_pb") >= 80:
+                add("Private credit marks", f"Listed BDCs trade {v['bdc_pb']:.0f}% below reported NAV, wider than "
+                    f"{g('bdc_pb'):.0f}% of months since 2008: the market doubts the loan marks.", "bdc_pb")
             if g("bank_rel_dd") >= 60:
                 add("Regional banks", f"{self.reading('bank_rel_dd')}.", "bank_rel_dd")
-        return head, B[:5 if name == "Contagion" else 4]
+        return head, B[:5 if name in ("Contagion", "Trigger") else 4]
 
     # ------------------------------------------------------------- headline
     def headline(self, links):
@@ -476,6 +506,13 @@ class Story:
             "hf": (f"Hedge fund Treasury leverage is at a record: ${v['hf_repo']:.1f}tn of repo borrowing and "
                    f"${v['lf_ust_short']:.2f}tn net short in futures" if sc.get("hf_repo", 0) >= 95 else
                    f"Hedge fund repo borrowing ${v['hf_repo']:.1f}tn; leveraged funds ${v['lf_ust_short']:.2f}tn net short futures"),
+            "xccy": (f"Offshore dollar funding is {'tight' if sc.get('xccy_basis', 0) >= 70 else 'calm'}: USD/JPY basis "
+                     f"{v.get('xccy_basis', float('nan')):.0f}bp vs {self.panel['xccy_basis'].loc['2020-03'].min():.0f}bp in March 2020"
+                     if "xccy_basis" in self.panel and pd.notna(v.get("xccy_basis", np.nan)) else ""),
+            "liq": (f"Treasuries trade normally ({v.get('ust_liq', float('nan')):.1f}bp), but JGB and gilt liquidity is "
+                    f"near its worst ({v.get('intl_liq', float('nan')):.1f}bp, {sc.get('intl_liq', 0):.0f}th percentile)"
+                    if sc.get("intl_liq", 0) >= 85 and sc.get("ust_liq", 100) < 70 else
+                    f"Government bond liquidity: Treasuries {v.get('ust_liq', float('nan')):.1f}bp off the fitted curve"),
             "recprob": f"The yield curve puts the chance of a US recession within a year at {v['rec_prob']:.0f}%",
             "gar": (f"Even in a bad case, growth stays positive: 5th-percentile GDP growth over the next year is "
                     f"{R['gar'].dropna().iloc[-1]['q05']:+.1f}%" if R["gar"].dropna().iloc[-1]["q05"] > 0 else
@@ -519,6 +556,9 @@ def payload(R: dict) -> dict:
         "gar": {k: _s(R["gar"][k], "2000") for k in R["gar"].columns},
         "valuation": {"eq": _s(R["extra"]["eq_val"], "1990"), "house": _s(R["extra"]["house_gap"], "1990")},
         "stockbond": _s(R["panel"]["stock_bond"].loc[:asof], "2004"),
+        "bbg": None if not R.get("extra", {}).get("bbg") else {
+            "xccy": {c: _s(R["extra"]["bbg"]["xccy"][c].loc[:asof], "2005", 2) for c in R["extra"]["bbg"]["xccy"]},
+            "liq": {c: _s(R["extra"]["bbg"]["liq"][c].loc[:asof], "2007", 2) for c in R["extra"]["bbg"]["liq"]}},
         "hf": {"repo": _s(R["extra"]["hf"]["repo"].loc[:asof]), "short": _s(R["extra"]["hf"]["short"].loc[:asof])},
         "vol": {"vix": _s(R["panel"]["vix"].loc[:asof], "2005"), "move": _s(R["panel"]["move"].loc[:asof], "2005"),
                 "baa": _s(fred["BAA10Y"].resample("W-FRI").last().loc[:asof], "2005")},

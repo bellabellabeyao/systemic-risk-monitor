@@ -267,9 +267,13 @@ const SECTIONS = {
                            "Barth & Kahn (2021, OFR WP 21-01); Schrimpf, Shin & Sushko (2020, BIS Bulletin 2) on the March 2020 unwind; Fed Financial Stability Report. Data: OFR Hedge Fund Monitor (FPF-BORROW_REPO_SUM, TFF-LF_TREAS_NET_POSITION)."],
                           ["stockbond","stockbond","3-month correlation of daily S&P 500 and 7-10y Treasury returns. Above zero = bonds no longer hedge stocks.",
                            "Campbell, Pflueger & Viceira (2020, JPE) on why the stock-bond correlation flips with the inflation regime. Data: Yahoo SPY, IEF."]], cols:2},
-  "Shock absorbers": {charts:[["plumb","plumb","Bank reserves and ON RRP balances ($tn, right axis) and the overnight repo rate minus the Fed's interest on reserves (bp, left axis).",
+  "Shock absorbers": {charts:[["xccy","xccy","Cost of borrowing dollars by swapping out of yen (3-month OIS basis) and euros (1-year basis), bp. More negative = dollars scarcer offshore.",
+                               "Du, Tepper & Verdelhan (2018, JF); Avdjiev, Du, Koch & Shin (2019). Data: Bloomberg .JYCCBS3M G Index; EUXOQQ1 Curncy spliced to EUBS1 Curncy (LIBOR era to 2021).", "bbg"],
+                              ["plumb","plumb","Bank reserves and ON RRP balances ($tn, right axis) and the overnight repo rate minus the Fed's interest on reserves (bp, left axis).",
                                "Copeland, Duffie & Yang (2021, NY Fed SR 974) on the Sept-2019 repo spike; Afonso, Giannone, La Spada & Williams (2022, NY Fed SR 1019) on the reserve demand curve. Data: FRED WRESBAL, RRPONTSYD, SOFR, IORB/IOER."]], cols:1},
-  "Trigger": {charts:[["stress","stress","St. Louis Fed Financial Stress Index (zero = normal) and regional banks' shortfall vs the S&P 500 from their 1-year high (%, right axis).",
+  "Trigger": {charts:[["liq","liq","Bloomberg government bond liquidity indices: average gap between bond yields and a fitted curve, bp. Higher = less liquid.",
+                        "Hu, Pan & Wang (2013, JF) on yield-curve noise as illiquidity; Pinter (2023) on the 2022 gilt crisis. Data: Bloomberg GVLQUSD, GVLQJPY, GVLQGBP, GVLQDE Index.", "bbg"],
+                       ["stress","stress","St. Louis Fed Financial Stress Index (zero = normal) and regional banks' shortfall vs the S&P 500 from their 1-year high (%, right axis).",
                         "Kliesen & Smith (2010), St. Louis Fed FSI v4; Jiang, Matvos, Piskorski & Seru (2024, JFE) on the 2023 regional bank runs. Data: FRED STLFSI4; Yahoo KRE, SPY."],
                        ["vol","vol","VIX and MOVE (left) and the Baa−10y corporate spread, pp (right).",
                         "Whaley (2000) on VIX; Bekaert & Hoerova (2014) on VIX as risk aversion plus uncertainty; Gilchrist & Zakrajšek (2012) on credit-spread shocks. Data: FRED VIXCLS, BAA10Y; Yahoo ^MOVE."],
@@ -321,7 +325,8 @@ function renderStatic(){
   // sections
   const T = D.titles;
   document.getElementById("sections").innerHTML = D.links.map((l,i)=>{
-    const S = SECTIONS[l.name], cols = S.cols===3 ? "grid3" : S.cols===1 ? "" : "grid2";
+    const S0 = SECTIONS[l.name], charts = S0.charts.filter(c=>c[4]!=="bbg" || D.bbg), S = {charts, cols: S0.cols};
+    const cols = charts.length===1 ? "" : (S.cols===3 && charts.length>=3) ? "grid3" : "grid2";
     return `<section class="linksec" id="${l.name.replace(/\s/g,'')}">
       <div class="sec-head">
         <div class="row"><span class="step num muted">${i+1} of 4</span><h2>${esc(l.name)}: ${esc(l.q)}</h2></div>
@@ -436,6 +441,16 @@ function renderCharts(){
   Plotly.react("c_stockbond", [ln(D.stockbond,"Stock-bond correlation",acc,{fill:"tozeroy", fillcolor:"rgba(127,127,127,.08)"})],
     base({yaxis:{range:[-1,1], zeroline:true, zerolinecolor:mut}, shapes:[hrect(0,1,bad,.06)]}), CFG);
   // absorbers
+  if (D.bbg && document.getElementById("c_xccy")) {
+    const xc = Object.entries(D.bbg.xccy), xcol=[acc, vio];
+    Plotly.react("c_xccy", xc.map(([k,v],i)=>ln(v,k,xcol[i],{line:{width:i?1:1.8,color:xcol[i]}, hovertemplate:"%{x|%b %Y}: %{y:.0f}bp<extra>"+k+"</extra>"})),
+      base({showlegend:true, yaxis:{ticksuffix:"bp", zeroline:true, zerolinecolor:mut}}), CFG);
+  }
+  if (D.bbg && document.getElementById("c_liq")) {
+    const lq = Object.entries(D.bbg.liq), lcol=[acc, bad, warn, mut];
+    Plotly.react("c_liq", lq.map(([k,v],i)=>ln(v,k,lcol[i],{line:{width:i?1.1:2,color:lcol[i]}, hovertemplate:"%{x|%b %Y}: %{y:.1f}bp<extra>"+k+"</extra>"})),
+      base({showlegend:true, yaxis:{ticksuffix:"bp"}}), CFG);
+  }
   Plotly.react("c_plumb", [ln(D.plumb.sofr_iorb,"SOFR − IORB, bp (left)",bad),
     ln(D.plumb.res,"Bank reserves, $tn (right)",acc,{yaxis:"y2", hovertemplate:"%{x|%b %Y}: $%{y:.2f}tn<extra>Reserves</extra>"}),
     ln(D.plumb.rrp,"ON RRP, $tn (right)",vio,{yaxis:"y2", fill:"tozeroy", fillcolor:"rgba(127,127,127,.08)", hovertemplate:"%{x|%b %Y}: $%{y:.2f}tn<extra>ON RRP</extra>"})],

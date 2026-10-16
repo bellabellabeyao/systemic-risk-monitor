@@ -385,3 +385,16 @@ def fetch_nyfed_rate(rate: str = "tgcr", start: str = "2018-04-02") -> pd.Series
     end = pd.Timestamp.today().strftime("%Y-%m-%d")
     d = _get_json(f"https://markets.newyorkfed.org/api/rates/secured/{rate}/search.json?startDate={start}&endDate={end}")
     return pd.Series({pd.Timestamp(r["effectiveDate"]): float(r["percentRate"]) for r in d["refRates"]}).sort_index()
+
+
+# ------------------------------------------------------------------ Bloomberg extracts (private build only)
+def load_bbg(folder: str) -> dict:
+    """Read the CSVs written by bbg_pull.py / bbg_pull2.py (long format: date, ticker, field, value)."""
+    import os
+    out = {}
+    for name in ["spreads", "xccy", "xccy_liq", "cet1", "bdc_nav", "dealers", "srisk_fund"]:
+        f = os.path.join(folder, f"{name}.csv")
+        if os.path.exists(f):
+            d = pd.read_csv(f, parse_dates=["date"])
+            out[name] = d.pivot_table(index="date", columns=["ticker", "field"], values="value").sort_index()
+    return out
