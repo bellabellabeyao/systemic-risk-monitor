@@ -43,6 +43,8 @@ class Params:
 def _weekly(s: pd.Series | pd.DataFrame, lag_days: int = 0, limit: int | None = 26):
     """Shift by publication lag, sample to Friday weeks, forward fill (bounded) - no look-ahead."""
     x = s.copy()
+    if len(x) == 0:                         # a failed optional source: return an empty weekly series, never crash
+        return pd.Series(dtype=float, index=pd.DatetimeIndex([], freq="W-FRI"))
     if lag_days:
         x.index = x.index + pd.Timedelta(days=lag_days)
     return x.resample("W-FRI").last().ffill(limit=limit)

@@ -6,3 +6,4 @@ streamlit>=1.35
 # optional, Bloomberg Terminal machine only:
 # xbbg
 # blpapi --index-url=https://blpapi.bloomberg.com/repository/releases/python/simple/
+openpyxl>=3.1
