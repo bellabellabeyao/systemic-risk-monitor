@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import pickle
+import re
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +26,7 @@ import pandas as pd
 
 from .config import PILLAR_Q, PILLARS, REGISTRY
 from .pipeline import LEVELS
+from .narrative import AS_OF as NW_ASOF, NARRATIVE, NOT_COVERED
 
 # Display units for each indicator's own history chart: (scale, suffix, prefix, axis label)
 HIST_UNITS = {
@@ -170,7 +172,7 @@ LITMAP = [
      "here": "Growth-at-Risk; yield-curve recession probability (shown, not in the index)"},
     {"strand": "Evaluating systemic risk measures", "link": "Whole index", "status": "in",
      "papers": "Bisias, Flood, Lo & Valavanis (2012); Giglio, Kelly & Pruitt (2016)",
-     "here": "Out-of-sample quantile test of the index (new). Gap: Giglio-Kelly-Pruitt's dimension-reduced quantile regression (PCQR) as an alternative to equal weights."},
+     "here": "Out-of-sample quantile test of the index, and a real-time evidence screen (same test, run each month on past data only) that decides which indicators feed the score. Tested and rejected: equal weights on everything, and CISS-style correlation weights."},
 ]
 
 
@@ -183,7 +185,7 @@ def ordn(x):
 def level_of(x):
     if x is None or pd.isna(x):
         return "n/a"
-    lab = "Low"
+    lab, x = "Low", round(float(x))
     for cut, name in LEVELS:
         if x >= cut:
             lab = name
@@ -315,6 +317,7 @@ class Story:
                          "spark": [round(float(z), 1) for z in s.loc[self.asof - pd.DateOffset(years=3):].iloc[::2]],
                          "why": ind.why, "transmits": ind.transmits, "src": ind.src,
                          "scored": ind.scored, "not_scored_why": ind.not_scored_why, "ns_tag": ind.ns_tag,
+                         "fit": None if getattr(ind, "fit", None) is None else round(ind.fit, 2),
                          "charted": i in CHARTED})
         return {"name": name, "q": PILLAR_Q[[k for k, n in PILLARS.items() if n == name][0]],
                 "score": score, "d13": d13, "level": level_of(score), "head": head, "bullets": bullets,
@@ -446,9 +449,15 @@ class Story:
         hi = max(links, key=lambda l: l["score"])
         lo = min(links, key=lambda l: l["score"])
         gar = self.R["gar"].dropna().iloc[-1]
-        title = (f"Systemic risk is {level_of(x).lower()}: excesses are building and losses would spread, "
-                 f"but nothing is testing the system yet") if links[3]["score"] < 45 and level_of(x) in ("Moderate", "Low") \
-            else f"Systemic risk is {level_of(x).lower()}"
+        sc = {l["name"]: l["score"] for l in links}
+        calm, risk = [], []
+        b_, c_, s_, t_ = sc["Build-up"], sc["Contagion"], sc["Shock absorbers"], sc["Trigger"]
+        (risk if b_ >= 55 else calm).append("excesses are building" if b_ >= 55 else "leverage is low" if b_ <= 35 else "excesses are modest")
+        (risk if c_ >= 50 else calm).append("losses would spread quickly" if c_ >= 50 else "contagion channels are quiet")
+        if s_ >= 55: risk.append("liquidity buffers are thin")
+        (risk if t_ >= 55 else calm).append("stress is starting to show" if t_ >= 55 else "nothing is testing the system yet")
+        j = lambda xs: xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+        title = f"Systemic risk is {level_of(x).lower()}: " + (j(calm) + (", but " + j(risk) if risk else "") if calm else j(risk))
         summary = (f"The Systemic Risk Index is {x:.0f} out of 100, {trend} over the past 3 months ({d13:+.0f}), "
                    f"and higher than {pct:.0f}% of weeks since {idx.index[0].year}. "
                    + (f"That is below the peak of every stress episode since 2008. " if not [n for n, p in peaks if p <= x] else
@@ -520,14 +529,71 @@ class Story:
         }
 
 
+def apply_screen_flags(R: dict):
+    """Indicators that are eligible but fail the real-time evidence screen are shown as context, with the reason."""
+    sc = R.get("screen")
+    if not sc:
+        return
+    for c in sc["eligible"]:
+        ind = REG[c]
+        r2 = sc["latest"].get(c)
+        ind.fit = r2
+        if r2 is not None:
+            continue
+        ind.scored = False
+        if sc["n_train"].get(c, 0) < sc["min_train"]:
+            ind.ns_tag = "too new"
+            ind.not_scored_why = ("Not enough history yet to test whether it predicts financial-sector drawdowns "
+                                  f"(needs {sc['min_train']} months of realised outcomes). It joins the score "
+                                  "automatically once it passes the test.")
+        else:
+            ind.ns_tag = "failed test"
+            ind.not_scored_why = ("Has published support, but in our data it did not flag deep drawdowns in "
+                                  "financial stocks over the following year, using only data available at the time. "
+                                  "It is re-tested every month and rejoins the score if it starts to work.")
+
+
+STRAND_IDS = {
+    "Credit booms and early warning": ["credit_gap", "hh_debt", "corp_debt", "hh_dsr", "nbfi_leverage"],
+    "Credit and asset-price booms together": ["rzone"], "Credit-market sentiment": ["ebp_sentiment"],
+    "Asset-price bubbles and valuations": ["house_gap"], "Volatility paradox": ["low_vol"],
+    "Market-based tail measures": ["dcovar_max", "dcovar_private", "srisk_gdp"],
+    "Connectedness and correlation": ["dy_total", "granger_dgc", "absorption"],
+    "Funding liquidity, repo and runs": ["reserves_gdp", "rrp_buffer", "sofr_iorb", "srf_usage", "cp_spread"],
+    "Global dollar funding": ["xccy_basis"], "Bank interest-rate risk and deposit runs": ["bank_rel_dd"],
+    "Credit supply and realised losses": ["ci_draw"], "Non-bank and private credit, hidden leverage": ["dcovar_private"],
+    "Credit-spread shocks": ["credit_widen"], "Market liquidity": ["ust_liq"], "Composite stress indices": ["stlfsi", "nfci"],
+}
+
+
+def litmap_now(panel) -> list:
+    """Status follows the evidence screen: 'in' only if at least one of the strand's indicators is scored today."""
+    out = []
+    for r in LITMAP:
+        r = dict(r)
+        ids = [i for i in STRAND_IDS.get(r["strand"], []) if i in panel and panel[i].notna().any()]
+        if ids:
+            r["here"] = re.sub(r" ?\(scored[^)]*\)", "", r["here"])
+            on = [REG[i].name.split(" (")[0] for i in ids if REG[i].scored]
+            off = [REG[i].name.split(" (")[0] for i in ids if not REG[i].scored]
+            r["status"] = "in" if on else "context"
+            r["here"] = r["here"].rstrip() + ("" if r["here"].rstrip().endswith(".") else ".")
+            r["here"] += (f" Scored now: {', '.join(on)}." if on else "") + \
+                         (f" Context after the evidence test: {', '.join(off)}." if off else "")
+        out.append(r)
+    return out
+
+
 def payload(R: dict) -> dict:
+    apply_screen_flags(R)
     st = Story(R)
     links = [st.link(n) for n in PILLARS.values()]
     head = st.headline(links)
     asof = st.asof
     fred = R["fred"]
     idx = R["index"].loc[:asof]
-    ctx = [{"name": i.name, "owner": i.owner, "why": i.why} for i in REGISTRY if i.pillar == "context"]
+    NWMAP = {"ai_obs", "private_credit", "bdc_nav", "unrealised", "positioning", "repo_mmf"}
+    ctx = [{"name": i.name, "owner": i.owner, "why": i.why, "nw": i.id in NWMAP} for i in REGISTRY if i.pillar == "context"]
     firm = R["srisk_firm"].head(10).reset_index().rename(columns={"index": "ticker"})
     dco_now = R["dcovar"].rolling(4, min_periods=2).mean().loc[:asof].dropna(how="all").iloc[-1].sort_values()
     return {
@@ -566,7 +632,8 @@ def payload(R: dict) -> dict:
         "validation": None if not R.get("validation") else {
             k: [{"name": n, "r2": round(float(r["R2_oos"]), 3), "n": int(r["n"])} for n, r in v.iterrows()]
             for k, v in R["validation"].items()},
-        "litmap": LITMAP,
+        "litmap": litmap_now(R["panel"]),
+        "narrative": {"asof": NW_ASOF, "items": NARRATIVE, "not_covered": NOT_COVERED},
         "hist": hist_payload(R, asof, [r["id"] for l in links for r in l["rows"] if not r.get("missing")]),
     }
 

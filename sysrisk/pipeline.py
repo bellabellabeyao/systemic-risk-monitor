@@ -342,21 +342,34 @@ def run(provider, p: Params = Params(), log=print) -> dict:
     R["panel"] = panel
     R.update(score(panel, p))
 
-    # ---------------------------------------------------------------- out-of-sample validation (Giglio-Kelly-Pruitt)
+    # ---------------------------------------------------------------- evidence screen + out-of-sample validation
+    log("[model] evidence screen (real-time, monthly)")
+    xlf_long = _try(lambda: provider.ohlc([SYSTEM_PROXY], "1998-12-01")["close"][SYSTEM_PROXY].dropna())
+    xlf_long = xlf_long if xlf_long is not None and len(xlf_long) else close[SYSTEM_PROXY].dropna()
+    xlf_long = xlf_long.loc[:close.index[-1]]
+    dd = drawdown_target(xlf_long)
+    R["equal_weight_index"] = R["index"].copy()
+    sel = screen(R["scores"], dd)
+    R.update(apply_screen(R["scores"], sel))
+    R["screen"] = {"history": sel, "latest": sel[max(sel)] if sel else {},
+                   "eligible": [c for c in R["scores"] if REG_BY_ID[c].scored and REG_BY_ID[c].pillar in PILLARS],
+                   "n_train": {c: int(pd.concat({"x": R["scores"][c].resample("ME").mean(), "y": dd}, axis=1)
+                                       .loc[:dd.index[-1] - pd.offsets.MonthEnd(SCREEN_H)].dropna().shape[0])
+                               for c in R["scores"]}, "min_train": SCREEN_MIN, "thr": SCREEN_THR}
+    log("   selected now: " + ", ".join(R["screen"]["latest"]))
     log("[model] out-of-sample validation")
     try:
         m = lambda x: x.resample("ME").mean()
-        xlf = close[SYSTEM_PROXY].resample("ME").last()
-        dd = (pd.concat([xlf.shift(-k) for k in range(1, 13)], axis=1).min(axis=1) / xlf - 1) * 100
-        dd.iloc[-12:] = np.nan
         ip = np.log(fred["INDPRO"].dropna()); ip.index = ip.index.to_period("M").to_timestamp("M")
         yip = (ip.shift(-12) - ip) * 100
         I = m(R["index"])
-        preds = {"Systemic Risk Index": I, "Chicago Fed NFCI alone": m(panel["nfci"]),
-                 "St. Louis Fed stress index alone": m(panel["stlfsi"])}
+        preds = {"Systemic Risk Index": I, "Old version (equal weights, no screen)": m(R["equal_weight_index"]),
+                 "Chicago Fed NFCI alone": m(panel["nfci"]), "St. Louis Fed stress index alone": m(panel["stlfsi"])}
+        idx_m = I.index.union(dd.index)
         R["validation"] = {
-            "drawdown": M.oos_quantile_test(dd.reindex(I.index), preds, 0.10, "2010-01-01"),
-            "ip": M.oos_quantile_test(yip.reindex(I.index), preds, 0.10, "2010-01-01")}
+            "drawdown": M.oos_quantile_test(dd.reindex(idx_m), preds, 0.10, "2010-01-01"),
+            "drawdown_2003": M.oos_quantile_test(dd.loc["2003":].reindex(idx_m), preds, 0.10, "2010-01-01"),
+            "ip": M.oos_quantile_test(yip.reindex(idx_m), preds, 0.10, "2010-01-01")}
     except Exception as e:
         log(f"   validation failed: {e}")
         R["validation"] = None
@@ -411,6 +424,70 @@ ZERO_FLOOR = {"srf_usage": 1.0, "swap_lines": 1.0}   # $bn
 
 LEVELS = [(40, "Moderate"), (52, "Elevated"), (65, "High")]
 
+
+
+# ==================================================================== evidence screen
+SCREEN_H, SCREEN_TAU, SCREEN_MIN, SCREEN_THR = 12, 0.10, 36, 0.02
+REG_BY_ID = {i.id: i for i in REGISTRY}
+
+
+def drawdown_target(px: pd.Series) -> pd.Series:
+    """Worst XLF drawdown over the next 12 months (%), monthly. NaN for the last 12 months."""
+    x = px.resample("ME").last()
+    dd = (pd.concat([x.shift(-k) for k in range(1, SCREEN_H + 1)], axis=1).min(axis=1) / x - 1) * 100
+    dd.iloc[-SCREEN_H:] = np.nan
+    return dd
+
+
+def screen(S: pd.DataFrame, dd: pd.Series) -> dict:
+    """
+    Real-time evidence screen (pre-specified: tau 0.10, 12-month horizon, >= 36 months of training pairs,
+    in-sample quantile pseudo-R2 > 0.02 with the right sign). At each month-end t, each eligible indicator is
+    fitted only on pairs (x_s, worst drawdown over s+1..s+12) already realised by t. An indicator is kept if
+    a higher risk score went with a deeper 10th-percentile drawdown. Returns {month_end: {id: pseudo_R2}}.
+    """
+    cand = [c for c in S if REG_BY_ID[c].scored and REG_BY_ID[c].pillar in PILLARS]
+    Sm = S[cand].resample("ME").mean()
+    out = {}
+    for t in Sm.index:
+        tr_end = t - pd.offsets.MonthEnd(SCREEN_H)
+        keep = {}
+        for c in cand:
+            d = pd.concat({"x": Sm[c], "y": dd}, axis=1).loc[:tr_end].dropna()
+            if len(d) < SCREEN_MIN:
+                continue
+            X = np.column_stack([np.ones(len(d)), d.x.values])
+            b = M.quantreg(d.y.values, X, SCREEN_TAU)
+            l1 = M.qloss(d.y.values, X @ b, SCREEN_TAU)
+            l0 = M.qloss(d.y.values, np.quantile(d.y.values, SCREEN_TAU), SCREEN_TAU)
+            r2 = 1 - l1 / l0
+            if b[1] < 0 and r2 > SCREEN_THR:
+                keep[c] = float(r2)
+        if keep or out:
+            out[t] = keep
+    return out
+
+
+def apply_screen(S: pd.DataFrame, sel: dict) -> dict:
+    """Each week uses the selection made at the previous month-end. Link = mean of kept indicators;
+    index = mean of the links (at least three), 4-week EMA."""
+    if not sel:
+        return {}
+    months = pd.DatetimeIndex(sorted(sel))
+    mask = pd.DataFrame(False, index=S.index, columns=S.columns)
+    for w in S.index:
+        pos = months.searchsorted(w, side="left") - 1          # latest month-end strictly before this week
+        if pos >= 0:
+            mask.loc[w, list(sel[months[pos]])] = True
+    pill = pd.DataFrame({PILLARS[k]: S[[c for c in S if REG_BY_ID[c].pillar == k]].where(
+        mask[[c for c in S if REG_BY_ID[c].pillar == k]]).mean(axis=1) for k in PILLARS})
+    # at least two links: before 2009 few contagion/liquidity indicators have a track record, and requiring three
+    # would cut the history to Aug 2008 and leave the screen nothing pre-crisis to learn from
+    idx = pill.mean(axis=1).where(pill.notna().sum(axis=1) >= 2).ewm(span=4).mean()
+    r = idx.round()
+    level = pd.Series(np.select([r >= LEVELS[2][0], r >= LEVELS[1][0], r >= LEVELS[0][0]],
+                                [LEVELS[2][1], LEVELS[1][1], LEVELS[0][1]], "Low"), index=idx.index).where(idx.notna())
+    return {"pillars": pill, "index": idx.rename("Systemic Risk Index"), "regime": level, "screen_mask": mask}
 
 def save(R: dict, out: Path):
     out.mkdir(parents=True, exist_ok=True)

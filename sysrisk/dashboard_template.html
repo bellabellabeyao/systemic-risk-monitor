@@ -147,6 +147,13 @@ svg.spark{display:block}
 .how ul{margin:6px 0 0;padding-left:16px}
 footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);padding-top:12px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.nw{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
+.nw .card{display:flex;flex-direction:column;gap:10px}
+.sig{font:600 11px var(--f-body);text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.sig-warning{background:var(--bad);color:var(--panel)}.sig-watch{background:var(--warn);color:var(--panel)}.sig-calm{background:var(--ok);color:var(--panel)}
+.nw ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.nw .cite{color:var(--muted);font-size:12px}
+.nwflag{margin-top:2px;font-size:13.5px}
 </style>
 
 <div class="wrap">
@@ -173,6 +180,7 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
         <div class="fact"><p class="eyebrow">What it means for growth</p><p id="gar"></p></div>
         <div class="fact"><p class="eyebrow">What changed in the last 3 months</p><ul id="watch"></ul></div>
       </div>
+      <p class="nwflag" id="nwflag" hidden></p>
     </div>
   </section>
 
@@ -194,18 +202,26 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
   <!-- 3. HISTORY -->
   <section class="panel card">
     <h4 id="histtitle">The index through past crises</h4>
-    <p class="what">Weekly Systemic Risk Index since 2005, with each link shown faintly behind it. Shading marks the level bands.</p>
+    <p class="what">Weekly Systemic Risk Index, with each link shown faintly behind it. Shading marks the level bands. Before 2009 it rests on two or three links, because few contagion and liquidity measures existed earlier.</p>
     <div id="hist" class="chart tall"></div>
-    <p class="src"><b>Source and method.</b> Equal-weight average of the four link scores; each indicator is ranked against its own history using only data available at the time (expanding window). Composite design follows Holló, Kremer &amp; Lo Duca (2012, ECB CISS) and the survey in Bisias, Flood, Lo &amp; Valavanis (2012); out-of-sample evaluation follows Giglio, Kelly &amp; Pruitt (2016). Data: FRED, BIS via FRED, Yahoo Finance.</p>
+    <p class="src"><b>Source and method.</b> Average of the four link scores. Each link averages only the indicators that pass a real-time evidence test: using data available at the time, a higher score must have come before deeper drawdowns in US financial stocks. Each indicator is ranked against its own history, also using only data available at the time. Composite design follows Holló, Kremer &amp; Lo Duca (2012, ECB CISS) and the survey in Bisias, Flood, Lo &amp; Valavanis (2012); out-of-sample evaluation follows Giglio, Kelly &amp; Pruitt (2016). Data: FRED, BIS via FRED, Yahoo Finance.</p>
   </section>
 
   <!-- 4. EVIDENCE PER LINK -->
   <div id="sections" style="display:flex;flex-direction:column;gap:40px"></div>
 
+  <!-- 4b. NARRATIVE WATCH -->
+  <section style="display:flex;flex-direction:column;gap:14px" id="narrative" hidden>
+    <div class="sec-head"><h2>Narrative watch: risks the numbers cannot see yet</h2>
+      <p class="prose muted" id="nwintro"></p></div>
+    <div class="nw" id="nwgrid"></div>
+    <p class="src" id="nwnot"></p>
+  </section>
+
   <!-- 5. DOES IT WORK -->
   <section style="display:flex;flex-direction:column;gap:14px" id="validation">
     <div class="sec-head"><h2>Does the index work?</h2>
-      <p class="prose muted">A real-time test, as if the index had been run every month since 2010 using only data available then. For each month we predict the bad-case (10th percentile) outcome over the next 12 months and compare the forecast error with simply using the historical 10th percentile. A positive score means the measure beats history; Giglio, Kelly &amp; Pruitt (2016) run the same test on 19 published systemic risk measures.</p></div>
+      <p class="prose muted">A real-time test, as if the index had been run every month since 2010 using only data available then. That includes the choice of indicators: the evidence test that picks them is rerun each month on past data only, so the index is never graded on data it was built from. For each month we predict the bad-case (10th percentile) outcome over the next 12 months and compare the forecast error with simply using the historical 10th percentile. A positive score means the measure beats history; Giglio, Kelly &amp; Pruitt (2016) run the same test on 19 published systemic risk measures.</p></div>
     <div class="grid2" id="valgrid"></div>
   </section>
 
@@ -221,7 +237,7 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
     <div class="sec-head"><h2>How this monitor works</h2></div>
     <div class="how">
       <div><h4>Why four links</h4><p>The literature splits systemic risk into the build-up of vulnerabilities and their amplification once a shock hits. The Build-up link covers the first. Contagion and shock absorbers are the amplifiers: one is about who is exposed to whom, the other about whether there is cash to absorb forced selling. Trigger is the shock itself. A high reading in one link alone is rarely a crisis; 2008 had all four.</p></div>
-      <div><h4>How scores work</h4><p>Every indicator is ranked against its own history (0 = calmest week on record, 100 = most dangerous), using only data available at the time. Link scores average their scored indicators; the index averages the links. An indicator is scored only if published work shows it predicts crises and it has no known structural break in our sample; this rule was fixed before the out-of-sample test. Others are shown as context: the data is real and current, but adding it to the score would mislead, because it double counts another indicator, trends up for decades, lags the cycle, measures a global rather than US channel, or has no published evidence of predicting crises. Each context row says which. Bands are set from the index's own crisis peaks (see the ruler above).</p></div>
+      <div><h4>How scores work</h4><p>Every indicator is ranked against its own history (0 = calmest week on record, 100 = most dangerous), using only data available at the time. To feed the score, an indicator must pass two tests. First, published work must show it predicts crises, with no known structural break in our data. Second, each month it must pass an evidence test on our own data, using only what was known then: its past readings must have come before deeper drawdowns in US financial stocks over the next 12 months. Indicators that fail either test are shown as context. The data is real, but adding it would add noise. Each context row says why: failed test, too new to test, double counts, trends up, lags, global, or no evidence. Each link averages its scored indicators, and the index averages the four links. Bands come from the index's own crisis peaks (see the ruler above).</p></div>
       <div><h4>What is not here yet</h4><p>Everything in the literature map marked as a gap. These need data the free feed does not carry (supervisory, holdings, CFTC or Bloomberg):</p><ul id="manual"></ul></div>
     </div>
   </section>
@@ -348,7 +364,7 @@ function renderStatic(){
           <td class="r num">${r.d13==null?"–":sgn(r.d13)}</td>
           <td>${spark(r.spark, scoreVar(r.score))}</td></tr>
           <tr class="exp" id="x_${r.id}" hidden><td colspan="5"><div class="expgrid">
-            <div class="more"><span><b>Why it matters.</b> ${esc(r.why)}</span>${r.transmits&&r.transmits!=="--"?`<span><b>How it transmits.</b> ${esc(r.transmits)}</span>`:""}${r.scored?"":`<span><b>Why it is context, not scored:</b> ${esc(r.not_scored_why)}</span>`}${r.src?`<span><b>Source.</b> ${esc(r.src)}</span>`:""}</div>
+            <div class="more"><span><b>Why it matters.</b> ${esc(r.why)}</span>${r.transmits&&r.transmits!=="--"?`<span><b>How it transmits.</b> ${esc(r.transmits)}</span>`:""}${r.scored?(r.fit!=null?`<span><b>Evidence test.</b> Passes: in our data it cuts the error in forecasting the bad-case drawdown in financial stocks a year ahead by ${Math.round(r.fit*100)}% vs using history alone (bar to pass: 2%).</span>`:""):`<span><b>Why it is context, not scored:</b> ${esc(r.not_scored_why)}</span>`}${r.src?`<span><b>Source.</b> ${esc(r.src)}</span>`:""}</div>
             <div><div class="rowchart" id="h_${r.id}"></div><p class="src">Actual readings since 1995 or first available. Dashed line: the level beyond which this indicator scores in its riskiest 20% of history to date, so the chart and the score agree.${D.hist[r.id]&&D.hist[r.id].abs?" Dotted lines: thresholds from the literature.":""} Vertical marks: stress episodes on the ruler above.</p></div>
           </div></td></tr>`).join("")).join("")}
         </tbody></table></div></div>
@@ -356,27 +372,49 @@ function renderStatic(){
 
   // validation
   if (D.validation) {
-    const lab = {drawdown:"Worst 12-month drawdown in US financial stocks (XLF)", ip:"12-month industrial production growth"};
-    const dd = D.validation.drawdown, gap = dd[0].r2 - Math.max(...dd.slice(1).map(r=>r.r2));
-    const read = {drawdown: gap > 0.03 ? `The index beats both Fed stress indices at flagging deep financial-sector drawdowns, by ${gap.toFixed(2)} on this sample. The edge is modest and depends on the sample window.`
-                 : gap > -0.03 ? "The index forecasts deep financial-sector drawdowns about as well as the Chicago Fed NFCI and better than the St. Louis index. Its value is in showing where risk sits, not in beating the NFCI on a single number. A narrower earlier version scored higher, but choosing indicators on this test would be data snooping."
-                 : (()=>{ const better = dd.slice(1).filter(r=>r.r2 < dd[0].r2).map(r=>r.name.replace(" alone","")), worse = dd.slice(1).filter(r=>r.r2 >= dd[0].r2).map(r=>r.name.replace(" alone",""));
-                     return `On this sample the index trails ${worse.join(" and ")} at flagging deep financial-sector drawdowns (${dd[0].r2.toFixed(2)} vs ${Math.max(...dd.slice(1).map(r=>r.r2)).toFixed(2)})${better.length?`, but beats ${better.join(" and ")}`:""}. Each indicator added at equal weight has diluted this one test a little; the test window holds only two crises (Covid and SVB), so read it as a check, not a ranking.`; })(),
-                  ip:"No measure beats history at predicting the growth tail out of sample, the same result Giglio, Kelly & Pruitt found for most published measures. The index is a financial-stability gauge, not a recession model."};
-    const beats = rows => rows[0].r2 > Math.max(...rows.slice(1).map(r=>r.r2));
-    if (D.validation.ip[0].r2 > 0) read.ip = "The index beats the historical distribution at predicting the growth tail out of sample on the current sample.";
+    const lab = {drawdown:"Worst 12-month drawdown in US financial stocks (XLF), trained from 1999",
+                 drawdown_2003:"Same test, trained from 2003 only (robustness)", ip:"12-month industrial production growth"};
+    const f = x => (x>=0?"+":"−")+Math.abs(x).toFixed(2);
+    const row = (k,n) => D.validation[k].find(r=>r.name.startsWith(n));
+    const read = {};
+    for (const k of ["drawdown","drawdown_2003"]) { if (!D.validation[k]) continue;
+      const me=row(k,"Systemic"), old=row(k,"Old"), fed=D.validation[k].filter(r=>/Fed|NFCI/.test(r.name)), best=Math.max(...fed.map(r=>r.r2));
+      read[k] = `The index scores ${f(me.r2)}, vs ${f(old.r2)} for the old equal-weight version and ${f(best)} for the better of the two Fed stress indices. `
+        + (me.r2 > best ? "It beats both Fed indices on this window." : "It does not beat the best Fed index on this window.")
+        + (k==="drawdown" ? " The test window holds only a few stress episodes (2011, 2015-16, 2018, Covid, SVB), so differences of 0.05 are within noise." : " Scores move a lot with the training start, which is why both are shown.");
+    }
+    const ipm = row("ip","Systemic");
+    read.ip = ipm && ipm.r2 > 0 ? `The index scores ${f(ipm.r2)} on the growth tail. It is a financial-stability gauge, so this is a bonus, not its job.`
+      : "No measure reliably beats history at predicting the growth tail, the same result Giglio, Kelly & Pruitt found for most published measures. The index is a financial-stability gauge, not a recession model.";
     document.getElementById("valgrid").innerHTML = Object.entries(D.validation).map(([k,rows])=>{
       const mx = Math.max(...rows.map(r=>Math.abs(r.r2)), .01);
-      return `<div class="panel card"><h4>${lab[k]}</h4><p class="what">Out-of-sample quantile R² (10th percentile), monthly, 2010 onward, ${rows[0].n} forecasts.</p>
+      return `<div class="panel card"><h4>${lab[k]||k}</h4><p class="what">Out-of-sample quantile R² (10th percentile), monthly, 2010 onward, ${rows[0].n} forecasts.</p>
       <div style="display:flex;flex-direction:column;gap:8px">${rows.map(r=>`<div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 56px;gap:10px;align-items:center"><span style="font-size:13.5px">${esc(r.name)}</span>
         <span style="position:relative;height:10px;background:var(--soft);border-radius:2px"><i style="position:absolute;top:0;bottom:0;${r.r2>=0?`left:50%;width:${r.r2/mx*50}%;background:var(--ok)`:`right:50%;width:${-r.r2/mx*50}%;background:var(--bad)`}"></i><b style="position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--muted)"></b></span>
-        <span class="num" style="text-align:right">${r.r2>=0?"+":"−"}${Math.abs(r.r2).toFixed(2)}</span></div>`).join("")}</div>
-      <p style="font-size:13.5px">${read[k]}</p></div>`;}).join("");
+        <span class="num" style="text-align:right">${f(r.r2)}</span></div>`).join("")}</div>
+      <p style="font-size:13.5px">${read[k]||""}</p></div>`;}).join("");
+  }
+  // narrative watch
+  if (D.narrative && D.narrative.items.length) {
+    const N = D.narrative, lab = {warning:"Warning", watch:"Watch", calm:"Calm"};
+    document.getElementById("narrative").hidden = false;
+    document.getElementById("nwintro").textContent = `Some risks have no usable public time series: private-credit marks, AI financing hidden in SPVs and leases, bank losses that only show up quarterly. These cards give a sourced, qualitative read instead. They do not feed the score, and they are updated by hand (last on ${N.asof}), not by the daily refresh.`;
+    document.getElementById("nwgrid").innerHTML = N.items.map(c=>`<div class="panel card">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><h4 style="margin:0">${esc(c.title)}</h4><span class="sig sig-${c.signal}">${lab[c.signal]}</span></div>
+      <p style="margin:0"><b>${esc(c.head)}</b> <span class="muted">Link: ${esc(c.link)}.</span></p>
+      <ul>${c.facts.map(f=>`<li><b>${esc(f[0])}.</b> ${esc(f[1])} <span class="cite">(${esc(f[2])})</span></li>`).join("")}</ul>
+      <p style="margin:0;font-size:13.5px"><b>How it transmits.</b> ${esc(c.transmits)}</p>
+      <p style="margin:0;font-size:13.5px"><b>What would make it worse.</b> ${esc(c.watch)}</p>
+      <p class="src" style="margin:0"><b>Sources.</b> ${c.sources.map(x=>`<a href="${esc(x[1])}" target="_blank" rel="noopener">${esc(x[0])}</a>`).join(" · ")}</p></div>`).join("");
+    document.getElementById("nwnot").textContent = N.not_covered;
+    const warn = N.items.filter(c=>c.signal==="warning");
+    if (warn.length) { const el = document.getElementById("nwflag"); el.hidden = false;
+      el.innerHTML = `<b>Outside the score:</b> the narrative watch flags ${warn.length===1?"a warning":warn.length+" warnings"} on ${warn.map(c=>esc(c.short)).join(" and ")}. <a href="#narrative">See below.</a>`; }
   }
   // literature map
   document.querySelector("#littbl tbody").innerHTML = D.litmap.map(r=>`<tr><td><b>${esc(r.strand)}</b><div class="muted" style="font-size:12px">${esc(r.link)}</div></td><td><span class="st st-${r.status}">${r.status==="in"?"In":r.status==="context"?"Context":"Gap"}</span></td><td style="font-size:13px">${esc(r.papers)}</td><td style="font-size:13px">${esc(r.here)}</td></tr>`).join("");
 
-  document.getElementById("manual").innerHTML = D.context.map(c=>`<li>${esc(c.name)}</li>`).join("");
+  document.getElementById("manual").innerHTML = D.context.map(c=>`<li>${esc(c.name)}${c.nw?' <span class="muted">(qualitative read in the <a href="#narrative">narrative watch</a>)</span>':""}</li>`).join("");
   document.getElementById("foot").innerHTML = `Sources: FRED (St. Louis Fed), Yahoo Finance, BIS via FRED. SRISK history starts ${D.meta.srisk_start} with free balance-sheet data. Methods: Adrian &amp; Brunnermeier (2016); Brownlees &amp; Engle (2017); Diebold &amp; Yilmaz (2012); Kritzman et al. (2011); Billio et al. (2012); Borio &amp; Drehmann (2009); Greenwood et al. (2022); López-Salido, Stein &amp; Zakrajšek (2017); Adrian, Boyarchenko &amp; Giannone (2019).`;
 }
 
