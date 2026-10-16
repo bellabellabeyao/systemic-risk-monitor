@@ -1,0 +1,8 @@
+indicator,date,value,unit,source,note
+cet1_aggregate,,,%,Fed / bank 10-Qs,Aggregate CET1 of large US banks
+dfast_min_cet1,,,%,DFAST 2026 results,Minimum CET1 under severely adverse
+gsib_score_max,,,bp,BCBS / FSB G-SIB list,Highest G-SIB bucket score
+hf_basis_leverage,,,x,OFR Hedge Fund Monitor (Form PF),Treasury repo borrowing of qualifying hedge funds
+private_credit_aum,,,$bn,Preqin / PitchBook,US direct lending AUM
+bdc_nonaccrual,,,% cost,BDC 10-Qs,Median non-accrual rate across listed BDCs
+margin_debt,,,$bn,FINRA,Owned by market-top monitor

@@ -1,0 +1,480 @@
+<meta charset="utf-8">
+<title>Systemic Risk Monitor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a research note that reads top to bottom. Verdict -> ruler vs past crises -> the four-link chain -> evidence per link -> method. */
+:root{
+  --paper:#F1F3F2; --panel:#FFFFFF; --ink:#15202A; --muted:#5A6670; --rule:#D6DCDB; --soft:#E7EBEA;
+  --accent:#2F5D8A; --ok:#2E7D5B; --mod:#8A9A3A; --warn:#B7791F; --bad:#B4372F; --violet:#6B4E9B;
+  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E1418; --panel:#151D22; --ink:#E3E8EB; --muted:#93A0A8; --rule:#29343B; --soft:#1C262C;
+  --accent:#86ADD6; --ok:#5DBB8E; --mod:#B5C266; --warn:#E2AA4C; --bad:#E2685D; --violet:#B39AE0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E1418; --panel:#151D22; --ink:#E3E8EB; --muted:#93A0A8; --rule:#29343B; --soft:#1C262C;
+  --accent:#86ADD6; --ok:#5DBB8E; --mod:#B5C266; --warn:#E2AA4C; --bad:#E2685D; --violet:#B39AE0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:15px/1.55 var(--f-body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:36px}
+h1,h2,h4{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(28px,3.6vw,42px);line-height:1.1}
+h2{font-size:clamp(22px,2.4vw,28px);line-height:1.2}
+h4{font-size:18px;line-height:1.3;font-weight:500}
+.eyebrow{font:600 12px/1.3 var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0}
+p{margin:0}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.prose{max-width:72ch}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+header .meta{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.demo{border:1px dashed var(--bad);color:var(--bad);padding:10px 14px;font-size:13px;border-radius:4px}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:18px;min-width:0}
+
+/* verdict */
+.verdict{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:28px;align-items:start}
+@media (max-width:860px){.verdict{grid-template-columns:1fr}}
+.big{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.big .n{font:500 clamp(64px,9vw,104px)/0.9 var(--f-mono);letter-spacing:-.04em}
+.big .of{font:500 18px var(--f-mono);color:var(--muted)}
+.lvl{display:inline-block;font:600 13px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-radius:3px;color:var(--panel)}
+.L-Low{background:var(--ok)}.L-Moderate{background:var(--mod)}.L-Elevated{background:var(--warn)}.L-High{background:var(--bad)}
+.side{display:flex;flex-direction:column;gap:16px}
+.side h1{font-size:clamp(24px,2.8vw,34px)}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:520px){.facts{grid-template-columns:1fr}}
+.fact{border-top:1px solid var(--rule);padding-top:8px;display:flex;flex-direction:column;gap:4px}
+.fact ul{margin:0;padding-left:16px;font-size:13.5px}
+.fact li{margin:2px 0}
+
+/* ruler */
+.ruler-wrap{overflow-x:auto}
+.ruler{position:relative;min-width:560px;height:118px;margin-top:6px}
+.ruler .band{position:absolute;top:44px;height:14px}
+.ruler .tick{position:absolute;top:60px;font:11px var(--f-mono);color:var(--muted);transform:translateX(-50%)}
+.ruler .pk{position:absolute;top:30px;width:2px;height:28px;background:var(--muted)}
+.ruler .pkl{position:absolute;font-size:11.5px;color:var(--muted);white-space:nowrap;transform:translateX(-50%)}
+.ruler .now{position:absolute;top:22px;width:4px;height:44px;background:var(--ink);border-radius:2px}
+.ruler .nowl{position:absolute;top:0;font:600 12px var(--f-body);transform:translateX(-50%);white-space:nowrap}
+
+/* chain */
+.chain{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;align-items:stretch}
+@media (max-width:980px){.chain{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+@media (max-width:560px){.chain{grid-template-columns:1fr}}
+.link{position:relative;background:var(--panel);border:1px solid var(--rule);padding:16px 16px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.chain .link + .link{border-left:none}
+@media (max-width:980px){.chain .link + .link{border-left:1px solid var(--rule)}}
+.link .arrow{position:absolute;right:-11px;top:22px;width:20px;height:20px;background:var(--panel);border:1px solid var(--rule);border-radius:50%;display:grid;place-items:center;font-size:12px;color:var(--muted);z-index:1}
+@media (max-width:980px){.link .arrow{display:none}}
+.link .step{font:500 11px var(--f-mono);color:var(--muted)}
+.link .nm{font:600 20px/1.2 var(--f-display)}
+.link .q{font-size:13px;color:var(--muted)}
+.link .sc{display:flex;align-items:center;gap:10px}
+.link .sc .v{font:500 28px/1 var(--f-mono)}
+.link .lede{font-size:14px;font-weight:500;line-height:1.4}
+.take{display:flex;flex-direction:column;gap:10px}
+.take .hl{font:500 clamp(19px,2vw,23px)/1.3 var(--f-display);max-width:60ch;text-wrap:balance}
+.take ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;max-width:92ch}
+.take li{font-size:14.5px}
+.take li b{font-weight:600}
+.ctx{font:500 10.5px var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border:1px dashed var(--muted);padding:1px 5px;border-radius:3px;margin-left:6px;white-space:nowrap;vertical-align:1px}
+.sub{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sub p{font-size:12.5px;color:var(--muted);margin:0;max-width:80ch}
+tr.grp td{background:var(--soft);font:600 11px var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px}
+.chartmark{font:500 10.5px var(--f-mono);color:var(--accent);margin-left:6px;white-space:nowrap}
+.link a{color:var(--accent);font-size:13px;text-decoration:none;margin-top:auto}
+.link a:hover,.link a:focus-visible{text-decoration:underline}
+.meter{position:relative;height:6px;background:var(--soft);border-radius:3px;flex:1}
+.meter i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+
+/* sections */
+section.linksec{display:flex;flex-direction:column;gap:16px;scroll-margin-top:16px}
+.sec-head{display:flex;flex-direction:column;gap:8px;border-top:2px solid var(--ink);padding-top:14px}
+.sec-head .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:980px){.grid3{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{display:flex;flex-direction:column;gap:8px}
+.card .what{font-size:12.5px;color:var(--muted)}
+.src{font-size:11.5px;color:var(--muted);border-top:1px dashed var(--rule);padding-top:6px;margin-top:2px}
+.src b{font-weight:600;color:var(--ink)}
+.mon{font:500 10.5px var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border:1px dashed var(--muted);padding:1px 5px;border-radius:3px;margin-left:6px;white-space:nowrap}
+tr.ctxrow td{color:var(--muted)}
+.st{font:600 10.5px var(--f-body);text-transform:uppercase;letter-spacing:.05em;padding:3px 6px;border-radius:3px;white-space:nowrap}
+.st-in{background:var(--ok);color:var(--panel)}.st-context{border:1px dashed var(--warn);color:var(--warn)}.st-gap{border:1px solid var(--bad);color:var(--bad)}
+.chart{width:100%;height:260px}
+.chart.tall{height:320px}
+
+/* indicator table */
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font:600 11px var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule)}
+td{padding:9px 8px;border-bottom:1px solid var(--soft);vertical-align:top}
+td.r,th.r{text-align:right}
+.rowbtn{all:unset;cursor:pointer;font-weight:500;display:inline}
+.rowbtn::before{content:"+";display:inline-block;width:14px;color:var(--muted);font-family:var(--f-mono)}
+.rowbtn[aria-expanded="true"]::before{content:"\2212"}
+.rowbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rowbtn:hover{color:var(--accent)}
+tr.exp > td{background:var(--paper);padding:12px 14px 14px}
+.expgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);gap:18px;align-items:start}
+@media (max-width:760px){.expgrid{grid-template-columns:1fr}}
+.expgrid .more{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+tr.exp .more{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.rowchart{width:100%;height:230px}
+details summary{cursor:pointer;list-style:none;font-weight:500}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"+";display:inline-block;width:14px;color:var(--muted);font-family:var(--f-mono)}
+details[open] summary::before{content:"\2212"}
+details summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+details .more{font-size:13px;color:var(--muted);padding:6px 0 2px 14px;max-width:70ch;display:flex;flex-direction:column;gap:4px}
+.sbar{display:flex;align-items:center;gap:8px;min-width:120px}
+.sbar .meter{max-width:90px}
+svg.spark{display:block}
+.tag{font:500 11px var(--f-mono);color:var(--muted);border:1px solid var(--rule);padding:1px 5px;border-radius:3px;margin-left:6px;white-space:nowrap}
+
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+@media (max-width:860px){.how{grid-template-columns:1fr}}
+.how h4{font-size:16px;margin-bottom:6px}
+.how p,.how li{font-size:13.5px;color:var(--muted)}
+.how ul{margin:6px 0 0;padding-left:16px}
+footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);padding-top:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">Top-of-house financial stability · United States</p>
+      <h1>Systemic Risk Monitor</h1>
+    </div>
+    <div class="meta"><span>Week ending <b class="num" id="asof"></b></span><span id="src"></span><span>Run <span class="num" id="run"></span></span></div>
+  </header>
+  <div class="demo" id="demo" hidden>Synthetic demo data: these readings come from simulated markets and only show how the page behaves.</div>
+
+  <!-- 1. VERDICT -->
+  <section class="verdict">
+    <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+      <p class="eyebrow">Systemic Risk Index</p>
+      <div class="big"><span class="n" id="idx"></span><span class="of">/ 100</span><span class="lvl" id="lvl"></span></div>
+      <p class="muted" id="idxsub"></p>
+    </div>
+    <div class="side">
+      <h1 id="title"></h1>
+      <p class="prose" id="summary"></p>
+      <div class="facts">
+        <div class="fact"><p class="eyebrow">What it means for growth</p><p id="gar"></p></div>
+        <div class="fact"><p class="eyebrow">What changed in the last 3 months</p><ul id="watch"></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" style="display:flex;flex-direction:column;gap:6px">
+    <h4 id="rulertitle">Today against the peak of every stress episode since 2008</h4>
+    <div class="ruler-wrap"><div class="ruler" id="ruler"></div></div>
+    <p class="src"><b>Note.</b> Each episode's value is this index's own weekly peak within three weeks of the dated event. Bands are calibrated to those peaks.</p>
+  </section>
+
+  <!-- 2. CHAIN -->
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <div class="sec-head">
+      <h2>How a loss becomes systemic</h2>
+      <p class="prose muted">A systemic event needs four things at once: an excess that can unwind, channels for the loss to spread, too little liquidity to absorb the forced selling, and a shock that actually tests the system. Each link is scored 0–100 against its own history; the index is their average. The weakest link tells you where trouble would start.</p>
+    </div>
+    <div class="chain" id="chain"></div>
+  </section>
+
+  <!-- 3. HISTORY -->
+  <section class="panel card">
+    <h4 id="histtitle">The index through past crises</h4>
+    <p class="what">Weekly Systemic Risk Index since 2005, with each link shown faintly behind it. Shading marks the level bands.</p>
+    <div id="hist" class="chart tall"></div>
+    <p class="src"><b>Source and method.</b> Equal-weight average of the four link scores; each indicator is ranked against its own history using only data available at the time (expanding window). Composite design follows Holló, Kremer &amp; Lo Duca (2012, ECB CISS) and the survey in Bisias, Flood, Lo &amp; Valavanis (2012); out-of-sample evaluation follows Giglio, Kelly &amp; Pruitt (2016). Data: FRED, BIS via FRED, Yahoo Finance.</p>
+  </section>
+
+  <!-- 4. EVIDENCE PER LINK -->
+  <div id="sections" style="display:flex;flex-direction:column;gap:40px"></div>
+
+  <!-- 5. DOES IT WORK -->
+  <section style="display:flex;flex-direction:column;gap:14px" id="validation">
+    <div class="sec-head"><h2>Does the index work?</h2>
+      <p class="prose muted">A real-time test, as if the index had been run every month since 2010 using only data available then. For each month we predict the bad-case (10th percentile) outcome over the next 12 months and compare the forecast error with simply using the historical 10th percentile. A positive score means the measure beats history; Giglio, Kelly &amp; Pruitt (2016) run the same test on 19 published systemic risk measures.</p></div>
+    <div class="grid2" id="valgrid"></div>
+  </section>
+
+  <!-- 6. LITERATURE MAP -->
+  <section style="display:flex;flex-direction:column;gap:14px" id="litmap">
+    <div class="sec-head"><h2>Literature map: what is covered and what is missing</h2>
+      <p class="prose muted">Every main strand of the systemic risk literature, where it sits on this page, and the gaps. <span class="st st-in">In</span> scored in the index · <span class="st st-context">Context</span> shown but not scored · <span class="st st-gap">Gap</span> not covered, with the reason.</p></div>
+    <div class="panel"><div class="tbl"><table id="littbl" style="min-width:760px"><thead><tr><th style="width:18%">Strand</th><th style="width:9%">Status</th><th style="width:33%">Key papers</th><th>On this dashboard</th></tr></thead><tbody></tbody></table></div></div>
+  </section>
+
+  <!-- 7. HOW TO READ -->
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <div class="sec-head"><h2>How this monitor works</h2></div>
+    <div class="how">
+      <div><h4>Why four links</h4><p>The literature splits systemic risk into the build-up of vulnerabilities and their amplification once a shock hits. The Build-up link covers the first. Contagion and shock absorbers are the amplifiers: one is about who is exposed to whom, the other about whether there is cash to absorb forced selling. Trigger is the shock itself. A high reading in one link alone is rarely a crisis; 2008 had all four.</p></div>
+      <div><h4>How scores work</h4><p>Every indicator is ranked against its own history (0 = calmest week on record, 100 = most dangerous), using only data available at the time. Link scores average their scored indicators; the index averages the links. An indicator is scored only if published work shows it predicts crises and it has no known structural break in our sample; this rule was fixed before the out-of-sample test. Others are shown as context: the data is real and current, but adding it to the score would mislead, because it double counts another indicator, trends up for decades, lags the cycle, measures a global rather than US channel, or has no published evidence of predicting crises. Each context row says which. Bands are set from the index's own crisis peaks (see the ruler above).</p></div>
+      <div><h4>What is not here yet</h4><p>Everything in the literature map marked as a gap. These need data the free feed does not carry (supervisory, holdings, CFTC or Bloomberg):</p><ul id="manual"></ul></div>
+    </div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<script>
+const D = /*__DATA__*/null;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (v, d=0) => v==null||isNaN(v) ? "–" : Number(v).toFixed(d);
+const sgn = v => v==null ? "–" : (v>0?"+":v<0?"−":"±")+Math.abs(v).toFixed(0);
+const LV = {Low:"var(--ok)", Moderate:"var(--mod)", Elevated:"var(--warn)", High:"var(--bad)"};
+const LVc = () => ({Low:css("--ok"), Moderate:css("--mod"), Elevated:css("--warn"), High:css("--bad")});
+const levelOf = x => { let l="Low"; for (const [c,n] of D.meta.levels) if (x>=c) l=n; return l; };
+const scoreVar = s => s==null ? "var(--muted)" : LV[levelOf(s)];
+const esc = s => String(s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+function spark(vals, color, w=96, h=24){
+  const v = vals.filter(x=>x!=null); if (v.length<2) return "";
+  const pts = vals.map((y,i)=> y==null?null:[i/(vals.length-1)*(w-4)+2, h-3-(y/100)*(h-6)]).filter(Boolean);
+  const d = pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join("");
+  const l = pts[pts.length-1];
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" style="fill:none;stroke:${color};stroke-width:1.4"/><circle cx="${l[0]}" cy="${l[1]}" r="2.4" style="fill:${color}"/></svg>`;
+}
+const meter = s => `<span class="meter"><i style="width:${s||0}%;background:${scoreVar(s)}"></i></span>`;
+
+const SECTIONS = {
+  "Build-up": {charts:[["spread","spread","Moody's Baa corporate yield minus 10-year Treasury, weekly. Lower = investors demand less for credit risk.",
+                    "López-Salido, Stein & Zakrajšek (2017, QJE): tight credit pricing predicts wider spreads and weaker growth ~2 years out; Gilchrist & Zakrajšek (2012, AER) for the excess bond premium this proxies. Data: FRED BAA10Y."],
+                   ["gap","gap","Private non-financial credit/GDP minus its one-sided trend (BIS method). Shaded: Basel buffer zone, 2 to 10pp.",
+                    "Borio & Drehmann (2009, BIS QR); Drehmann, Borio & Tsatsaronis (2011); Basel Committee (2010) countercyclical buffer guidance. One-sided HP filter, λ = 400,000. Data: BIS via FRED QUSPAM770A."],
+                   ["valuation","valuation","Equity market value as % of GDP (left) and real house prices vs their long-run trend, % (right).",
+                    "Borio & Lowe (2002) on asset-price gaps; Jordà, Schularick & Taylor (2015) on why credit-fuelled housing booms are costlier than equity booms. Data: Fed Financial Accounts via FRED NCBEILQ027S, GDP; BIS via FRED QUSR628BIS (one-sided HP)."]]},
+  "Contagion": {charts:[["srisk","srisk","Capital US financials would need to raise after a 40% equity fall, by sector, $bn. Starts when free balance-sheet data begins.",
+                           "Brownlees & Engle (2017, RFS); Acharya, Engle & Richardson (2012, AER P&P). k = 8%, LRMES = 1 − exp(ln(0.6)·β) (NYU V-Lab approximation), EWMA β in place of GARCH-DCC. Data: Yahoo prices and balance sheets."],
+                          ["dcovar","dcovar","Extra loss in the financial system's worst 5% of weeks when each sector is in distress, % per week, latest.",
+                           "Adrian & Brunnermeier (2016, AER). 5% quantile regressions on VIX, term spread, Baa−10y and S&P return; expanding window, refit yearly. Data: Yahoo weekly returns, FRED."],
+                          ["dy","dy","Net spillover of volatility: positive = sends shocks to other assets, negative = receives them. Last 200 trading days.",
+                           "Diebold & Yilmaz (2012, IJF; 2014, JoE). VAR(2) on log Parkinson range volatility, 10-day generalised variance decomposition (Pesaran & Shin 1998). Data: Yahoo ETFs."],
+                          ["stockbond","stockbond","3-month correlation of daily S&P 500 and 7-10y Treasury returns. Above zero = bonds no longer hedge stocks.",
+                           "Campbell, Pflueger & Viceira (2020, JPE) on why the stock-bond correlation flips with the inflation regime. Data: Yahoo SPY, IEF."]], cols:2},
+  "Shock absorbers": {charts:[["plumb","plumb","Bank reserves and ON RRP balances ($tn, right axis) and the overnight repo rate minus the Fed's interest on reserves (bp, left axis).",
+                               "Copeland, Duffie & Yang (2021, NY Fed SR 974) on the Sept-2019 repo spike; Afonso, Giannone, La Spada & Williams (2022, NY Fed SR 1019) on the reserve demand curve. Data: FRED WRESBAL, RRPONTSYD, SOFR, IORB/IOER."]], cols:1},
+  "Trigger": {charts:[["stress","stress","St. Louis Fed Financial Stress Index (zero = normal) and regional banks' shortfall vs the S&P 500 from their 1-year high (%, right axis).",
+                        "Kliesen & Smith (2010), St. Louis Fed FSI v4; Jiang, Matvos, Piskorski & Seru (2024, JFE) on the 2023 regional bank runs. Data: FRED STLFSI4; Yahoo KRE, SPY."],
+                       ["vol","vol","VIX and MOVE (left) and the Baa−10y corporate spread, pp (right).",
+                        "Whaley (2000) on VIX; Bekaert & Hoerova (2014) on VIX as risk aversion plus uncertainty; Gilchrist & Zakrajšek (2012) on credit-spread shocks. Data: FRED VIXCLS, BAA10Y; Yahoo ^MOVE."],
+                       ["recprob","recprob","Probability of a US recession within 12 months implied by the 10y−3m Treasury spread. Dashed line at 30%: crossed within 24 months before each of the four recessions since 1982 (1990, 2001, 2008, 2020), and gave a long false alarm in 2022-25.",
+                        "Estrella & Mishkin (1998, REStat); Estrella & Trubin (2006). NY Fed probit coefficients applied to FRED T10Y3M; approximate, since the NY Fed uses the bond-equivalent 3-month yield."],
+                       ["gar","gar","Forecast distribution of US GDP growth over the next 4 quarters given today's financial conditions. Red line = bad case (5th percentile).",
+                        "Adrian, Boyarchenko & Giannone (2019, AER). Quantile regression on NFCI and current growth, expanding window. Caveat: out of sample, no financial indicator here (NFCI included) has beaten the historical growth distribution since 2010; read as a conditional estimate. Data: FRED GDPC1, NFCI."]]},
+};
+
+function renderStatic(){
+  const H = D.head;
+  document.getElementById("asof").textContent = D.meta.asof;
+  document.getElementById("run").textContent = D.meta.run;
+  document.getElementById("src").textContent = D.meta.source;
+  document.getElementById("demo").hidden = !D.meta.demo;
+  document.getElementById("idx").textContent = fmt(H.value);
+  const lv = document.getElementById("lvl"); lv.textContent = H.level; lv.className = "lvl L-"+H.level;
+  document.getElementById("idxsub").textContent = `${sgn(H.d13)} over 3 months · higher than ${fmt(H.pct)}% of weeks since 2005`;
+  document.getElementById("title").textContent = H.title;
+  document.getElementById("summary").textContent = H.summary;
+  document.getElementById("gar").innerHTML = `The yield curve puts the chance of a recession within a year at <b class="num">${H.gar.rec.toFixed(0)}%</b>. In a bad case (1 in 20), US growth over the next year would be <b class="num">${H.gar.q05>=0?"+":""}${H.gar.q05.toFixed(1)}%</b>; the central case is <b class="num">${H.gar.q50>=0?"+":""}${H.gar.q50.toFixed(1)}%</b>. ${H.gar.q05>0?"Financial conditions are not pointing to a recession.":"Financial conditions put a recession inside the plausible range."} <span class="muted">(${H.gar.date}; a conditional estimate: out of sample, financial indicators have not reliably predicted the growth tail.)</span>`;
+  document.getElementById("watch").innerHTML = H.watch.length ? H.watch.map(w=>`<li><b>${esc(w.name)}</b>: ${esc(w.reading)} <span class="muted num">(score ${sgn(w.d13)})</span></li>`).join("") : "<li>No indicator deteriorated meaningfully.</li>";
+
+  // ruler
+  const r = document.getElementById("ruler");
+  const bands = [[0,40,"Low"],[40,52,"Moderate"],[52,65,"Elevated"],[65,100,"High"]];
+  let html = bands.map(b=>`<div class="band" style="left:${b[0]}%;width:${b[1]-b[0]}%;background:${LV[b[2]]};opacity:.35"></div><div class="tick" style="left:${(b[0]+b[1])/2}%">${b[2]}</div>`).join("");
+  html += [0,25,50,75,100].map(t=>`<div class="tick" style="left:${t}%;top:78px">${t}</div>`).join("");
+  // stack crisis labels into rows so close peaks (51-58) do not overlap
+  const pk = [...H.peaks].sort((a,b)=>a.value-b.value), rows = [];
+  pk.forEach(p=>{ let r = rows.findIndex(last => p.value - last >= 11); if (r<0) { rows.push(p.value); r = rows.length-1; } else rows[r] = p.value;
+    html += `<div class="pk" style="left:${p.value}%"></div><div class="pkl" style="left:${p.value}%;top:${94 + r*16}px">${esc(p.name)} ${fmt(p.value)}</div>`; });
+  html += `<div class="now" style="left:calc(${H.value}% - 2px)"></div><div class="nowl" style="left:${H.value}%">Today ${fmt(H.value)}</div>`;
+  r.innerHTML = html; r.style.height = (112 + rows.length*16) + "px";
+
+  // chain
+  document.getElementById("chain").innerHTML = D.links.map((l,i)=>`
+    <div class="link">
+      ${i<3?'<span class="arrow" aria-hidden="true">→</span>':""}
+      <span class="step">${i+1} of 4</span>
+      <span class="nm">${esc(l.name)}</span>
+      <span class="q">${esc(l.q)}</span>
+      <div class="sc"><span class="v num">${fmt(l.score)}</span>${meter(l.score)}<span class="lvl L-${l.level}" style="font-size:10.5px;padding:4px 6px">${l.level}</span></div>
+      <span class="muted num" style="font-size:12px">${sgn(l.d13)} over 3 months</span>
+      <p class="lede">${esc(l.head)}</p>
+      <a href="#${l.name.replace(/\s/g,'')}">See the evidence ↓</a>
+    </div>`).join("");
+
+  // sections
+  const T = D.titles;
+  document.getElementById("sections").innerHTML = D.links.map((l,i)=>{
+    const S = SECTIONS[l.name], cols = S.cols===3 ? "grid3" : S.cols===1 ? "" : "grid2";
+    return `<section class="linksec" id="${l.name.replace(/\s/g,'')}">
+      <div class="sec-head">
+        <div class="row"><span class="step num muted">${i+1} of 4</span><h2>${esc(l.name)}: ${esc(l.q)}</h2></div>
+        <div class="row"><span class="lvl L-${l.level}">${l.level} · ${fmt(l.score)}</span><span class="muted num" style="font-size:13px">${sgn(l.d13)} over 3 months</span></div>
+        <div class="take"><p class="hl">${esc(l.head)}</p>
+          <ul>${l.bullets.map(b=>`<li><b>${esc(b.label)}.</b> ${esc(b.text)}${b.scored?"":'<span class="ctx">context</span>'}</li>`).join("")}</ul></div>
+      </div>
+      <div class="sub"><p class="eyebrow">Key charts</p><p>The readings that carry this link's story. Every indicator, including these, is in the table below.</p></div>
+      <div class="${cols}">${S.charts.map(([id,tk,what,src])=>`<div class="panel card"><h4>${esc(T[tk])}</h4><p class="what">${what}</p><div id="c_${id}" class="chart"></div><p class="src"><b>Source.</b> ${esc(src)}</p></div>`).join("")}</div>
+      ${l.name==="Contagion" ? firmTable() : ""}
+      <div class="sub"><p class="eyebrow">All ${l.rows.length} indicators in this link</p><p>${l.rows.filter(r=>r.scored).length} feed the score; ${l.rows.filter(r=>!r.scored&&!r.missing).length} are context, shown for the story but kept out of the score (reason on each row); ${l.rows.filter(r=>r.missing).length} need data we do not have. ◆ marks a reading charted above. Click any indicator for why it matters, its source and its full history.</p></div>
+      <div class="panel"><div class="tbl"><table>
+        <thead><tr><th style="width:38%">Indicator</th><th>Reading</th><th>Risk score</th><th class="r">3m</th><th>3 years</th></tr></thead>
+        <tbody>${[["Feeds the score", l.rows.filter(r=>r.scored)], ["Context: shown, not in the score", l.rows.filter(r=>!r.scored&&!r.missing)], ["Not available in free data", l.rows.filter(r=>r.missing)]].filter(g=>g[1].length).map(([gname, grows])=>`<tr class="grp"><td colspan="5">${gname} (${grows.length})</td></tr>`+grows.map(r=> r.missing ? `<tr class="ctxrow"><td><button class="rowbtn" aria-expanded="false" data-id="${r.id}">${esc(r.name)}<span class="mon">gap</span></button></td><td colspan="4">Needs ${esc(r.tag)}.</td></tr>
+          <tr class="exp" id="x_${r.id}" hidden><td colspan="5"><div class="more"><span>${esc(r.why)}</span>${r.src?`<span><b>Source.</b> ${esc(r.src)}</span>`:""}</div></td></tr>` : `
+          <tr class="${r.scored?"":"ctxrow"}"><td><button class="rowbtn" aria-expanded="false" data-id="${r.id}">${esc(r.name)}${r.charted?'<span class="chartmark" title="Charted above">◆</span>':""}${r.scored?"":`<span class="ctx">${esc(r.ns_tag||"context")}</span>`}</button></td>
+          <td>${esc(r.reading)}</td>
+          <td><div class="sbar">${meter(r.score)}<span class="num muted" style="font-size:12px">${fmt(r.score)}</span></div></td>
+          <td class="r num">${r.d13==null?"–":sgn(r.d13)}</td>
+          <td>${spark(r.spark, scoreVar(r.score))}</td></tr>
+          <tr class="exp" id="x_${r.id}" hidden><td colspan="5"><div class="expgrid">
+            <div class="more"><span><b>Why it matters.</b> ${esc(r.why)}</span>${r.transmits&&r.transmits!=="--"?`<span><b>How it transmits.</b> ${esc(r.transmits)}</span>`:""}${r.scored?"":`<span><b>Why it is context, not scored:</b> ${esc(r.not_scored_why)}</span>`}${r.src?`<span><b>Source.</b> ${esc(r.src)}</span>`:""}</div>
+            <div><div class="rowchart" id="h_${r.id}"></div><p class="src">Actual readings since 1995 or first available. Dashed line: the level beyond which this indicator scores in its riskiest 20% of history to date, so the chart and the score agree.${D.hist[r.id]&&D.hist[r.id].abs?" Dotted lines: thresholds from the literature.":""} Vertical marks: stress episodes on the ruler above.</p></div>
+          </div></td></tr>`).join("")).join("")}
+        </tbody></table></div></div>
+    </section>`;}).join("");
+
+  // validation
+  if (D.validation) {
+    const lab = {drawdown:"Worst 12-month drawdown in US financial stocks (XLF)", ip:"12-month industrial production growth"};
+    const dd = D.validation.drawdown, gap = dd[0].r2 - Math.max(...dd.slice(1).map(r=>r.r2));
+    const read = {drawdown: gap > 0.03 ? `The index beats both Fed stress indices at flagging deep financial-sector drawdowns, by ${gap.toFixed(2)} on this sample. The edge is modest and depends on the sample window.`
+                 : gap > -0.03 ? "The index forecasts deep financial-sector drawdowns about as well as the Chicago Fed NFCI and better than the St. Louis index. Its value is in showing where risk sits, not in beating the NFCI on a single number. A narrower earlier version scored higher, but choosing indicators on this test would be data snooping."
+                 : "The index does worse than the Fed stress indices at flagging deep financial-sector drawdowns on this sample; treat its level with caution.",
+                  ip:"No measure beats history at predicting the growth tail out of sample, the same result Giglio, Kelly & Pruitt found for most published measures. The index is a financial-stability gauge, not a recession model."};
+    const beats = rows => rows[0].r2 > Math.max(...rows.slice(1).map(r=>r.r2));
+    if (D.validation.ip[0].r2 > 0) read.ip = "The index beats the historical distribution at predicting the growth tail out of sample on the current sample.";
+    document.getElementById("valgrid").innerHTML = Object.entries(D.validation).map(([k,rows])=>{
+      const mx = Math.max(...rows.map(r=>Math.abs(r.r2)), .01);
+      return `<div class="panel card"><h4>${lab[k]}</h4><p class="what">Out-of-sample quantile R² (10th percentile), monthly, 2010 onward, ${rows[0].n} forecasts.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">${rows.map(r=>`<div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 56px;gap:10px;align-items:center"><span style="font-size:13.5px">${esc(r.name)}</span>
+        <span style="position:relative;height:10px;background:var(--soft);border-radius:2px"><i style="position:absolute;top:0;bottom:0;${r.r2>=0?`left:50%;width:${r.r2/mx*50}%;background:var(--ok)`:`right:50%;width:${-r.r2/mx*50}%;background:var(--bad)`}"></i><b style="position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--muted)"></b></span>
+        <span class="num" style="text-align:right">${r.r2>=0?"+":"−"}${Math.abs(r.r2).toFixed(2)}</span></div>`).join("")}</div>
+      <p style="font-size:13.5px">${read[k]}</p></div>`;}).join("");
+  }
+  // literature map
+  document.querySelector("#littbl tbody").innerHTML = D.litmap.map(r=>`<tr><td><b>${esc(r.strand)}</b><div class="muted" style="font-size:12px">${esc(r.link)}</div></td><td><span class="st st-${r.status}">${r.status==="in"?"In":r.status==="context"?"Context":"Gap"}</span></td><td style="font-size:13px">${esc(r.papers)}</td><td style="font-size:13px">${esc(r.here)}</td></tr>`).join("");
+
+  document.getElementById("manual").innerHTML = D.context.map(c=>`<li>${esc(c.name)}</li>`).join("");
+  document.getElementById("foot").innerHTML = `Sources: FRED (St. Louis Fed), Yahoo Finance, BIS via FRED. SRISK history starts ${D.meta.srisk_start} with free balance-sheet data. Methods: Adrian &amp; Brunnermeier (2016); Brownlees &amp; Engle (2017); Diebold &amp; Yilmaz (2012); Kritzman et al. (2011); Billio et al. (2012); Borio &amp; Drehmann (2009); Greenwood et al. (2022); López-Salido, Stein &amp; Zakrajšek (2017); Adrian, Boyarchenko &amp; Giannone (2019).`;
+}
+
+function firmTable(){
+  return `<details class="panel"><summary>Which firms carry the capital shortfall (top 10 by SRISK)</summary><div class="tbl" style="margin-top:10px"><table style="min-width:520px"><thead><tr><th>Firm</th><th>Sector</th><th class="r">Shortfall $bn</th><th class="r">Loss in crash %</th><th class="r">Leverage</th></tr></thead><tbody>${
+    D.firms.map(r=>`<tr><td class="num">${esc(r.ticker)}</td><td class="muted">${esc(r.sector)}</td><td class="r num">${fmt(r["SRISK $bn"],1)}</td><td class="r num">${fmt(r["LRMES %"],0)}</td><td class="r num">${fmt(r["Book lev (D+W)/W"],1)}x</td></tr>`).join("")}</tbody></table></div></details>`;
+}
+
+function base(extra={}){
+  const mut=css("--muted"), rule=css("--rule"), ink=css("--ink");
+  const L = {paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)", font:{family:css("--f-body"), size:11, color:mut},
+    margin:{l:42,r:14,t:6,b:28}, showlegend:false, hoverlabel:{font:{family:css("--f-mono")}},
+    xaxis:{gridcolor:"rgba(0,0,0,0)", linecolor:rule, tickfont:{color:mut}, zeroline:false},
+    yaxis:{gridcolor:rule, linecolor:"rgba(0,0,0,0)", tickfont:{color:mut}, zeroline:false},
+    legend:{orientation:"h", y:-0.16, font:{color:ink, size:11}}};
+  for (const k in extra) L[k] = (typeof extra[k]==="object" && !Array.isArray(extra[k]) && L[k]) ? Object.assign({}, L[k], extra[k]) : extra[k];
+  return L;
+}
+const CFG = {displayModeBar:false, responsive:true};
+const ln = (s, name, color, extra={}) => Object.assign({x:s.x, y:s.y, name, type:"scatter", mode:"lines", line:{color, width:1.8}, hovertemplate:"%{x|%b %Y}: %{y:.2f}<extra>"+name+"</extra>"}, extra);
+const hrect = (y0,y1,color,op=.10) => ({type:"rect", xref:"paper", x0:0, x1:1, y0, y1, fillcolor:color, opacity:op, line:{width:0}, layer:"below"});
+const hbar = (obj, name) => { const e = Object.entries(obj); return {type:"bar", orientation:"h", y:e.map(a=>a[0]), x:e.map(a=>a[1]), hovertemplate:"%{y}: %{x:.1f}<extra></extra>"}; };
+
+function renderCharts(){
+  const mut=css("--muted"), ink=css("--ink"), acc=css("--accent"), bad=css("--bad"), warn=css("--warn"), vio=css("--violet"), ok=css("--ok"), rule=css("--rule");
+  const C = LVc();
+  // history
+  const pal = [acc, vio, warn, ok];
+  const pills = Object.entries(D.pillars_hist).map(([k,s],i)=>ln(s,k,pal[i],{line:{width:1,color:pal[i]}, opacity:.35}));
+  const crisis = D.crises.map(c=>({x:c.x, y:105, text:c.name, showarrow:false, font:{size:10, color:mut}, textangle:0, yanchor:"bottom"}));
+  Plotly.react("hist", [...pills, ln(D.index,"Systemic Risk Index",ink,{line:{width:2.4,color:ink}})], base({
+    showlegend:true, yaxis:{range:[0,112], tickvals:[0,40,52,65,100]}, margin:{l:36,r:12,t:20,b:30},
+    shapes:[hrect(0,40,C.Low,.07),hrect(40,52,C.Moderate,.09),hrect(52,65,C.Elevated,.10),hrect(65,100,C.High,.10),
+      ...D.crises.map(c=>({type:"line", x0:c.x, x1:c.x, y0:0, y1:104, line:{color:rule, width:1, dash:"dot"}}))],
+    annotations: crisis}), CFG);
+  // fuel
+  if (document.getElementById("c_spread")) {
+    const ys = D.spread.y.filter(v=>v!=null).slice().sort((a,b)=>a-b), p10 = ys[Math.floor(ys.length*0.1)];
+    Plotly.react("c_spread", [ln(D.spread,"Baa − 10y",acc)], base({yaxis:{ticksuffix:"pp"}, shapes:[hrect(0,p10,bad,.10)],
+      annotations:[{xref:"paper", x:0.01, y:p10, text:"tightest 10% of weeks", showarrow:false, yanchor:"bottom", xanchor:"left", font:{size:10,color:bad}}]}), CFG);
+    Plotly.react("c_gap", [ln(D.gap,"Credit gap",acc,{line:{width:2,color:acc}})], base({yaxis:{ticksuffix:"pp"},
+      shapes:[hrect(2,10,warn,.14), {type:"line", xref:"paper", x0:0, x1:1, y0:0, y1:0, line:{color:mut, width:1}}],
+      annotations:[{xref:"paper", x:0.01, y:10, text:"Basel buffer zone", showarrow:false, yanchor:"top", xanchor:"left", font:{size:10,color:warn}}]}), CFG);
+  }
+  if (document.getElementById("c_valuation")) {
+    Plotly.react("c_valuation", [ln(D.valuation.eq,"Equity value, % of GDP (left)",acc,{hovertemplate:"%{x|%b %Y}: %{y:.0f}%<extra>Equities/GDP</extra>"}),
+      ln(D.valuation.house,"Real house prices vs trend, % (right)",vio,{yaxis:"y2", hovertemplate:"%{x|%b %Y}: %{y:+.1f}%<extra>House price gap</extra>"})],
+      base({showlegend:true, yaxis:{ticksuffix:"%"}, yaxis2:{overlaying:"y", side:"right", gridcolor:"rgba(0,0,0,0)", tickfont:{color:mut}, ticksuffix:"%", zeroline:true, zerolinecolor:rule}, margin:{l:44,r:44,t:6,b:28}}), CFG);
+  }
+  // contagion
+  const P2 = [acc, vio, warn, ok, bad, mut];
+  Plotly.react("c_srisk", Object.entries(D.srisk).map(([k,s],i)=>ln(s,k,P2[i%6],{stackgroup:"a", line:{width:.5,color:P2[i%6]}, hovertemplate:"%{x|%b %Y}: $%{y:.0f}bn<extra>"+k+"</extra>"})),
+    base({showlegend:true, yaxis:{tickprefix:"$"}, legend:{orientation:"h", y:-0.22, font:{size:10,color:ink}}}), CFG);
+  const dc = D.dcovar_now;
+  Plotly.react("c_dcovar", [{type:"bar", orientation:"h", y:dc.y, x:dc.x, marker:{color:dc.y.map(n=>/Alt|BDC/.test(n)?vio:acc)}, hovertemplate:"%{y}: +%{x:.1f}%<extra></extra>"}],
+    base({margin:{l:120,r:14,t:6,b:28}, xaxis:{ticksuffix:"%", gridcolor:rule}, yaxis:{gridcolor:"rgba(0,0,0,0)", tickfont:{color:ink}}}), CFG);
+  const dy = hbar(D.dy_net); dy.marker = {color:dy.x.map(v=>v>0?bad:acc)};
+  Plotly.react("c_dy", [dy], base({margin:{l:84,r:14,t:6,b:28}, xaxis:{gridcolor:rule, zeroline:true, zerolinecolor:mut}, yaxis:{gridcolor:"rgba(0,0,0,0)", tickfont:{color:ink}}}), CFG);
+  Plotly.react("c_stockbond", [ln(D.stockbond,"Stock-bond correlation",acc,{fill:"tozeroy", fillcolor:"rgba(127,127,127,.08)"})],
+    base({yaxis:{range:[-1,1], zeroline:true, zerolinecolor:mut}, shapes:[hrect(0,1,bad,.06)]}), CFG);
+  // absorbers
+  Plotly.react("c_plumb", [ln(D.plumb.sofr_iorb,"SOFR − IORB, bp (left)",bad),
+    ln(D.plumb.res,"Bank reserves, $tn (right)",acc,{yaxis:"y2", hovertemplate:"%{x|%b %Y}: $%{y:.2f}tn<extra>Reserves</extra>"}),
+    ln(D.plumb.rrp,"ON RRP, $tn (right)",vio,{yaxis:"y2", fill:"tozeroy", fillcolor:"rgba(127,127,127,.08)", hovertemplate:"%{x|%b %Y}: $%{y:.2f}tn<extra>ON RRP</extra>"})],
+    base({showlegend:true, yaxis:{ticksuffix:"bp", zeroline:true, zerolinecolor:mut}, yaxis2:{overlaying:"y", side:"right", gridcolor:"rgba(0,0,0,0)", tickfont:{color:mut}, tickprefix:"$", ticksuffix:"tn"}, margin:{l:44,r:48,t:6,b:28}}), CFG);
+  // trigger
+  Plotly.react("c_stress", [ln(D.stress.stlfsi,"St. Louis Fed stress index (left)",bad),
+    ln(D.stress.kre,"Regional banks behind S&P, % (right)",acc,{yaxis:"y2", line:{width:1,color:acc}})],
+    base({showlegend:true, yaxis:{zeroline:true, zerolinecolor:mut}, yaxis2:{overlaying:"y", side:"right", gridcolor:"rgba(0,0,0,0)", tickfont:{color:mut}, ticksuffix:"%"}, margin:{l:36,r:44,t:6,b:28}}), CFG);
+  Plotly.react("c_vol", [ln(D.vol.vix,"VIX (left)",bad,{line:{width:1.2,color:bad}}), ln(D.vol.move,"MOVE (left)",vio,{line:{width:1.2,color:vio}}),
+    ln(D.vol.baa,"Baa − 10y, pp (right)",acc,{yaxis:"y2"})],
+    base({showlegend:true, yaxis2:{overlaying:"y", side:"right", gridcolor:"rgba(0,0,0,0)", tickfont:{color:mut}, ticksuffix:"pp"}, margin:{l:36,r:44,t:6,b:28}}), CFG);
+  Plotly.react("c_recprob", [ln(D.recprob,"Recession probability",acc,{fill:"tozeroy", fillcolor:"rgba(127,127,127,.08)", hovertemplate:"%{x|%b %Y}: %{y:.0f}%<extra></extra>"})],
+    base({yaxis:{ticksuffix:"%", range:[0,100]}, shapes:[{type:"line", xref:"paper", x0:0, x1:1, y0:30, y1:30, line:{color:bad, width:1, dash:"dash"}}]}), CFG);
+  const g = D.gar;
+  Plotly.react("c_gar", [ln(g.q95,"95th",mut,{line:{width:.5,color:mut}}),
+    ln(g.q05,"Range",mut,{fill:"tonexty", fillcolor:"rgba(127,127,127,.14)", line:{width:.5,color:mut}}),
+    ln(g.q50,"Central case",ink), ln(g.q05,"Bad case (5th pct)",bad,{line:{width:2,color:bad}})],
+    base({yaxis:{ticksuffix:"%", zeroline:true, zerolinecolor:mut}}), CFG);
+}
+
+// expandable indicator rows: details + full-history chart, drawn on first open
+const openRows = new Set();
+function drawRow(id){
+  const H = D.hist[id], el = document.getElementById("h_"+id);
+  if (!H || !el || !window.Plotly) { if (el && !H) el.hidden = true; return; }
+  const mut=css("--muted"), ink=css("--ink"), acc=css("--accent"), bad=css("--bad"), warn=css("--warn"), rule=css("--rule");
+  const fmtv = H.pre+"%{y:.2f}"+H.suf;
+  const tr = [ln({x:H.x,y:H.y}, "Reading", acc, {hovertemplate:"%{x|%b %Y}: "+fmtv+"<extra></extra>"}),
+              ln({x:H.x,y:H.thr}, "High-risk line", bad, {line:{width:1.2,color:bad,dash:"dash"}, hovertemplate:"%{x|%b %Y}: "+fmtv+"<extra>High-risk line</extra>"})];
+  const shapes = D.crises.filter(c=>c.x>=H.x[0]).map(c=>({type:"line", x0:c.x, x1:c.x, yref:"paper", y0:0, y1:1, line:{color:rule, width:1, dash:"dot"}}));
+  if (H.abs) H.abs.forEach((a,k)=>shapes.push({type:"line", xref:"paper", x0:0, x1:1, y0:a, y1:a, line:{color:k?bad:warn, width:1, dash:"dot"}}));
+  Plotly.react(el, tr, base({showlegend:true, legend:{orientation:"h", y:1.12, x:0, font:{size:10,color:ink}}, margin:{l:48,r:10,t:22,b:26},
+    yaxis:{tickprefix:H.pre, ticksuffix:H.suf, title:{text:H.lab, font:{size:10,color:mut}}}, shapes}), CFG);
+}
+document.addEventListener("click", e=>{
+  const b = e.target.closest(".rowbtn"); if (!b) return;
+  const id = b.dataset.id, row = document.getElementById("x_"+id), open = b.getAttribute("aria-expanded")!=="true";
+  b.setAttribute("aria-expanded", open); row.hidden = !open;
+  if (open) { openRows.add(id); drawRow(id); } else openRows.delete(id);
+});
+
+renderStatic();
+if (window.Plotly) renderCharts();
+else document.querySelectorAll(".chart").forEach(el=>el.innerHTML='<p class="what">Charts need Plotly from cdnjs, which did not load.</p>');
+const rerender = () => { if (window.Plotly) { renderCharts(); openRows.forEach(drawRow); } };
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender); } catch(e) {}
+new MutationObserver(rerender).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+</script>
