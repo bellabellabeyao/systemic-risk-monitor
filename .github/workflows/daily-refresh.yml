@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "45 23 * * 0-4"   # 07:45 Singapore time, Mon-Fri (23:45 UTC Sun-Thu)
   workflow_dispatch:           # "Run workflow" button for a manual refresh
+  push:                        # rebuild as soon as code changes land on main
+    branches: [main]
+    paths: ["sysrisk/**", "requirements-ci.txt", ".github/workflows/**"]
 
 permissions:
   contents: read
