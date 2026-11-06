@@ -56,6 +56,27 @@ def change_formula(sig, prev):
             f'IF({rank(sig)}>{rank(prev)},"▲ worse","▼ better")))')
 
 
+RANK = {"GREEN": 0, "AMBER": 1, "RED": 2}
+
+
+def paint(cell, sig, prev=None):
+    """Static colours (shown in every viewer, incl. previews that ignore conditional formatting)."""
+    if sig in FILL:
+        bg, fg = FILL[sig]
+        cell.fill = fill(bg)
+        cell.font = Font(name=F, bold=True, color=fg, size=cell.font.size or 10)
+
+
+def paint_change(cell, sig, prev):
+    d = RANK.get(sig, 0) - RANK.get(prev, 0)
+    col = "9C0006" if d > 0 else "006100" if d < 0 else "5A6670"
+    cell.font = Font(name=F, bold=d != 0, color=col, size=cell.font.size or 10)
+    if d > 0:
+        cell.fill = fill("FDE9EA")
+    elif d < 0:
+        cell.fill = fill("E8F5EC")
+
+
 def signal_cf(ws, rng):
     for k, (bg, fg) in FILL.items():
         ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=[f'"{k}"'],
@@ -122,6 +143,7 @@ def build_summary(wb):
         for c in (2, 3, 4):
             ws.cell(r, c).border = BOX
             ws.cell(r, c).alignment = CENTER
+        paint(ws.cell(r, 2), s)
     signal_cf(ws, f"B{top+1}:B{top+3}")
     ws.cell(top + 1, 6, f'=COUNTIF($E${first}:$E${last},"▲*")&" indicators worse, "&COUNTIF($E${first}:$E${last},"▼*")&" better since {SB.PREV_ASOF}"').font = Font(name=F, bold=True, size=10.5)
 
@@ -134,6 +156,7 @@ def build_summary(wb):
             cell = ws.cell(r, c)
             cell.font = Font(name=F, size=10); cell.border = BOX
             cell.alignment = CENTER if c in (3, 4, 5) else WRAP
+        paint(ws.cell(r, 3), sig); paint(ws.cell(r, 4), prev); paint_change(ws.cell(r, 5), sig, prev)
         ws.row_dimensions[r].height = 30
     merge_runs(ws, 1, first, [r[0] for r in SB.SUMMARY], group_style)
     signal_cf(ws, f"C{first}:D{last}")
@@ -165,6 +188,8 @@ def build_detail(wb):
             cell = ws.cell(r, c, v)
             cell.font = Font(name=F, size=9.5); cell.border = BOX
             cell.alignment = CENTER if c in (4, 5, 6, 9) else WRAP
+        ws.cell(r, 4).font = Font(name=F, size=9.5); ws.cell(r, 5).font = Font(name=F, size=9.5)
+        paint(ws.cell(r, 4), sig); paint(ws.cell(r, 5), prev); paint_change(ws.cell(r, 6), sig, prev)
         if not ref:
             ws.cell(r, 3).font = Font(name=F, size=9.5, italic=True, color="808080")
         ws.row_dimensions[r].height = 40
