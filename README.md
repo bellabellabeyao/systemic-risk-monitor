@@ -13,7 +13,11 @@ One dashboard that answers: **how fragile is the system, is it being tested, and
 
 Lenses: **Broad system** and **AI channel** (off-balance-sheet commitments, circular financing, debt-funded capex, AI credit, concentration, bank/insurer absorption).
 
-Evidence: (1) **scored model** (evidence-screened, feeds the index); (2) **signal board** (judgement traffic lights in `sysrisk/signal_board.py`, not scored); (3) **narrative watch** (`sysrisk/narrative.py`, sourced cards). Placement rule: level of an excess = Fragility; shock or fast change = Trigger; mechanism that forces selling or spreads losses = Amplifier; buffer and whether it gives way = Threshold.
+**One evaluation for every row** (`sysrisk/unified.py`): every series scores 0-100, higher = riskier. Model series: percentile of its own history, real time. Judgement series (no usable time series, in `sysrisk/signal_board.py`): GREEN 25, AMBER 52, RED 80. Theme = weighted average of its series (series passing the evidence test 1.0, other model series 0.5, judgement 0.5); stage condition = average of its themes; colour from the rounded score: GREEN < 40 <= AMBER < 65 <= RED.
+
+**Two aggregates, two jobs.** *Condition* (all series) says how stretched each stage is today; it is descriptive. *Early warning* (the evidence-screened index) is the only number tested out of sample. Adding the untested context series to the early-warning index turned its out-of-sample drawdown R2 negative (Nov 2026 test), so they stay separate. A stage whose early-warning score rests on one tested series is marked "thin".
+
+Placement rule: level of an excess = Fragility; shock or fast change = Trigger; mechanism that forces selling or spreads losses = Amplifier; buffer and whether it gives way = Threshold.
 
 The page and the Excel download (`Systemic_Risk_Dashboard.xlsx`, linked in the page header) are built from the same files on every run.
 
@@ -66,7 +70,7 @@ python tests/test_models.py                                   # known-answer che
 4. After that it runs every weekday at 07:45 Singapore time and republishes `index.html`
    (plus the CSVs) at `https://<user>.github.io/<repo>/`.
 
-The judgement layer (signal board readings) is refreshed by a daily Claude scheduled task that researches new readings, edits `sysrisk/signal_board.py` and pushes to `main`; the push triggers the same rebuild. Rows it cannot refresh keep `refreshed=False` and show as "carried". Bloomberg-only series need a session linked to the Terminal machine.
+The judgement series are refreshed by a daily Claude scheduled task that researches new readings, edits `sysrisk/signal_board.py` (DETAIL rows only; model series refresh themselves) and pushes to `main`; the push triggers the same rebuild. Rows it cannot refresh keep `refreshed=False` and show as "carried". Bloomberg-only series need a session linked to the Terminal machine.
 
 If a run fails, open it in the Actions tab; the log shows which data source failed. Yahoo rate limits
 are retried with backoff; a failed run leaves the previous day's page live.

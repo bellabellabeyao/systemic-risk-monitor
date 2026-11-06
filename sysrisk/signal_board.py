@@ -25,99 +25,73 @@ STAGES = [
 ]
 LENSES = [("broad", "Broad system"), ("ai", "AI channel")]
 
-# ---------------------------------------------------------------- headline indicators
-# key, stage, lens, indicator, signal, prev, comment
-SUMMARY = [
-    # 1 Fragility - broad
-    ("agg_lev", "fragility", "broad", "Aggregate leverage (debt-to-GDP, financial leverage, credit gap)", "AMBER", "AMBER",
-     "Total non-financial debt flat at 2.59x GDP (Q2). Government debt is the red spot; corporate debt growth slowed to 4.6%."),
-    ("nonbank", "fragility", "broad", "Non-bank leverage (margin debt, private credit, hedge funds)", "RED", "AMBER",
-     "Private-credit gates persist through Q3 with record defaults; margin debt 1.5% below its record into the 5 Nov selloff."),
-    ("valuation", "fragility", "broad", "Valuation stretch (equity CAPE, risk premia, real estate)", "RED", "RED",
-     "CAPE ~40.7 in Oct (99th percentile since 1881); credit spreads still near tights."),
-    ("em_imb", "fragility", "broad", "EM imbalances and reserve adequacy", "AMBER", "AMBER",
-     "EM spreads resilient (EMBI GD 187bp) despite US 10y above 5% in Oct; energy importers and weak sovereigns are the soft spots."),
-    # 1 Fragility - AI
-    ("ai_fin", "fragility", "ai", "AI financing structure (off-balance-sheet, circular, debt-funded capex)", "RED", "",
-     "Capex now exceeds operating cash flow at three of four hyperscalers; leases and vendor financing keep much of the build-out off balance sheet."),
-    # 2 Triggers - broad
-    ("vol", "triggers", "broad", "Volatility (VIX, MOVE, FX vol)", "AMBER", "GREEN",
-     "VIX jumped ~70% to ~28 on 5 Nov; MOVE peaked at 114 in early Oct and is back near 94-100."),
-    ("spread_chg", "triggers", "broad", "Credit spread widening (HY/IG OAS, CDS indices, sovereign)", "AMBER", "AMBER",
-     "Widening has started: HY 340bp (+80bp from Aug low), IG 94bp (+21bp from Jan low). 5 Nov prints pending."),
-    ("curve", "triggers", "broad", "Term spreads / yield curve", "AMBER", "AMBER",
-     "Curve has steepened out of inversion: 2s10s +38bp, 3m10y about +75bp. Post-inversion steepening is a late-cycle sign."),
-    # 2 Triggers - AI
-    ("ai_trig", "triggers", "ai", "AI repricing triggers (AI credit, demand signals, project stress)", "RED", "",
-     "The trigger fired on 5 Nov in equities; AI issuers' CDS were already at records and data-centre projects show first cracks."),
-    # 3 Amplifiers - broad
-    ("crowded", "amplifiers", "broad", "Common exposures / crowded trades", "RED", "AMBER",
-     "The crowded AI trade is unwinding: Mag-7 lost >$1tn on 5 Nov. Short-yen and margin positions are still in place."),
-    ("corr", "amplifiers", "broad", "Correlation spikes", "AMBER", "GREEN",
-     "All 11 S&P sectors fell on 5 Nov (decliners ~6:1); Treasuries still rallied, so the stock-bond hedge worked."),
-    ("sifi", "amplifiers", "broad", "SIFI footprint and interbank network", "AMBER", "AMBER",
-     "G-SIB footprint structurally large; no interbank counterparty stress. FSB 2026 G-SIB list due mid-Nov."),
-    # 3 Amplifiers - AI
-    ("ai_amp", "amplifiers", "ai", "AI concentration and leverage on AI exposure", "RED", "",
-     "Top 10 stocks ~39% of the S&P 500, near the record; leveraged products and margin sit on the same names."),
-    # 4 Systemic threshold - broad
-    ("bank_cap", "threshold", "broad", "Bank capital & liquidity (CET1, stress test, LCR/NSFR)", "GREEN", "GREEN",
-     "Large banks well capitalised; IMF (Oct) finds core banks resilient to an AI + bond + energy shock, but the weak-bank tail grew to 22% of assets."),
-    ("mm_spreads", "threshold", "broad", "Money-market spreads and cross-currency basis", "GREEN", "GREEN",
-     "Core funding spreads narrow (3m CP ~4bp over bills); no dollar-shortage signal."),
-    ("repo", "threshold", "broad", "Repo and reserves", "AMBER", "AMBER",
-     "SOFR 4-7bp above IORB since 29 Oct; reserves ~$2.97tn with no reverse-repo cushion left."),
-    ("cb_fac", "threshold", "broad", "Central bank facility usage", "GREEN", "AMBER",
-     "Standing Repo Facility take-up near zero; Sep quarter-end passed with SOFR at IORB."),
-    ("mkt_liq", "threshold", "broad", "Market liquidity and financial conditions", "GREEN", "GREEN",
-     "Conditions still loose (NFCI -0.46) but tighter five weeks in a row."),
-    # 4 Systemic threshold - AI
-    ("ai_abs", "threshold", "ai", "Absorption of AI credit losses (banks, insurers, credit supply)", "AMBER", "",
-     "Banks are hedging and selling down data-centre loans and insurers say capacity is close to full; direct bank exposure is still small."),
+# ---------------------------------------------------------------- themes (one row per thing we monitor)
+# key, stage, lens, theme, model series ids (sysrisk.config), comment, July board signal (for "change")
+# The theme score is computed (see sysrisk/unified.py) from its model series and judgement series below.
+THEMES = [
+    ("agg_lev", "fragility", "broad", "Aggregate leverage (household, corporate, government, credit gap)",
+     ["credit_gap", "hh_dsr", "hh_debt", "corp_debt", "rzone", "fiscal"],
+     "Households deleveraged; corporate and government debt high. Total non-financial debt flat at 2.59x GDP.", "AMBER"),
+    ("nonbank", "fragility", "broad", "Non-bank leverage (margin, hedge funds, private credit)",
+     ["nbfi_leverage", "margin", "hf_repo", "hf_rv_lev", "bank_nbfi"],
+     "Hedge-fund leverage at records; private-credit gates and record defaults; margin debt 1.5% below its June record.", "AMBER"),
+    ("valuation", "fragility", "broad", "Valuation stretch (credit pricing, equities, housing)",
+     ["ebp_sentiment", "eq_val", "house_gap", "low_vol"],
+     "Credit priced for perfection, equities near record valuations (CAPE ~41).", "RED"),
+    ("em_imb", "fragility", "broad", "EM imbalances and reserve adequacy", [],
+     "EM spreads resilient; energy importers and weak sovereigns are the soft spots.", "AMBER"),
+    ("ai_fin", "fragility", "ai", "AI financing structure (off-balance-sheet, circular, debt-funded capex)", [],
+     "Capex exceeds operating cash flow at three of four hyperscalers; leases and vendor financing keep much of it off balance sheet.", ""),
+    ("vol", "triggers", "broad", "Volatility shock (VIX, MOVE, FX vol)", ["vix", "move", "fx_vol"],
+     "VIX jumped ~70% to ~28 on 5 Nov (enters the model with the next daily print); MOVE peaked at 114 in Oct.", "GREEN"),
+    ("spread_chg", "triggers", "broad", "Credit spread widening", ["credit_widen", "em_stress"],
+     "HY 340bp (+80bp from Aug low), IG 94bp; 5 Nov prints pending.", "AMBER"),
+    ("stress", "triggers", "broad", "Realised stress (stress indices, bank equity, credit-line draws, lending)",
+     ["stlfsi", "nfci", "bank_rel_dd", "ci_draw", "pc_mark", "sloos_ci", "cre_delinq"],
+     "Stress indices still below normal; companies drawing credit lines fast; private-credit marks lagging HY.", "GREEN"),
+    ("curve", "triggers", "broad", "Term spreads / yield curve", [],
+     "Curve steepened out of inversion: 2s10s +38bp, 3m10y ~+75bp.", "AMBER"),
+    ("ai_trig", "triggers", "ai", "AI repricing triggers (AI credit, demand signals, project stress)", [],
+     "Fired in equities on 5 Nov; AI issuers' CDS already at records; first data-centre project cracks.", ""),
+    ("crowded", "amplifiers", "broad", "Crowded trades and positioning", ["lf_ust_short"],
+     "AI trade unwinding (Mag-7 -$1tn on 5 Nov); short-yen and Treasury basis positions still large.", "AMBER"),
+    ("corr", "amplifiers", "broad", "Correlation and common drivers", ["absorption", "stock_bond", "dy_total", "granger_dgc"],
+     "Financials driven by a few common factors; on 5 Nov everything equity fell together but bonds still hedged.", "GREEN"),
+    ("sifi", "amplifiers", "broad", "Spillovers from large institutions", ["srisk_gdp", "dcovar_max", "dcovar_private", "dealer_lev"],
+     "Capital shortfall in a crash still low; tail spillovers mid-range.", "AMBER"),
+    ("ai_amp", "amplifiers", "ai", "AI concentration and leverage on AI exposure", ["concentration"],
+     "Top 10 stocks ~39% of the S&P 500; leverage sits on the same names.", ""),
+    ("bank_cap", "threshold", "broad", "Bank capital and liquidity", [],
+     "Large banks well capitalised; IMF's weak-bank tail grew to 22% of assets.", "GREEN"),
+    ("mm_spreads", "threshold", "broad", "Short-term funding (CP, cross-currency basis)", ["cp_spread", "a2p2", "fin_cp"],
+     "Bank and corporate short-term funding cheap; no dollar shortage.", "GREEN"),
+    ("repo", "threshold", "broad", "Repo, reserves and the reverse-repo cushion", ["reserves_gdp", "rrp_buffer", "sofr_iorb", "tgcr_iorb"],
+     "Reverse-repo cushion gone; repo trading above the Fed floor since 29 Oct.", "AMBER"),
+    ("cb_fac", "threshold", "broad", "Central bank backstops (repo facility, swap lines)", ["srf_usage", "swap_lines"],
+     "Backstops ready and barely used.", "AMBER"),
+    ("mkt_liq", "threshold", "broad", "Market liquidity and dollar funding", ["usd_6m"],
+     "Dollar range-bound; Treasury depth not refreshed (Bloomberg).", "GREEN"),
+    ("ai_abs", "threshold", "ai", "Absorption of AI credit losses (banks, insurers, credit supply)", [],
+     "Banks hedging and selling down data-centre loans; insurers near capacity; direct bank exposure still small.", ""),
 ]
 
 # ---------------------------------------------------------------- underlying series
-# key (-> SUMMARY), metric, signal, prev, reading, note/what to watch, source, as of, refresh code, refreshed
+# judgement series (no usable model time series, or a different measure)
+# key (-> THEMES), metric, signal, prev, reading, note/what to watch, source, as of, refresh code, refreshed
 DETAIL = [
     # agg_lev
-    ("agg_lev", "Household debt-to-GDP", "GREEN", "GREEN",
-     "$21.4tn (Q2), ~66% of GDP on a Z.1 basis. Growth picked up to 5.0% annualised.",
-     "Still deleveraged vs 2008. July used the BIS-basis series (~60%); levels not comparable.",
-     "Fed Z.1, 11 Sep 2026", "Q2 2026", "FRED: CMDEBT / GDP", True),
-    ("agg_lev", "Corporate debt-to-GDP", "AMBER", "AMBER",
-     "Non-financial business debt $24.0tn (~74% of GDP). Growth slowed to 4.6% from 7.0%.",
-     "AI capex is increasingly debt-funded (see AI rows).",
-     "Fed Z.1, 11 Sep 2026", "Q2 2026", "FRED: TBSDODNS / GDP", True),
-    ("agg_lev", "Government debt-to-GDP", "RED", "RED",
-     "Total government debt $38.7tn (~119% of GDP on Z.1). 10y Treasury hit ~5.36% in early Oct.",
-     "IMF GFSR names a sovereign-yield shock as one of three main risks.",
-     "Fed Z.1; IMF GFSR Oct 2026", "Q2 2026", "FRED: GFDEGDQ188S", True),
     ("agg_lev", "Total non-financial debt-to-GDP", "AMBER", "AMBER",
      "2.59x GDP in Q2, flat; $84.1tn outstanding.", "Stable in aggregate; mix tilting to government.",
      "Fed Z.1, 11 Sep 2026", "Q2 2026", "Z.1 table D.3", True),
-    ("agg_lev", "BIS credit-to-GDP gap", "AMBER", "AMBER",
-     "Not refreshed; the model's own one-sided-HP gap is in the Fragility charts.", "Slow-moving early-warning indicator.",
-     "BIS (carried from Jul)", "Jul 2026", "FRED: QUSPAM770A", False),
     # nonbank
-    ("nonbank", "FINRA margin debt", "AMBER", "AMBER",
-     "$1.48tn in Sep (+1.8% m/m, +31.4% y/y), 1.5% below June's $1.50tn record.",
-     "Growth slowed from 53.7% y/y in May; such slowdowns preceded past tops. Oct data due ~3rd week Nov.",
-     "FINRA via Advisor Perspectives 23 Oct; CNBC 27 Oct", "Sep 2026", "FINRA margin statistics", True),
     ("nonbank", "Private credit", "RED", "AMBER",
      "Q3 redemption requests still above 5% caps (Blue Owl OTIC ~39%, Cliffwater ~16%). Fitch default rate ~6%, a record.",
      "Gates hold, so stress shows in marks, PIK and gates. Watch Q3 BDC non-accruals.",
      "Valuation Research Q3 2026; Yardeni PC monitor; IMF GFSR Oct 2026", "Oct 2026", "manual_overlay: bdc_nonaccrual", True),
-    ("nonbank", "Hedge-fund basis-trade leverage", "AMBER", "AMBER",
-     "Basis trade down ~20% to ~$1.2tn (MS est.); hedge funds still hold a record ~7% of Treasuries.",
-     "Leverage moved into other relative-value trades; a repo or margin shock is the amplifier.",
-     "OFR blog 19 Aug; CNBC 30 Sep; Fed FSR May 2026", "Sep 2026", "OFR HFM: FPF-BORROW_REPO_SUM", True),
     # valuation
     ("valuation", "Equity CAPE (Shiller)", "RED", "RED",
      "40.7 in Oct, 98.9th percentile since 1881; only 1999-2000 was higher.",
      "Signals low 10-year returns; not a timing tool.", "Shiller data via thetrading.tools", "Oct 2026", "multpl / Shiller ie_data", True),
-    ("valuation", "Risk-premia compression (credit levels)", "RED", "RED",
-     "HY 340bp and IG 94bp still near multi-decade tights.", "Little pay for risk.",
-     "FRED ICE BofA OAS", "3 Nov 2026", "FRED: BAMLH0A0HYM2, BAMLC0A0CM", True),
     ("valuation", "Real estate price-to-income", "AMBER", "AMBER",
      "30y mortgage 7.24% (29 Oct), off a 7.40% Oct peak. Case-Shiller +2.1-2.7% y/y; real prices falling.",
      "Affordability worse than July.", "Freddie Mac PMMS; S&P Cotality Case-Shiller", "29 Oct 2026", "FRED: MORTGAGE30US", True),
@@ -142,22 +116,10 @@ DETAIL = [
      "Each step up in capex now needs external funding.",
      "Company Q3 results via Decoding Discontinuity; Yield Theory 4 Oct", "Q3 2026", "BBG: CAPEX / CF_CASH_FROM_OPER", True),
     # vol
-    ("vol", "VIX (equity)", "AMBER", "GREEN",
-     "~28.2 on 5 Nov (+11.6pts), highest since 31 Mar; 16.6 the day before.",
-     "Some feeds show ~23 at the close: confirm the official print.", "CNBC 5 Nov; Cboe", "5 Nov 2026", "FRED: VIXCLS", True),
-    ("vol", "MOVE (rates)", "AMBER", "GREEN",
-     "Peaked at 113.6 on 5 Oct; ~94-100 in early Nov.", "A new break above ~110 would confirm rates-driven stress.",
-     "StreetStats; Amundi Oct 2026", "4 Nov 2026", "Yahoo: ^MOVE", True),
-    ("vol", "FX volatility / DXY", "GREEN", "GREEN",
-     "DXY ~101-102; no haven bid for the dollar on 5 Nov.", "Dollar strength + FX-vol spike = global dollar stress.",
-     "Vantage 5 Nov", "5 Nov 2026", "DXY Curncy", True),
     # spread_chg
     ("spread_chg", "US HY OAS (change)", "AMBER", "GREEN",
      "340bp (3 Nov), from 260bp on 28 Aug and 314bp on 28 Oct. CCC 1,316bp.",
      "Speed matters: a gap above ~400bp would confirm credit is following equities.", "FRED BAMLH0A0HYM2", "3 Nov 2026", "FRED: BAMLH0A0HYM2", True),
-    ("spread_chg", "IG / BBB OAS (change)", "AMBER", "GREEN",
-     "IG 94bp (30 Oct), from 82bp in early Oct.", "IG above 100bp would show repricing beyond AI issuers.",
-     "FRED BAMLC0A0CM", "30 Oct 2026", "FRED: BAMLC0A0CM", True),
     ("spread_chg", "CDX IG / iTraxx Crossover", "GREEN", "GREEN",
      "CDX IG 61bp; iTraxx Crossover 308bp (27 Oct), +21bp m/m. Pre-selloff.", "Watch Crossover fallen-angel risk.",
      "irates.today 27 Oct", "27 Oct 2026", "CDX IG CDSI GEN 5Y Corp", True),
@@ -212,28 +174,12 @@ DETAIL = [
     ("bank_cap", "Liquidity (LCR / NSFR)", "GREEN", "GREEN",
      "Comfortably above requirements (carried).", "Deposit stability better than 2023.", "Bank 10-Qs (carried)", "Jun 2026", "-", False),
     # mm_spreads
-    ("mm_spreads", "SOFR-OIS / commercial paper", "GREEN", "GREEN",
-     "3m CP averaged 3.95% vs 3.91% for T-bills in Q3 (~4bp).", "Short-term funding orderly.",
-     "H.15 via US Dept of Education", "Q3 2026", "FRED: CPF3M - DTB3", True),
     ("mm_spreads", "Cross-currency basis (EUR, JPY)", "GREEN", "GREEN",
      "Basis not refreshed; USD/JPY ~158, off the 163.9 high of 29 Jul.", "Basis widening + yen squeeze = stress trigger.",
      "BBG (carried); Trading Economics", "5 Nov 2026", "BBG: .JYCCBS3M G Index", False),
     # repo
-    ("repo", "SOFR vs IORB", "AMBER", "AMBER",
-     "Sep 30 quarter-end SOFR 3.90% = IORB. Since 29 Oct SOFR 3.94-3.97%, 4-7bp above IORB.",
-     "Weeks above IORB = reserves no longer ample.", "FRED SOFR; Fed 28 Oct", "4 Nov 2026", "FRED: SOFR - IORB", True),
-    ("repo", "Reserves and reverse repo", "AMBER", "AMBER",
-     "Reserves ~$2.97tn (21 Oct); ON RRP ~$0-5bn; TGA ~$0.95tn.", "No RRP cushion: the next drain hits reserves.",
-     "Fed H.4.1", "21 Oct 2026", "FRED: WRESBAL, RRPONTSYD", True),
     # cb_fac
-    ("cb_fac", "Standing Repo Facility", "GREEN", "AMBER",
-     "Take-up near zero by Oct 2026 (record $74.6bn on 31 Dec 2025).", "Heavy repeated use would be a red flag.",
-     "NY Fed via YX Insights", "Oct 2026", "FRED: RPONTSYD", True),
-    ("cb_fac", "Discount window / FX swap lines", "GREEN", "GREEN",
-     "No elevated usage (carried).", "Swap-line draws = global dollar stress.", "Fed H.4.1 (carried)", "Jul 2026", "FRED: SWPT", False),
     # mkt_liq
-    ("mkt_liq", "Financial conditions (NFCI)", "GREEN", "GREEN",
-     "NFCI -0.46 (30 Oct), tighter for 5 weeks from -0.50.", "Still loose; direction has turned.", "FRED NFCI", "30 Oct 2026", "FRED: NFCI", True),
     ("mkt_liq", "Treasury market depth", "GREEN", "GREEN",
      "Not refreshed; MOVE >110 in Oct passed without reported dysfunction.", "Watch auction tails.",
      "BBG (carried)", "Jul 2026", "model: ust_liq", False),
@@ -254,42 +200,23 @@ SOURCES = ("FRED / St. Louis Fed; Federal Reserve (Z.1 Sep 2026, H.4.1, FOMC 28 
            "Signals apply judgement to illustrative thresholds and are not an official risk view.")
 
 RANK = {"GREEN": 0, "AMBER": 1, "RED": 2}
+# One scale for every row: 0-100, higher = riskier. Colour bands match the index levels.
+BANDS = (40, 65)                                   # GREEN < 40 <= AMBER < 65 <= RED
+JUDGEMENT_SCORE = {"GREEN": 25, "AMBER": 52, "RED": 80}   # analyst traffic light -> score (mid-band)
+WEIGHTS = {"screened": 1.0, "context": 0.5, "judgement": 0.5}
 
 
-def rollup(signals):
-    """Stage x lens roll-up: mean rank (GREEN 0, AMBER 1, RED 2); RED if >= 1.5, AMBER if >= 0.75."""
-    s = [RANK[x] for x in signals if x in RANK]
-    if not s:
+def colour(score):
+    if score is None:
         return ""
-    m = sum(s) / len(s)
-    return "RED" if m >= 1.5 else "AMBER" if m >= 0.75 else "GREEN"
-
-
-def payload():
-    by_key = {r[0]: r for r in SUMMARY}
-    summary = [dict(zip(["key", "stage", "lens", "indicator", "signal", "prev", "comment"], r)) for r in SUMMARY]
-    detail = []
-    for r in DETAIL:
-        d = dict(zip(["key", "metric", "signal", "prev", "reading", "note", "source", "asof", "code", "refreshed"], r))
-        d["stage"], d["lens"] = by_key[d["key"]][1], by_key[d["key"]][2]
-        detail.append(d)
-    grid = {}
-    for sk, *_ in STAGES:
-        for lk, _ in LENSES:
-            rows = [s for s in summary if s["stage"] == sk and s["lens"] == lk]
-            grid[f"{sk}|{lk}"] = {"now": rollup([r["signal"] for r in rows]),
-                                  "prev": rollup([r["prev"] for r in rows]),
-                                  "n": {k: sum(r["signal"] == k for r in rows) for k in RANK}}
-    return {"asof": AS_OF, "prev_asof": PREV_ASOF, "sources": SOURCES,
-            "stages": [dict(zip(["key", "n", "name", "q", "model_link"], s)) for s in STAGES],
-            "lenses": [dict(zip(["key", "name"], l)) for l in LENSES],
-            "summary": summary, "detail": detail, "grid": grid}
+    score = round(score)                            # colour the number people see
+    return "RED" if score >= BANDS[1] else "AMBER" if score >= BANDS[0] else "GREEN"
 
 
 def _check():
-    keys = {r[0] for r in SUMMARY}
-    assert all(r[0] in keys for r in DETAIL), "detail row points to unknown key"
-    assert all(any(d[0] == k for d in DETAIL) for k in keys), "summary row without detail"
+    keys = {t[0] for t in THEMES}
+    assert all(r[0] in keys for r in DETAIL), "detail row points to unknown theme"
+    assert all(t[4] or any(d[0] == t[0] for d in DETAIL) for t in THEMES), "theme with no series"
 
 
 _check()
