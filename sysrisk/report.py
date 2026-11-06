@@ -29,6 +29,9 @@ from .pipeline import LEVELS
 from .narrative import AS_OF as NW_ASOF, NARRATIVE, NOT_COVERED
 from . import signal_board
 
+STAGE_OF = {s[4]: s for s in signal_board.STAGES}       # model link name -> (key, n, stage, question, link)
+XLSX_NAME = "Systemic_Risk_Dashboard.xlsx"
+
 # Display units for each indicator's own history chart: (scale, suffix, prefix, axis label)
 HIST_UNITS = {
     "ebp_sentiment": (1, "pp", "", "Baa minus 10y Treasury"), "nbfi_leverage": (1, "", "", "Index, 0 = average"),
@@ -320,7 +323,9 @@ class Story:
                          "scored": ind.scored, "not_scored_why": ind.not_scored_why, "ns_tag": ind.ns_tag,
                          "fit": None if getattr(ind, "fit", None) is None else round(ind.fit, 2),
                          "charted": i in CHARTED})
+        stg = STAGE_OF[name]
         return {"name": name, "q": PILLAR_Q[[k for k, n in PILLARS.items() if n == name][0]],
+                "stage_key": stg[0], "stage_n": stg[1], "stage": stg[2], "stage_q": stg[3],
                 "score": score, "d13": d13, "level": level_of(score), "head": head, "bullets": bullets,
                 "lede": head,
                 "drivers": drivers, "offsets": offsets, "rows": rows,
@@ -463,7 +468,7 @@ class Story:
                    f"and higher than {pct:.0f}% of weeks since {idx.index[0].year}. "
                    + (f"That is below the peak of every stress episode since 2008. " if not [n for n, p in peaks if p <= x] else
                       f"That is already above the peak reached in {', '.join(n for n, p in peaks if p <= x)}. ") +
-                   f"{hi['name']} is the riskiest link ({hi['score']:.0f}); {lo['name'].lower()} is the "
+                   f"{hi['stage']} is the riskiest stage ({hi['score']:.0f}); {lo['stage'].lower()} is the "
                    f"calmest ({lo['score']:.0f}).")
         # what to watch: biggest 13-week deteriorations among scored indicators
         d = self.sc13.dropna()
@@ -588,7 +593,7 @@ def litmap_now(panel) -> list:
 def payload(R: dict) -> dict:
     apply_screen_flags(R)
     st = Story(R)
-    links = [st.link(n) for n in PILLARS.values()]
+    links = [st.link(s[4]) for s in signal_board.STAGES]          # ordered Fragility -> Threshold
     head = st.headline(links)
     asof = st.asof
     fred = R["fred"]
@@ -634,8 +639,9 @@ def payload(R: dict) -> dict:
             k: [{"name": n, "r2": round(float(r["R2_oos"]), 3), "n": int(r["n"])} for n, r in v.iterrows()]
             for k, v in R["validation"].items()},
         "litmap": litmap_now(R["panel"]),
-        "narrative": {"asof": NW_ASOF, "items": NARRATIVE, "not_covered": NOT_COVERED},
-        "board": signal_board.payload(),
+        "narrative": {"asof": NW_ASOF, "not_covered": NOT_COVERED,
+                      "items": [dict(c, stage=STAGE_OF.get(c["link"], (None, None, c["link"]))[2]) for c in NARRATIVE]},
+        "board": signal_board.payload(), "xlsx": XLSX_NAME,
         "hist": hist_payload(R, asof, [r["id"] for l in links for r in l["rows"] if not r.get("missing")]),
     }
 

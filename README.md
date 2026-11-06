@@ -1,6 +1,21 @@
 # Systemic Risk Monitor
 
-One dashboard that answers: **how much fragility is building, and is it being tested?**
+One dashboard that answers: **how fragile is the system, is it being tested, and could the AI build-out become a systemic problem?**
+
+## Structure: 4 stages x 2 lenses x 3 kinds of evidence
+
+| Stage | Question | Model link |
+|---|---|---|
+| 1 Fragility | Why is the system vulnerable? | Build-up |
+| 2 Triggers | What sets it off? | Trigger |
+| 3 Amplifiers | Why does it spread? | Contagion |
+| 4 Systemic threshold | When is it systemic? | Shock absorbers |
+
+Lenses: **Broad system** and **AI channel** (off-balance-sheet commitments, circular financing, debt-funded capex, AI credit, concentration, bank/insurer absorption).
+
+Evidence: (1) **scored model** (evidence-screened, feeds the index); (2) **signal board** (judgement traffic lights in `sysrisk/signal_board.py`, not scored); (3) **narrative watch** (`sysrisk/narrative.py`, sourced cards). Placement rule: level of an excess = Fragility; shock or fast change = Trigger; mechanism that forces selling or spreads losses = Amplifier; buffer and whether it gives way = Threshold.
+
+The page and the Excel download (`Systemic_Risk_Dashboard.xlsx`, linked in the page header) are built from the same files on every run.
 
 ```
 Systemic risk = Vulnerability (Build-up + Amplifiers) x Stress (Plumbing + Outcome)
@@ -50,6 +65,8 @@ python tests/test_models.py                                   # known-answer che
 3. **Actions** tab → *Daily refresh* → **Run workflow** once to publish now.
 4. After that it runs every weekday at 07:45 Singapore time and republishes `index.html`
    (plus the CSVs) at `https://<user>.github.io/<repo>/`.
+
+The judgement layer (signal board readings) is refreshed by a daily Claude scheduled task that researches new readings, edits `sysrisk/signal_board.py` and pushes to `main`; the push triggers the same rebuild. Rows it cannot refresh keep `refreshed=False` and show as "carried". Bloomberg-only series need a session linked to the Terminal machine.
 
 If a run fails, open it in the Actions tab; the log shows which data source failed. Yahoo rate limits
 are retried with backoff; a failed run leaves the previous day's page live.

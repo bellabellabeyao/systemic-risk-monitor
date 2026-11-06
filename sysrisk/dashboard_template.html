@@ -158,6 +158,12 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
 .rag-RED{background:var(--bad);color:var(--panel)}.rag-AMBER{background:var(--warn);color:var(--panel)}.rag-GREEN{background:var(--ok);color:var(--panel)}
 .rag-prev{opacity:.45}
 .bd-chg{font-size:12px;font-weight:600;white-space:nowrap}.bd-up{color:var(--bad)}.bd-dn{color:var(--ok)}
+.dl{font:600 12.5px var(--f-body);color:var(--panel);background:var(--accent);padding:5px 10px;border-radius:4px;text-decoration:none;white-space:nowrap}
+.sgrid th,.sgrid td{text-align:center;vertical-align:middle}.sgrid th.lens,.sgrid td.lens{text-align:left;font-weight:600}
+.sgrid .stg{font:600 12px var(--f-body);letter-spacing:.05em;text-transform:uppercase;color:var(--ink)}.sgrid .stq{font-size:12px;color:var(--muted);font-style:italic;text-transform:none;letter-spacing:0;font-weight:400}
+.sgrid .cell{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px}.sgrid a{color:inherit;text-decoration:none}
+.lens-ai{color:var(--violet)}.bdlens{font:600 10.5px var(--f-body);text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:3px;border:1px solid currentColor}
+.bdtbl td{font-size:13px}.bdtbl .bdrow{cursor:pointer}.bdtbl .det td{font-size:12.5px;color:var(--muted)}.bdtbl .carried{font-style:italic}
 .bd-score{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:13.5px}
 #bdtbl td{font-size:13px}#bdtbl tr.grp td{background:var(--soft);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
 #bdtbl .bdrow{cursor:pointer}#bdtbl .det td{font-size:12.5px;color:var(--muted)}
@@ -167,10 +173,10 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
 <div class="wrap">
   <header>
     <div>
-      <p class="eyebrow">Top-of-house financial stability · United States</p>
+      <p class="eyebrow">Top-of-house financial stability · Broad system and AI channel</p>
       <h1>Systemic Risk Monitor</h1>
     </div>
-    <div class="meta"><span>Data to <b class="num" id="asof"></b></span><span id="src"></span><span>Run <span class="num" id="run"></span></span></div>
+    <div class="meta"><span>Data to <b class="num" id="asof"></b></span><span id="src"></span><span>Run <span class="num" id="run"></span></span><a class="dl" id="xlsx" href="Systemic_Risk_Dashboard.xlsx" download>⬇ Download Excel</a></div>
   </header>
   <div class="demo" id="demo" hidden>Synthetic demo data: these readings come from simulated markets and only show how the page behaves.</div>
 
@@ -192,6 +198,14 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
     </div>
   </section>
 
+  <!-- 1b. STAGE GRID -->
+  <section style="display:flex;flex-direction:column;gap:12px" id="gridsec">
+    <div class="sec-head"><h2>Where the risk sits: four stages, two lenses</h2>
+      <p class="prose muted" id="gridintro"></p></div>
+    <div class="panel"><div class="tbl"><table class="sgrid" id="sgrid" style="min-width:760px"></table></div>
+      <p class="src" id="gridnote"></p></div>
+  </section>
+
   <section class="panel" style="display:flex;flex-direction:column;gap:6px">
     <h4 id="rulertitle">Today against the peak of every stress episode since 2008</h4>
     <div class="ruler-wrap"><div class="ruler" id="ruler"></div></div>
@@ -202,7 +216,7 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
   <section style="display:flex;flex-direction:column;gap:14px">
     <div class="sec-head">
       <h2>How a loss becomes systemic</h2>
-      <p class="prose muted">A systemic event needs four things at once: an excess that can unwind, channels for the loss to spread, too little liquidity to absorb the forced selling, and a shock that actually tests the system. Each link is scored 0–100 against its own history; the index is their average. The weakest link tells you where trouble would start.</p>
+      <p class="prose muted">A systemic event needs four stages to line up: fragility (an excess that can unwind), a trigger that tests it, amplifiers that spread the loss, and buffers that give way at the systemic threshold. The model scores each stage 0–100 against its own history; the index is their average. Each stage below then adds the analyst signal board for the broad system and for the AI channel.</p>
     </div>
     <div class="chain" id="chain"></div>
   </section>
@@ -226,15 +240,6 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
     <p class="src" id="nwnot"></p>
   </section>
 
-  <!-- 4c. ANALYST SIGNAL BOARD -->
-  <section style="display:flex;flex-direction:column;gap:14px" id="board" hidden>
-    <div class="sec-head"><h2>Signal board: the analyst traffic-light view</h2>
-      <p class="prose muted" id="bdintro"></p></div>
-    <div class="panel bd-score" id="bdscore"></div>
-    <div class="panel"><div class="tbl"><table id="bdtbl" style="min-width:820px"><thead><tr><th style="width:26%">Indicator</th><th>Now</th><th id="bdprevh">Prior</th><th>Change</th><th>Latest reading / comment</th></tr></thead><tbody></tbody></table></div></div>
-    <p class="src" id="bdsrc"></p>
-  </section>
-
   <!-- 5. DOES IT WORK -->
   <section style="display:flex;flex-direction:column;gap:14px" id="validation">
     <div class="sec-head"><h2>Does the index work?</h2>
@@ -253,7 +258,7 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
   <section style="display:flex;flex-direction:column;gap:14px">
     <div class="sec-head"><h2>How this monitor works</h2></div>
     <div class="how">
-      <div><h4>Why four links</h4><p>The literature splits systemic risk into the build-up of vulnerabilities and their amplification once a shock hits. The Build-up link covers the first. Contagion and shock absorbers are the amplifiers: one is about who is exposed to whom, the other about whether there is cash to absorb forced selling. Trigger is the shock itself. A high reading in one link alone is rarely a crisis; 2008 had all four.</p></div>
+      <div><h4>Four stages, two lenses, three kinds of evidence</h4><p>Stages: Fragility (why the system is vulnerable), Triggers (what sets it off), Amplifiers (why it spreads), Systemic threshold (when buffers give way). Lenses: the broad system, and the AI channel (circular financing, off-balance-sheet commitments, concentration, AI credit). Evidence: (1) the scored model, evidence-screened and refreshed daily; (2) the signal board, judgement traffic lights with sources, refreshed daily by an analyst task; (3) the narrative watch, sourced cards for risks with no time series. Only (1) feeds the index. A high reading in one stage alone is rarely a crisis; 2008 had all four.</p></div>
       <div><h4>How scores work</h4><p>Every indicator is ranked against its own history (0 = calmest week on record, 100 = most dangerous), using only data available at the time. To feed the score, an indicator must pass two tests. First, published work must show it predicts crises, with no known structural break in our data. Second, each month it must pass an evidence test on our own data, using only what was known then: its past readings must have come before deeper drawdowns in US financial stocks over the next 12 months. Indicators that fail either test are shown as context. The data is real, but adding it would add noise. Each context row says why: failed test, too new to test, double counts, trends up, lags, global, or no evidence. Each link averages its scored indicators, and the index averages the four links. Bands come from the index's own crisis peaks (see the ruler above).</p></div>
       <div><h4>What is not here yet</h4><p>Everything in the literature map marked as a gap. These need data the free feed does not carry (supervisory, holdings, CFTC or Bloomberg):</p><ul id="manual"></ul></div>
     </div>
@@ -316,7 +321,43 @@ const SECTIONS = {
                         "Adrian, Boyarchenko & Giannone (2019, AER). Quantile regression on NFCI and current growth, expanding window. Caveat: out of sample, no financial indicator here (NFCI included) has beaten the historical growth distribution since 2010; read as a conditional estimate. Data: FRED GDPC1, NFCI."]]},
 };
 
+
+// ---------- signal board (judgement layer; same data as the Excel download)
+const RK = {GREEN:0, AMBER:1, RED:2};
+const rag = (k, prev) => k ? `<span class="rag ${prev?"rag-prev ":""}rag-${k}">${k}</span>` : `<span class="muted" style="font-size:12px">${prev?"new":"–"}</span>`;
+const chg = (a,b) => !b ? '<span class="bd-chg lens-ai">new</span>' : RK[a]>RK[b] ? '<span class="bd-chg bd-up">▲ worse</span>' : RK[a]<RK[b] ? '<span class="bd-chg bd-dn">▼ better</span>' : '<span class="muted">=</span>';
+function boardFor(stage){
+  const B = D.board; if (!B) return "";
+  const lensName = Object.fromEntries(B.lenses.map(l=>[l.key,l.name]));
+  let h = "";
+  B.lenses.forEach(L=>{
+    const rows = B.summary.filter(r=>r.stage===stage && r.lens===L.key); if (!rows.length) return;
+    h += `<tr class="grp"><td colspan="5"><span class="bdlens ${L.key==="ai"?"lens-ai":""}">${esc(L.name)}</span></td></tr>`;
+    rows.forEach(r=>{
+      const det = B.detail.filter(d=>d.key===r.key), id = "bd_"+r.key;
+      h += `<tr class="bdrow" data-t="${id}"><td><b>${esc(r.indicator)}</b> <span class="tag">${det.length} series ▾</span></td><td>${rag(r.signal)}</td><td>${rag(r.prev,true)}</td><td>${chg(r.signal,r.prev)}</td><td>${esc(r.comment)}</td></tr>`;
+      det.forEach(d=>{ h += `<tr class="det ${id}" hidden><td style="padding-left:22px" class="${d.refreshed?"":"carried"}">${esc(d.metric)}${d.refreshed?"":' <span class="tag">carried</span>'}</td><td>${rag(d.signal)}</td><td>${rag(d.prev,true)}</td><td>${chg(d.signal,d.prev)}</td><td>${esc(d.reading)} <b>Watch:</b> ${esc(d.note)} <span class="cite">(${esc(d.source)}; ${esc(d.asof)})</span></td></tr>`; });
+    });
+  });
+  return `<div class="sub"><p class="eyebrow">Signal board for this stage · judgement, not scored</p><p>Traffic lights for the broad system and the AI channel, as of ${esc(B.asof)}, compared with ${esc(B.prev_asof)}. Click a row for the underlying series and sources. The same table is in the <a href="${esc(D.xlsx||"#")}" download>Excel download</a>.</p></div>
+    <div class="panel"><div class="tbl"><table class="bdtbl" style="min-width:820px"><thead><tr><th style="width:28%">Indicator</th><th>Now</th><th>${esc(B.prev_asof)}</th><th>Change</th><th>Latest reading / comment</th></tr></thead><tbody>${h}</tbody></table></div></div>`;
+}
+function renderGrid(){
+  const B = D.board; if (!B) { document.getElementById("gridsec").hidden = true; return; }
+  const link = Object.fromEntries(D.links.map(l=>[l.stage_key,l]));
+  document.getElementById("gridintro").textContent = `Each column is a stage of the chain from fragility to a systemic event. The top row is the broad financial system, the second row is the AI channel. Model scores come from the daily evidence-screened index; traffic lights are the analyst signal board (as of ${B.asof}).`;
+  let h = `<thead><tr><th class="lens"></th>${B.stages.map((s,i)=>`<th><a href="#${(link[s.key]||{name:""}).name.replace(/\s/g,'')}"><div class="stg">${s.n} ${esc(s.name)}</div><div class="stq">${esc(s.q)}</div></a></th>`).join("")}</tr></thead><tbody>`;
+  h += `<tr><td class="lens">Model score <span class="muted" style="font-weight:400;font-size:12px">(broad, 0–100)</span></td>${B.stages.map(s=>{const l=link[s.key]; return `<td>${l?`<div class="cell"><span class="lvl L-${l.level}" style="font-size:11px;padding:3px 7px">${fmt(l.score)} · ${l.level}</span><span class="muted num">${sgn(l.d13)} over 3m</span></div>`:"–"}</td>`;}).join("")}</tr>`;
+  B.lenses.forEach(L=>{
+    h += `<tr><td class="lens ${L.key==="ai"?"lens-ai":""}">${esc(L.name)} <span class="muted" style="font-weight:400;font-size:12px">(signal board)</span></td>${B.stages.map(s=>{const g=B.grid[s.key+"|"+L.key]; return `<td><div class="cell">${rag(g.now)}<span class="muted">${g.prev?`was ${g.prev}`:"new"} · ${["RED","AMBER","GREEN"].filter(k=>g.n[k]).map(k=>g.n[k]+" "+k.toLowerCase()).join(", ")}</span></div></td>`;}).join("")}</tr>`;
+  });
+  document.getElementById("sgrid").innerHTML = h + "</tbody>";
+  document.getElementById("gridnote").innerHTML = `Roll-up rule: average of the stage's indicators (green 0, amber 1, red 2); red at 1.5 or more, amber at 0.75 or more. Only the model score feeds the index. <a href="${esc(D.xlsx||"#")}" download>Download the full monitor as Excel</a>.`;
+}
+document.addEventListener("click", e=>{ const tr = e.target.closest(".bdtbl .bdrow"); if (tr) document.querySelectorAll(".bdtbl tr."+tr.dataset.t).forEach(x=>x.hidden=!x.hidden); });
+
 function renderStatic(){
+  renderGrid();
   const H = D.head;
   document.getElementById("asof").textContent = D.meta.asof;
   document.getElementById("run").textContent = D.meta.run;
@@ -346,9 +387,9 @@ function renderStatic(){
   document.getElementById("chain").innerHTML = D.links.map((l,i)=>`
     <div class="link">
       ${i<3?'<span class="arrow" aria-hidden="true">→</span>':""}
-      <span class="step">${i+1} of 4</span>
-      <span class="nm">${esc(l.name)}</span>
-      <span class="q">${esc(l.q)}</span>
+      <span class="step">Stage ${l.stage_n} of 4</span>
+      <span class="nm">${esc(l.stage)}</span>
+      <span class="q">${esc(l.stage_q)}</span>
       <div class="sc"><span class="v num">${fmt(l.score)}</span>${meter(l.score)}<span class="lvl L-${l.level}" style="font-size:10.5px;padding:4px 6px">${l.level}</span></div>
       <span class="muted num" style="font-size:12px">${sgn(l.d13)} over 3 months</span>
       <p class="lede">${esc(l.head)}</p>
@@ -362,7 +403,8 @@ function renderStatic(){
     const cols = charts.length===1 ? "" : (S.cols===3 && charts.length>=3) ? "grid3" : "grid2";
     return `<section class="linksec" id="${l.name.replace(/\s/g,'')}">
       <div class="sec-head">
-        <div class="row"><span class="step num muted">${i+1} of 4</span><h2>${esc(l.name)}: ${esc(l.q)}</h2></div>
+        <div class="row"><span class="step num muted">Stage ${l.stage_n} of 4</span><h2>${esc(l.stage)}: ${esc(l.stage_q)}</h2></div>
+        <p class="muted" style="margin:0;font-size:13.5px">Model question: ${esc(l.q)}</p>
         <div class="row"><span class="lvl L-${l.level}">${l.level} · ${fmt(l.score)}</span><span class="muted num" style="font-size:13px">${sgn(l.d13)} over 3 months</span></div>
         <div class="take"><p class="hl">${esc(l.head)}</p>
           <ul>${l.bullets.map(b=>`<li><b>${esc(b.label)}.</b> ${esc(b.text)}${b.scored?"":'<span class="ctx">context</span>'}</li>`).join("")}</ul></div>
@@ -385,6 +427,7 @@ function renderStatic(){
             <div><div class="rowchart" id="h_${r.id}"></div><p class="src">Actual readings since 1995 or first available. Dashed line: the level beyond which this indicator scores in its riskiest 20% of history to date, so the chart and the score agree.${D.hist[r.id]&&D.hist[r.id].abs?" Dotted lines: thresholds from the literature.":""} Vertical marks: stress episodes on the ruler above.</p></div>
           </div></td></tr>`).join("")).join("")}
         </tbody></table></div></div>
+      ${boardFor(l.stage_key)}
     </section>`;}).join("");
 
   // validation
@@ -418,7 +461,7 @@ function renderStatic(){
     document.getElementById("nwintro").textContent = `Some risks have no usable public time series: private-credit marks, AI financing hidden in SPVs and leases, bank losses that only show up quarterly. These cards give a sourced, qualitative read instead. They do not feed the score, and they are updated by hand (last on ${N.asof}), not by the daily refresh.`;
     document.getElementById("nwgrid").innerHTML = N.items.map(c=>`<div class="panel card">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><h4 style="margin:0">${esc(c.title)}</h4><span class="sig sig-${c.signal}">${lab[c.signal]}</span></div>
-      <p style="margin:0"><b>${esc(c.head)}</b> <span class="muted">Link: ${esc(c.link)}.</span></p>
+      <p style="margin:0"><b>${esc(c.head)}</b> <span class="muted">Stage: ${esc(c.stage)}.</span></p>
       <ul>${c.facts.map(f=>`<li><b>${esc(f[0])}.</b> ${esc(f[1])} <span class="cite">(${esc(f[2])})</span></li>`).join("")}</ul>
       <p style="margin:0;font-size:13.5px"><b>How it transmits.</b> ${esc(c.transmits)}</p>
       <p style="margin:0;font-size:13.5px"><b>What would make it worse.</b> ${esc(c.watch)}</p>
@@ -427,32 +470,6 @@ function renderStatic(){
     const warn = N.items.filter(c=>c.signal==="warning");
     if (warn.length) { const el = document.getElementById("nwflag"); el.hidden = false;
       el.innerHTML = `<b>Outside the score:</b> the narrative watch flags ${warn.length===1?"a warning":warn.length+" warnings"} on ${warn.map(c=>esc(c.short)).join(" and ")}. <a href="#narrative">See below.</a>`; }
-  }
-  // analyst signal board (hand-maintained, same source as the Excel workbook)
-  if (D.board && D.board.summary.length) {
-    const B = D.board, rk = {GREEN:0, AMBER:1, RED:2};
-    const chg = (a,b)=> rk[a]>rk[b] ? '<span class="bd-chg bd-up">▲ worse</span>' : rk[a]<rk[b] ? '<span class="bd-chg bd-dn">▼ better</span>' : '<span class="muted">=</span>';
-    document.getElementById("board").hidden = false;
-    document.getElementById("bdprevh").textContent = B.prev_asof;
-    document.getElementById("bdintro").textContent = `A judgement-based traffic light across 18 indicators and ${B.detail.length} underlying series, kept alongside the model. It does not feed the score. Readings as of ${B.asof}; compared with ${B.prev_asof}. Click a row to see the underlying series.`;
-    const cnt = k=>[B.summary.filter(r=>r.signal===k).length, B.summary.filter(r=>r.prev===k).length];
-    const up = B.summary.filter(r=>rk[r.signal]>rk[r.prev]), dn = B.summary.filter(r=>rk[r.signal]<rk[r.prev]);
-    document.getElementById("bdscore").innerHTML = ["RED","AMBER","GREEN"].map(k=>`<span><span class="rag rag-${k}">${k}</span> <b class="num">${cnt(k)[0]}</b> <span class="muted">(was ${cnt(k)[1]})</span></span>`).join("")
-      + `<span><b>${up.length} worse</b>, ${dn.length} better since ${esc(B.prev_asof)}${up.length?": "+up.map(r=>esc(r.indicator.split(" (")[0].toLowerCase())).join(", "):""}.</span>`;
-    let html = "";
-    B.groups.forEach(g=>{
-      html += `<tr class="grp"><td colspan="5">${esc(g)}</td></tr>`;
-      B.summary.filter(r=>r.group===g).forEach((r,i)=>{
-        const key = r.indicator.split(" (")[0].toLowerCase().replace(/[^a-z]/g,"").slice(0,10);
-        const det = B.detail.filter(d=>d.group===g && key.startsWith(d.indicator.toLowerCase().replace(/[^a-z]/g,"").slice(0,10)));
-        const id = "bd_"+g.replace(/\W/g,"")+i;
-        html += `<tr class="bdrow" data-t="${id}"><td><b>${esc(r.indicator)}</b>${det.length?` <span class="tag">${det.length} series</span>`:""}</td><td><span class="rag rag-${r.signal}">${r.signal}</span></td><td><span class="rag rag-prev rag-${r.prev}">${r.prev}</span></td><td>${chg(r.signal,r.prev)}</td><td>${esc(r.comment)}</td></tr>`;
-        det.forEach(d=>{ html += `<tr class="det ${id}" hidden><td style="padding-left:22px" class="${d.refreshed?"":"carried"}">${esc(d.metric)}${d.refreshed?"":' <span class="tag">carried</span>'}</td><td><span class="rag rag-${d.signal}">${d.signal}</span></td><td><span class="rag rag-prev rag-${d.prev}">${d.prev}</span></td><td>${chg(d.signal,d.prev)}</td><td>${esc(d.reading)} <b>Watch:</b> ${esc(d.note)} <span class="cite">(${esc(d.source)}; ${esc(d.asof)})</span></td></tr>`; });
-      });
-    });
-    document.querySelector("#bdtbl tbody").innerHTML = html;
-    document.querySelectorAll("#bdtbl .bdrow").forEach(tr=>tr.addEventListener("click",()=>document.querySelectorAll("#bdtbl tr."+tr.dataset.t).forEach(x=>x.hidden=!x.hidden)));
-    document.getElementById("bdsrc").textContent = "Sources: " + B.sources;
   }
   // literature map
   document.querySelector("#littbl tbody").innerHTML = D.litmap.map(r=>`<tr><td><b>${esc(r.strand)}</b><div class="muted" style="font-size:12px">${esc(r.link)}</div></td><td><span class="st st-${r.status}">${r.status==="in"?"In":r.status==="context"?"Context":"Gap"}</span></td><td style="font-size:13px">${esc(r.papers)}</td><td style="font-size:13px">${esc(r.here)}</td></tr>`).join("");
