@@ -6,7 +6,7 @@ on:
   workflow_dispatch:           # "Run workflow" button for a manual refresh
   push:                        # rebuild as soon as code changes land on main
     branches: [main]
-    paths: ["sysrisk/**", "requirements-ci.txt", ".github/workflows/**"]
+    paths: ["sysrisk/**", "tools/build_signal_board_xlsx.py", "requirements-ci.txt", ".github/workflows/**"]
 
 permissions:
   contents: read
@@ -37,6 +37,11 @@ jobs:
 
       - name: Build page
         run: python -m sysrisk.report --results output/results.pkl --out site/index.html --standalone
+
+      - name: Build the Excel download (same data as the page)
+        run: |
+          python tools/build_signal_board_xlsx.py --out site/Systemic_Risk_Dashboard.xlsx --results output/results.pkl \
+          || python tools/build_signal_board_xlsx.py --out site/Systemic_Risk_Dashboard.xlsx
 
       - name: Keep the data alongside the page
         run: cp output/*.csv site/ 2>/dev/null || true
