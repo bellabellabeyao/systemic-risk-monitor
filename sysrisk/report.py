@@ -27,7 +27,7 @@ import pandas as pd
 from .config import PILLAR_Q, PILLARS, REGISTRY
 from .pipeline import LEVELS
 from .narrative import AS_OF as NW_ASOF, NARRATIVE, NOT_COVERED
-from . import signal_board
+from . import signal_board, unified
 
 STAGE_OF = {s[4]: s for s in signal_board.STAGES}       # model link name -> (key, n, stage, question, link)
 XLSX_NAME = "Systemic_Risk_Dashboard.xlsx"
@@ -468,7 +468,7 @@ class Story:
                    f"and higher than {pct:.0f}% of weeks since {idx.index[0].year}. "
                    + (f"That is below the peak of every stress episode since 2008. " if not [n for n, p in peaks if p <= x] else
                       f"That is already above the peak reached in {', '.join(n for n, p in peaks if p <= x)}. ") +
-                   f"{hi['stage']} is the riskiest stage ({hi['score']:.0f}); {lo['stage'].lower()} is the "
+                   f"In that model, {hi['stage'].lower()} is the riskiest stage ({hi['score']:.0f}); {lo['stage'].lower()} is the "
                    f"calmest ({lo['score']:.0f}).")
         # what to watch: biggest 13-week deteriorations among scored indicators
         d = self.sc13.dropna()
@@ -595,6 +595,9 @@ def payload(R: dict) -> dict:
     st = Story(R)
     links = [st.link(s[4]) for s in signal_board.STAGES]          # ordered Fragility -> Threshold
     head = st.headline(links)
+    U = unified.evaluate(R, st)
+    head["title"], cond = unified.headline_text(U, head["level"])
+    head["summary"] = cond + head["summary"].replace("The Systemic Risk Index is", "The tested early-warning index is")
     asof = st.asof
     fred = R["fred"]
     idx = R["index"].loc[:asof]
@@ -641,7 +644,7 @@ def payload(R: dict) -> dict:
         "litmap": litmap_now(R["panel"]),
         "narrative": {"asof": NW_ASOF, "not_covered": NOT_COVERED,
                       "items": [dict(c, stage=STAGE_OF.get(c["link"], (None, None, c["link"]))[2]) for c in NARRATIVE]},
-        "board": signal_board.payload(), "xlsx": XLSX_NAME,
+        "board": U, "xlsx": XLSX_NAME,
         "hist": hist_payload(R, asof, [r["id"] for l in links for r in l["rows"] if not r.get("missing")]),
     }
 

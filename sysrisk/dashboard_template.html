@@ -183,9 +183,10 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
   <!-- 1. VERDICT -->
   <section class="verdict">
     <div class="panel" style="display:flex;flex-direction:column;gap:14px">
-      <p class="eyebrow">Systemic Risk Index</p>
+      <p class="eyebrow">Early-warning index (tested model)</p>
       <div class="big"><span class="n" id="idx"></span><span class="of">/ 100</span><span class="lvl" id="lvl"></span></div>
       <p class="muted" id="idxsub"></p>
+      <div id="condline" style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--rule);padding-top:10px"></div>
     </div>
     <div class="side">
       <h1 id="title"></h1>
@@ -322,42 +323,46 @@ const SECTIONS = {
 };
 
 
-// ---------- signal board (judgement layer; same data as the Excel download)
+// ---------- unified evaluation: one 0-100 score and one colour rule for every row (sysrisk/unified.py)
 const RK = {GREEN:0, AMBER:1, RED:2};
-const rag = (k, prev) => k ? `<span class="rag ${prev?"rag-prev ":""}rag-${k}">${k}</span>` : `<span class="muted" style="font-size:12px">${prev?"new":"–"}</span>`;
+const rag = (k, prev) => k ? `<span class="rag ${prev?"rag-prev ":""}rag-${k}">${k}</span>` : `<span class="muted" style="font-size:12px">–</span>`;
 const chg = (a,b) => !b ? '<span class="bd-chg lens-ai">new</span>' : RK[a]>RK[b] ? '<span class="bd-chg bd-up">▲ worse</span>' : RK[a]<RK[b] ? '<span class="bd-chg bd-dn">▼ better</span>' : '<span class="muted">=</span>';
+const sc1 = v => v==null ? "–" : Math.round(v);
+const TIER = {screened:"model · screened", context:"model · context", judgement:"judgement"};
 function boardFor(stage){
   const B = D.board; if (!B) return "";
-  const lensName = Object.fromEntries(B.lenses.map(l=>[l.key,l.name]));
   let h = "";
   B.lenses.forEach(L=>{
-    const rows = B.summary.filter(r=>r.stage===stage && r.lens===L.key); if (!rows.length) return;
-    h += `<tr class="grp"><td colspan="5"><span class="bdlens ${L.key==="ai"?"lens-ai":""}">${esc(L.name)}</span></td></tr>`;
-    rows.forEach(r=>{
-      const det = B.detail.filter(d=>d.key===r.key), id = "bd_"+r.key;
-      h += `<tr class="bdrow" data-t="${id}"><td><b>${esc(r.indicator)}</b> <span class="tag">${det.length} series ▾</span></td><td>${rag(r.signal)}</td><td>${rag(r.prev,true)}</td><td>${chg(r.signal,r.prev)}</td><td>${esc(r.comment)}</td></tr>`;
-      det.forEach(d=>{ h += `<tr class="det ${id}" hidden><td style="padding-left:22px" class="${d.refreshed?"":"carried"}">${esc(d.metric)}${d.refreshed?"":' <span class="tag">carried</span>'}</td><td>${rag(d.signal)}</td><td>${rag(d.prev,true)}</td><td>${chg(d.signal,d.prev)}</td><td>${esc(d.reading)} <b>Watch:</b> ${esc(d.note)} <span class="cite">(${esc(d.source)}; ${esc(d.asof)})</span></td></tr>`; });
+    const ts = B.themes.filter(t=>t.stage===stage && t.lens===L.key); if (!ts.length) return;
+    const g = B.grid[stage+"|"+L.key];
+    h += `<tr class="grp"><td colspan="5"><span class="bdlens ${L.key==="ai"?"lens-ai":""}">${esc(L.name)}</span> &nbsp;condition ${sc1(g.score)} · ${rag(g.signal)}</td></tr>`;
+    ts.forEach(t=>{
+      const id = "bd_"+t.key;
+      h += `<tr class="bdrow" data-t="${id}"><td><b>${esc(t.theme)}</b> <span class="tag">${t.rows.length} series ▾</span></td><td><div class="sbar">${meter(t.score)}<span class="num" style="font-size:12px">${sc1(t.score)}</span></div></td><td>${rag(t.signal)}</td><td>${rag(t.prev,true)} ${chg(t.signal,t.prev)}</td><td>${esc(t.comment)}</td></tr>`;
+      t.rows.forEach(d=>{ h += `<tr class="det ${id}" hidden><td style="padding-left:22px" class="${d.refreshed?"":"carried"}">${esc(d.metric)} <span class="tag">${TIER[d.tier]}</span>${d.refreshed?"":' <span class="tag">carried</span>'}</td><td><div class="sbar">${meter(d.score)}<span class="num muted" style="font-size:12px">${sc1(d.score)}</span></div></td><td>${rag(d.signal)}</td><td class="num muted" style="font-size:12px">${d.d13==null?"":sgn(d.d13)+" 3m"}</td><td>${esc(d.reading)}${d.note?` <b>Note:</b> ${esc(d.note)}`:""} <span class="cite">(${esc(d.asof)})</span></td></tr>`; });
     });
   });
-  return `<div class="sub"><p class="eyebrow">Signal board for this stage · judgement, not scored</p><p>Traffic lights for the broad system and the AI channel, as of ${esc(B.asof)}, compared with ${esc(B.prev_asof)}. Click a row for the underlying series and sources. The same table is in the <a href="${esc(D.xlsx||"#")}" download>Excel download</a>.</p></div>
-    <div class="panel"><div class="tbl"><table class="bdtbl" style="min-width:820px"><thead><tr><th style="width:28%">Indicator</th><th>Now</th><th>${esc(B.prev_asof)}</th><th>Change</th><th>Latest reading / comment</th></tr></thead><tbody>${h}</tbody></table></div></div>`;
+  return `<div class="sub"><p class="eyebrow">Everything we track in this stage, on one scale</p><p>Each theme scores 0–100 from all its series: model series ranked against their own history, and judgement series where no time series exists. Green below 40, amber 40–65, red 65 and above. Click a theme for its series. The early-warning score above uses only the series that pass the evidence test.</p></div>
+    <div class="panel"><div class="tbl"><table class="bdtbl" style="min-width:860px"><thead><tr><th style="width:30%">Theme / series</th><th>Score</th><th>Now</th><th>vs ${esc(B.prev_asof)}</th><th>Reading</th></tr></thead><tbody>${h}</tbody></table></div></div>`;
 }
 function renderGrid(){
   const B = D.board; if (!B) { document.getElementById("gridsec").hidden = true; return; }
   const link = Object.fromEntries(D.links.map(l=>[l.stage_key,l]));
-  document.getElementById("gridintro").textContent = `Each column is a stage of the chain from fragility to a systemic event. The top row is the broad financial system, the second row is the AI channel. Model scores come from the daily evidence-screened index; traffic lights are the analyst signal board (as of ${B.asof}).`;
-  let h = `<thead><tr><th class="lens"></th>${B.stages.map((s,i)=>`<th><a href="#${(link[s.key]||{name:""}).name.replace(/\s/g,'')}"><div class="stg">${s.n} ${esc(s.name)}</div><div class="stq">${esc(s.q)}</div></a></th>`).join("")}</tr></thead><tbody>`;
-  h += `<tr><td class="lens">Model score <span class="muted" style="font-weight:400;font-size:12px">(broad, 0–100)</span></td>${B.stages.map(s=>{const l=link[s.key]; return `<td>${l?`<div class="cell"><span class="lvl L-${l.level}" style="font-size:11px;padding:3px 7px">${fmt(l.score)} · ${l.level}</span><span class="muted num">${sgn(l.d13)} over 3m</span></div>`:"–"}</td>`;}).join("")}</tr>`;
+  document.getElementById("gridintro").textContent = `Columns follow the chain from fragility to a systemic event. Condition rows score everything we track in each stage, for the broad system and for the AI channel, on one 0–100 scale with one colour rule. The bottom row is the early-warning model: only the series that pass the out-of-sample evidence test.`;
+  let h = `<thead><tr><th class="lens"></th>${B.stages.map(s=>`<th><a href="#${(link[s.key]||{name:""}).name.replace(/\s/g,'')}"><div class="stg">${s.n} ${esc(s.name)}</div><div class="stq">${esc(s.q)}</div></a></th>`).join("")}<th><div class="stg">Overall</div></th></tr></thead><tbody>`;
   B.lenses.forEach(L=>{
-    h += `<tr><td class="lens ${L.key==="ai"?"lens-ai":""}">${esc(L.name)} <span class="muted" style="font-weight:400;font-size:12px">(signal board)</span></td>${B.stages.map(s=>{const g=B.grid[s.key+"|"+L.key]; return `<td><div class="cell">${rag(g.now)}<span class="muted">${g.prev?`was ${g.prev}`:"new"} · ${["RED","AMBER","GREEN"].filter(k=>g.n[k]).map(k=>g.n[k]+" "+k.toLowerCase()).join(", ")}</span></div></td>`;}).join("")}</tr>`;
+    h += `<tr><td class="lens ${L.key==="ai"?"lens-ai":""}">Condition: ${esc(L.name)}</td>${B.stages.map(s=>{const g=B.grid[s.key+"|"+L.key]; return `<td><div class="cell"><span class="num" style="font-size:18px;font-weight:600">${sc1(g.score)}</span>${rag(g.signal)}<span class="muted">${g.themes} theme${g.themes>1?"s":""} · ${g.series} series</span></div></td>`;}).join("")}<td><div class="cell"><span class="num" style="font-size:18px;font-weight:600">${sc1(B.condition[L.key])}</span>${rag(B.condition[L.key]==null?"":(B.condition[L.key]>=B.bands[1]?"RED":B.condition[L.key]>=B.bands[0]?"AMBER":"GREEN"))}</div></td></tr>`;
   });
+  h += `<tr><td class="lens">Early warning (tested model)</td>${B.stages.map(s=>{const l=link[s.key], e=(B.early_warning||{})[s.key]; return `<td>${l?`<div class="cell"><span class="lvl L-${l.level}" style="font-size:11px;padding:3px 7px">${fmt(l.score)} · ${l.level}</span><span class="muted">${e?e.n+" series pass the test":""}${e&&e.n<2?" · thin":""}</span></div>`:"–"}</td>`;}).join("")}<td><div class="cell"><span class="lvl L-${D.head.level}" style="font-size:11px;padding:3px 7px">${fmt(D.head.value)} · ${D.head.level}</span></div></td></tr>`;
   document.getElementById("sgrid").innerHTML = h + "</tbody>";
-  document.getElementById("gridnote").innerHTML = `Roll-up rule: average of the stage's indicators (green 0, amber 1, red 2); red at 1.5 or more, amber at 0.75 or more. Only the model score feeds the index. <a href="${esc(D.xlsx||"#")}" download>Download the full monitor as Excel</a>.`;
+  document.getElementById("gridnote").innerHTML = `How the condition score is built: every series scores 0–100 (model series: percentile of its own history, real time; judgement series: green 25, amber 52, red 80). Theme = weighted average (series passing the evidence test 1.0, other model series 0.5, judgement 0.5). Stage = average of its themes. Colour: green below 40, amber 40–65, red 65+. Why two numbers: out of sample, adding the untested series to the early-warning model made its drawdown forecasts worse, so the tested model stays separate and the condition score is descriptive, not a forecast. A stage resting on one tested series is marked "thin". <a href="${esc(D.xlsx||"#")}" download>Download everything as Excel</a>.`;
 }
 document.addEventListener("click", e=>{ const tr = e.target.closest(".bdtbl .bdrow"); if (tr) document.querySelectorAll(".bdtbl tr."+tr.dataset.t).forEach(x=>x.hidden=!x.hidden); });
 
 function renderStatic(){
   renderGrid();
+  if (D.board) { const B=D.board, col=v=>v>=B.bands[1]?"RED":v>=B.bands[0]?"AMBER":"GREEN";
+    document.getElementById("condline").innerHTML = `<p class="eyebrow" style="margin:0">Condition today (everything tracked)</p>` + B.lenses.map(L=>`<div style="display:flex;gap:10px;align-items:center"><span class="num" style="font-size:22px;font-weight:600">${sc1(B.condition[L.key])}</span>${rag(col(B.condition[L.key]))}<span class="${L.key==="ai"?"lens-ai":""}" style="font-size:13.5px">${esc(L.name)}</span></div>`).join("") + `<p class="muted" style="font-size:12px;margin:0">Same 0–100 scale. <a href="#gridsec">How the two numbers differ ↓</a></p>`; }
   const H = D.head;
   document.getElementById("asof").textContent = D.meta.asof;
   document.getElementById("run").textContent = D.meta.run;
@@ -409,10 +414,11 @@ function renderStatic(){
         <div class="take"><p class="hl">${esc(l.head)}</p>
           <ul>${l.bullets.map(b=>`<li><b>${esc(b.label)}.</b> ${esc(b.text)}${b.scored?"":'<span class="ctx">context</span>'}</li>`).join("")}</ul></div>
       </div>
+      ${boardFor(l.stage_key)}
       <div class="sub"><p class="eyebrow">Key charts</p><p>The readings that carry this link's story. Every indicator, including these, is in the table below.</p></div>
       <div class="${cols}">${S.charts.map(([id,tk,what,src])=>`<div class="panel card"><h4>${esc(T[tk])}</h4><p class="what">${what}</p><div id="c_${id}" class="chart"></div><p class="src"><b>Source.</b> ${esc(src)}</p></div>`).join("")}</div>
       ${l.name==="Contagion" ? firmTable() : ""}
-      <div class="sub"><p class="eyebrow">All ${l.rows.length} indicators in this link</p><p>${l.rows.filter(r=>r.scored).length} feed the score; ${l.rows.filter(r=>!r.scored&&!r.missing).length} are context, shown for the story but kept out of the score (reason on each row); ${l.rows.filter(r=>r.missing).length} need data we do not have. ◆ marks a reading charted above. Click any indicator for why it matters, its source and its full history.</p></div>
+      <div class="sub"><p class="eyebrow">Model series in this stage: scores, history and charts (${l.rows.length})</p><p>${l.rows.filter(r=>r.scored).length} feed the score; ${l.rows.filter(r=>!r.scored&&!r.missing).length} are context, shown for the story but kept out of the score (reason on each row); ${l.rows.filter(r=>r.missing).length} need data we do not have. ◆ marks a reading charted above. Click any indicator for why it matters, its source and its full history.</p></div>
       <div class="panel"><div class="tbl"><table>
         <thead><tr><th style="width:38%">Indicator</th><th>Reading</th><th>Risk score</th><th class="r">3m</th><th>3 years</th></tr></thead>
         <tbody>${[["Feeds the score", l.rows.filter(r=>r.scored)], ["Context: shown, not in the score", l.rows.filter(r=>!r.scored&&!r.missing)], ["Not available in free data", l.rows.filter(r=>r.missing)]].filter(g=>g[1].length).map(([gname, grows])=>`<tr class="grp"><td colspan="5">${gname} (${grows.length})</td></tr>`+grows.map(r=> r.missing ? `<tr class="ctxrow"><td><button class="rowbtn" aria-expanded="false" data-id="${r.id}">${esc(r.name)}<span class="mon">gap</span></button></td><td colspan="4">Needs ${esc(r.tag)}.</td></tr>
@@ -427,7 +433,6 @@ function renderStatic(){
             <div><div class="rowchart" id="h_${r.id}"></div><p class="src">Actual readings since 1995 or first available. Dashed line: the level beyond which this indicator scores in its riskiest 20% of history to date, so the chart and the score agree.${D.hist[r.id]&&D.hist[r.id].abs?" Dotted lines: thresholds from the literature.":""} Vertical marks: stress episodes on the ruler above.</p></div>
           </div></td></tr>`).join("")).join("")}
         </tbody></table></div></div>
-      ${boardFor(l.stage_key)}
     </section>`;}).join("");
 
   // validation
