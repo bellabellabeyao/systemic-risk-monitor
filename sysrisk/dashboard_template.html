@@ -158,6 +158,7 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
 .rag-RED{background:var(--bad);color:var(--panel)}.rag-AMBER{background:var(--warn);color:var(--panel)}.rag-GREEN{background:var(--ok);color:var(--panel)}
 .rag-prev{opacity:.45}
 .bd-chg{font-size:12px;font-weight:600;white-space:nowrap}.bd-up{color:var(--bad)}.bd-dn{color:var(--ok)}
+.morecharts summary{cursor:pointer;font:600 13px var(--f-body);color:var(--accent)}.morecharts{margin-top:4px}
 .dl{font:600 12.5px var(--f-body);color:var(--panel);background:var(--accent);padding:5px 10px;border-radius:4px;text-decoration:none;white-space:nowrap}
 .sgrid th,.sgrid td{text-align:center;vertical-align:middle}.sgrid th.lens,.sgrid td.lens{text-align:left;font-weight:600}
 .sgrid .stg{font:600 12px var(--f-body);letter-spacing:.05em;text-transform:uppercase;color:var(--ink)}.sgrid .stq{font-size:12px;color:var(--muted);font-style:italic;text-transform:none;letter-spacing:0;font-weight:400}
@@ -331,6 +332,7 @@ const sc1 = v => v==null ? "–" : Math.round(v);
 const TIER = {screened:"model · screened", context:"model · context", judgement:"judgement"};
 function boardFor(stage){
   const B = D.board; if (!B) return "";
+  const link = D.links.find(l=>l.stage_key===stage) || {rows:[]};
   let h = "";
   B.lenses.forEach(L=>{
     const ts = B.themes.filter(t=>t.stage===stage && t.lens===L.key); if (!ts.length) return;
@@ -339,11 +341,27 @@ function boardFor(stage){
     ts.forEach(t=>{
       const id = "bd_"+t.key;
       h += `<tr class="bdrow" data-t="${id}"><td><b>${esc(t.theme)}</b> <span class="tag">${t.rows.length} series ▾</span></td><td><div class="sbar">${meter(t.score)}<span class="num" style="font-size:12px">${sc1(t.score)}</span></div></td><td>${rag(t.signal)}</td><td>${rag(t.prev,true)} ${chg(t.signal,t.prev)}</td><td>${esc(t.comment)}</td></tr>`;
-      t.rows.forEach(d=>{ h += `<tr class="det ${id}" hidden><td style="padding-left:22px" class="${d.refreshed?"":"carried"}">${esc(d.metric)} <span class="tag">${TIER[d.tier]}</span>${d.refreshed?"":' <span class="tag">carried</span>'}</td><td><div class="sbar">${meter(d.score)}<span class="num muted" style="font-size:12px">${sc1(d.score)}</span></div></td><td>${rag(d.signal)}</td><td class="num muted" style="font-size:12px">${d.d13==null?"":sgn(d.d13)+" 3m"}</td><td>${esc(d.reading)}${d.note?` <b>Note:</b> ${esc(d.note)}`:""} <span class="cite">(${esc(d.asof)})</span></td></tr>`; });
+      t.rows.forEach(d=>{
+        const r = d.kind==="model" ? D.links.flatMap(x=>x.rows||[]).find(x=>x.id===d.id) : null;
+        const name = r ? `<button class="rowbtn" aria-expanded="false" data-id="${r.id}">${esc(d.metric)}</button>` : esc(d.metric);
+        h += `<tr class="det ${id}" hidden><td style="padding-left:22px" class="${d.refreshed?"":"carried"}">${name} <span class="tag">${TIER[d.tier]}</span>${d.refreshed?"":' <span class="tag">carried</span>'}</td><td><div class="sbar">${meter(d.score)}<span class="num muted" style="font-size:12px">${sc1(d.score)}</span></div></td><td>${rag(d.signal)}</td><td>${r?spark(r.spark, scoreVar(r.score)):(d.d13==null?"":`<span class="num muted" style="font-size:12px">${sgn(d.d13)} 3m</span>`)}</td><td>${esc(d.reading)}${d.kind==="judgement"&&d.note?` <b>Watch:</b> ${esc(d.note)}`:""} <span class="cite">(${esc(d.kind==="judgement"?d.source+"; "+d.asof:d.asof)})</span></td></tr>`;
+        if (r) h += `<tr class="exp ${id}x" id="x_${r.id}" hidden><td colspan="5"><div class="expgrid">
+            <div class="more"><span><b>Why it matters.</b> ${esc(r.why)}</span>${r.transmits&&r.transmits!=="--"?`<span><b>How it transmits.</b> ${esc(r.transmits)}</span>`:""}${r.scored?(r.fit!=null?`<span><b>Evidence test.</b> Passes: in our data it cuts the error in forecasting the bad-case drawdown in financial stocks a year ahead by ${Math.round(r.fit*100)}% vs using history alone (bar to pass: 2%). Counts fully in the theme and feeds the early-warning index.</span>`:""):`<span><b>Context series (half weight, not in the early-warning index):</b> ${esc(r.not_scored_why)}</span>`}${r.src?`<span><b>Source.</b> ${esc(r.src)}</span>`:""}</div>
+            <div><div class="rowchart" id="h_${r.id}"></div><p class="src">Actual readings since 1995 or first available. Dashed line: the level beyond which this series scores in its riskiest 20% of history. Vertical marks: stress episodes.</p></div>
+          </div></td></tr>`;
+      });
     });
   });
-  return `<div class="sub"><p class="eyebrow">Everything we track in this stage, on one scale</p><p>Each theme scores 0–100 from all its series: model series ranked against their own history, and judgement series where no time series exists. Green below 40, amber 40–65, red 65 and above. Click a theme for its series. The early-warning score above uses only the series that pass the evidence test.</p></div>
-    <div class="panel"><div class="tbl"><table class="bdtbl" style="min-width:860px"><thead><tr><th style="width:30%">Theme / series</th><th>Score</th><th>Now</th><th>vs ${esc(B.prev_asof)}</th><th>Reading</th></tr></thead><tbody>${h}</tbody></table></div></div>`;
+  return `<div class="sub"><p class="eyebrow">What we track in this stage</p><p>One table, one 0–100 scale (green below 40, amber 40–65, red 65+). Click a theme to see its series; click a model series for why it matters, its evidence test and its full history.</p></div>
+    <div class="panel"><div class="tbl"><table class="bdtbl" style="min-width:860px"><thead><tr><th style="width:30%">Theme / series</th><th>Score</th><th>Now</th><th>vs ${esc(B.prev_asof)} / 3 years</th><th>Reading</th></tr></thead><tbody>${h}</tbody></table></div></div>${gapNote(link)}`;
+}
+
+function gapNote(l){ const g=(l.rows||[]).filter(r=>r.missing); return g.length?`<p class="src">Not yet tracked (needs data we do not have): ${g.map(r=>esc(r.name)).join("; ")}.</p>`:""; }
+function stageChips(l){
+  const B=D.board; if(!B) return `<span class="lvl L-${l.level}">${l.level} · ${fmt(l.score)}</span>`;
+  const e=(B.early_warning||{})[l.stage_key];
+  return B.lenses.map(L=>{const g=B.grid[l.stage_key+"|"+L.key]; return `<span class="${L.key==="ai"?"lens-ai":""}" style="font-size:13.5px">Condition, ${esc(L.name.toLowerCase())}: <b class="num">${sc1(g.score)}</b> ${rag(g.signal)}</span>`;}).join("")
+    + `<span style="font-size:13.5px">Early warning (tested): <span class="lvl L-${l.level}" style="font-size:11px;padding:3px 7px">${fmt(l.score)} · ${l.level}</span> <span class="muted" style="font-size:12px">${e?e.n+" series"+(e.n<2?", thin":""):""}</span></span>`;
 }
 function renderGrid(){
   const B = D.board; if (!B) { document.getElementById("gridsec").hidden = true; return; }
@@ -357,7 +375,10 @@ function renderGrid(){
   document.getElementById("sgrid").innerHTML = h + "</tbody>";
   document.getElementById("gridnote").innerHTML = `How the condition score is built: every series scores 0–100 (model series: percentile of its own history, real time; judgement series: green 25, amber 52, red 80). Theme = weighted average (series passing the evidence test 1.0, other model series 0.5, judgement 0.5). Stage = average of its themes. Colour: green below 40, amber 40–65, red 65+. Why two numbers: out of sample, adding the untested series to the early-warning model made its drawdown forecasts worse, so the tested model stays separate and the condition score is descriptive, not a forecast. A stage resting on one tested series is marked "thin". <a href="${esc(D.xlsx||"#")}" download>Download everything as Excel</a>.`;
 }
-document.addEventListener("click", e=>{ const tr = e.target.closest(".bdtbl .bdrow"); if (tr) document.querySelectorAll(".bdtbl tr."+tr.dataset.t).forEach(x=>x.hidden=!x.hidden); });
+document.addEventListener("click", e=>{ const tr = e.target.closest(".bdtbl .bdrow"); if (!tr) return;
+  const rows=[...document.querySelectorAll(".bdtbl tr."+tr.dataset.t)], open=rows.length&&rows[0].hidden;
+  rows.forEach(x=>x.hidden=!open);
+  if (!open) document.querySelectorAll(".bdtbl tr."+tr.dataset.t+"x").forEach(x=>{x.hidden=true; const b=document.querySelector(`.rowbtn[data-id="${x.id.slice(2)}"]`); if(b) b.setAttribute("aria-expanded","false");}); });
 
 function renderStatic(){
   renderGrid();
@@ -409,30 +430,15 @@ function renderStatic(){
     return `<section class="linksec" id="${l.name.replace(/\s/g,'')}">
       <div class="sec-head">
         <div class="row"><span class="step num muted">Stage ${l.stage_n} of 4</span><h2>${esc(l.stage)}: ${esc(l.stage_q)}</h2></div>
-        <p class="muted" style="margin:0;font-size:13.5px">Model question: ${esc(l.q)}</p>
-        <div class="row"><span class="lvl L-${l.level}">${l.level} · ${fmt(l.score)}</span><span class="muted num" style="font-size:13px">${sgn(l.d13)} over 3 months</span></div>
+        <div class="row" style="gap:18px;flex-wrap:wrap">${stageChips(l)}</div>
         <div class="take"><p class="hl">${esc(l.head)}</p>
           <ul>${l.bullets.map(b=>`<li><b>${esc(b.label)}.</b> ${esc(b.text)}${b.scored?"":'<span class="ctx">context</span>'}</li>`).join("")}</ul></div>
       </div>
       ${boardFor(l.stage_key)}
-      <div class="sub"><p class="eyebrow">Key charts</p><p>The readings that carry this link's story. Every indicator, including these, is in the table below.</p></div>
-      <div class="${cols}">${S.charts.map(([id,tk,what,src])=>`<div class="panel card"><h4>${esc(T[tk])}</h4><p class="what">${what}</p><div id="c_${id}" class="chart"></div><p class="src"><b>Source.</b> ${esc(src)}</p></div>`).join("")}</div>
-      ${l.name==="Contagion" ? firmTable() : ""}
-      <div class="sub"><p class="eyebrow">Model series in this stage: scores, history and charts (${l.rows.length})</p><p>${l.rows.filter(r=>r.scored).length} feed the score; ${l.rows.filter(r=>!r.scored&&!r.missing).length} are context, shown for the story but kept out of the score (reason on each row); ${l.rows.filter(r=>r.missing).length} need data we do not have. ◆ marks a reading charted above. Click any indicator for why it matters, its source and its full history.</p></div>
-      <div class="panel"><div class="tbl"><table>
-        <thead><tr><th style="width:38%">Indicator</th><th>Reading</th><th>Risk score</th><th class="r">3m</th><th>3 years</th></tr></thead>
-        <tbody>${[["Feeds the score", l.rows.filter(r=>r.scored)], ["Context: shown, not in the score", l.rows.filter(r=>!r.scored&&!r.missing)], ["Not available in free data", l.rows.filter(r=>r.missing)]].filter(g=>g[1].length).map(([gname, grows])=>`<tr class="grp"><td colspan="5">${gname} (${grows.length})</td></tr>`+grows.map(r=> r.missing ? `<tr class="ctxrow"><td><button class="rowbtn" aria-expanded="false" data-id="${r.id}">${esc(r.name)}<span class="mon">gap</span></button></td><td colspan="4">Needs ${esc(r.tag)}.</td></tr>
-          <tr class="exp" id="x_${r.id}" hidden><td colspan="5"><div class="more"><span>${esc(r.why)}</span>${r.src?`<span><b>Source.</b> ${esc(r.src)}</span>`:""}</div></td></tr>` : `
-          <tr class="${r.scored?"":"ctxrow"}"><td><button class="rowbtn" aria-expanded="false" data-id="${r.id}">${esc(r.name)}${r.charted?'<span class="chartmark" title="Charted above">◆</span>':""}${r.scored?"":`<span class="ctx">${esc(r.ns_tag||"context")}</span>`}</button></td>
-          <td>${esc(r.reading)}</td>
-          <td><div class="sbar">${meter(r.score)}<span class="num muted" style="font-size:12px">${fmt(r.score)}</span></div></td>
-          <td class="r num">${r.d13==null?"–":sgn(r.d13)}</td>
-          <td>${spark(r.spark, scoreVar(r.score))}</td></tr>
-          <tr class="exp" id="x_${r.id}" hidden><td colspan="5"><div class="expgrid">
-            <div class="more"><span><b>Why it matters.</b> ${esc(r.why)}</span>${r.transmits&&r.transmits!=="--"?`<span><b>How it transmits.</b> ${esc(r.transmits)}</span>`:""}${r.scored?(r.fit!=null?`<span><b>Evidence test.</b> Passes: in our data it cuts the error in forecasting the bad-case drawdown in financial stocks a year ahead by ${Math.round(r.fit*100)}% vs using history alone (bar to pass: 2%).</span>`:""):`<span><b>Why it is context, not scored:</b> ${esc(r.not_scored_why)}</span>`}${r.src?`<span><b>Source.</b> ${esc(r.src)}</span>`:""}</div>
-            <div><div class="rowchart" id="h_${r.id}"></div><p class="src">Actual readings since 1995 or first available. Dashed line: the level beyond which this indicator scores in its riskiest 20% of history to date, so the chart and the score agree.${D.hist[r.id]&&D.hist[r.id].abs?" Dotted lines: thresholds from the literature.":""} Vertical marks: stress episodes on the ruler above.</p></div>
-          </div></td></tr>`).join("")).join("")}
-        </tbody></table></div></div>
+      <details class="morecharts"><summary>More charts for this stage (${S.charts.length})</summary>
+        <div class="${cols}" style="margin-top:12px">${S.charts.map(([id,tk,what,src])=>`<div class="panel card"><h4>${esc(T[tk])}</h4><p class="what">${what}</p><div id="c_${id}" class="chart"></div><p class="src"><b>Source.</b> ${esc(src)}</p></div>`).join("")}</div>
+        ${l.name==="Contagion" ? firmTable() : ""}
+      </details>
     </section>`;}).join("");
 
   // validation
@@ -595,6 +601,7 @@ document.addEventListener("click", e=>{
   if (open) { openRows.add(id); drawRow(id); } else openRows.delete(id);
 });
 
+document.addEventListener("toggle", e=>{ if (e.target.matches && e.target.matches(".morecharts") && e.target.open && window.Plotly) e.target.querySelectorAll(".chart").forEach(el=>{ try { Plotly.Plots.resize(el); } catch(_){} }); }, true);
 renderStatic();
 if (window.Plotly) renderCharts();
 else document.querySelectorAll(".chart").forEach(el=>el.innerHTML='<p class="what">Charts need Plotly from cdnjs, which did not load.</p>');
