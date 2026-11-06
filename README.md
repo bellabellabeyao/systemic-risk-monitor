@@ -34,6 +34,8 @@ python tests/test_models.py                                   # known-answer che
 - `sysrisk/pipeline.py` weekly panel, percentile scoring, pillars, regime
 - `sysrisk/report.py` + `dashboard_template.html` single-file HTML dashboard
 - `manual_overlay.csv` supervisory data with no free feed
+- `sysrisk/signal_board.py` hand-maintained traffic-light monitor (18 indicators, 41 series), shown as the *Signal board* section; not scored
+- `tools/build_signal_board_xlsx.py` builds the same signal board as an Excel workbook: `python tools/build_signal_board_xlsx.py --out Systemic_Risk_Dashboard.xlsx`
 
 ## Known limits
 - Yahoo returns only ~5-8 quarters of balance sheets, so pre-2024 SRISK uses back-filled liabilities (flagged). Use Bloomberg or NYU V-Lab for history.

@@ -27,6 +27,7 @@ import pandas as pd
 from .config import PILLAR_Q, PILLARS, REGISTRY
 from .pipeline import LEVELS
 from .narrative import AS_OF as NW_ASOF, NARRATIVE, NOT_COVERED
+from . import signal_board
 
 # Display units for each indicator's own history chart: (scale, suffix, prefix, axis label)
 HIST_UNITS = {
@@ -634,6 +635,7 @@ def payload(R: dict) -> dict:
             for k, v in R["validation"].items()},
         "litmap": litmap_now(R["panel"]),
         "narrative": {"asof": NW_ASOF, "items": NARRATIVE, "not_covered": NOT_COVERED},
+        "board": signal_board.payload(),
         "hist": hist_payload(R, asof, [r["id"] for l in links for r in l["rows"] if not r.get("missing")]),
     }
 

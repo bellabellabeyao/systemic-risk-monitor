@@ -154,6 +154,14 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
 .nw ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
 .nw .cite{color:var(--muted);font-size:12px}
 .nwflag{margin-top:2px;font-size:13.5px}
+.rag{font:600 11px var(--f-body);letter-spacing:.05em;padding:2px 7px;border-radius:3px;white-space:nowrap;display:inline-block;min-width:54px;text-align:center}
+.rag-RED{background:var(--bad);color:var(--panel)}.rag-AMBER{background:var(--warn);color:var(--panel)}.rag-GREEN{background:var(--ok);color:var(--panel)}
+.rag-prev{opacity:.45}
+.bd-chg{font-size:12px;font-weight:600;white-space:nowrap}.bd-up{color:var(--bad)}.bd-dn{color:var(--ok)}
+.bd-score{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:13.5px}
+#bdtbl td{font-size:13px}#bdtbl tr.grp td{background:var(--soft);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+#bdtbl .bdrow{cursor:pointer}#bdtbl .det td{font-size:12.5px;color:var(--muted)}
+#bdtbl .carried{font-style:italic}
 </style>
 
 <div class="wrap">
@@ -216,6 +224,15 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
       <p class="prose muted" id="nwintro"></p></div>
     <div class="nw" id="nwgrid"></div>
     <p class="src" id="nwnot"></p>
+  </section>
+
+  <!-- 4c. ANALYST SIGNAL BOARD -->
+  <section style="display:flex;flex-direction:column;gap:14px" id="board" hidden>
+    <div class="sec-head"><h2>Signal board: the analyst traffic-light view</h2>
+      <p class="prose muted" id="bdintro"></p></div>
+    <div class="panel bd-score" id="bdscore"></div>
+    <div class="panel"><div class="tbl"><table id="bdtbl" style="min-width:820px"><thead><tr><th style="width:26%">Indicator</th><th>Now</th><th id="bdprevh">Prior</th><th>Change</th><th>Latest reading / comment</th></tr></thead><tbody></tbody></table></div></div>
+    <p class="src" id="bdsrc"></p>
   </section>
 
   <!-- 5. DOES IT WORK -->
@@ -410,6 +427,32 @@ function renderStatic(){
     const warn = N.items.filter(c=>c.signal==="warning");
     if (warn.length) { const el = document.getElementById("nwflag"); el.hidden = false;
       el.innerHTML = `<b>Outside the score:</b> the narrative watch flags ${warn.length===1?"a warning":warn.length+" warnings"} on ${warn.map(c=>esc(c.short)).join(" and ")}. <a href="#narrative">See below.</a>`; }
+  }
+  // analyst signal board (hand-maintained, same source as the Excel workbook)
+  if (D.board && D.board.summary.length) {
+    const B = D.board, rk = {GREEN:0, AMBER:1, RED:2};
+    const chg = (a,b)=> rk[a]>rk[b] ? '<span class="bd-chg bd-up">▲ worse</span>' : rk[a]<rk[b] ? '<span class="bd-chg bd-dn">▼ better</span>' : '<span class="muted">=</span>';
+    document.getElementById("board").hidden = false;
+    document.getElementById("bdprevh").textContent = B.prev_asof;
+    document.getElementById("bdintro").textContent = `A judgement-based traffic light across 18 indicators and ${B.detail.length} underlying series, kept alongside the model. It does not feed the score. Readings as of ${B.asof}; compared with ${B.prev_asof}. Click a row to see the underlying series.`;
+    const cnt = k=>[B.summary.filter(r=>r.signal===k).length, B.summary.filter(r=>r.prev===k).length];
+    const up = B.summary.filter(r=>rk[r.signal]>rk[r.prev]), dn = B.summary.filter(r=>rk[r.signal]<rk[r.prev]);
+    document.getElementById("bdscore").innerHTML = ["RED","AMBER","GREEN"].map(k=>`<span><span class="rag rag-${k}">${k}</span> <b class="num">${cnt(k)[0]}</b> <span class="muted">(was ${cnt(k)[1]})</span></span>`).join("")
+      + `<span><b>${up.length} worse</b>, ${dn.length} better since ${esc(B.prev_asof)}${up.length?": "+up.map(r=>esc(r.indicator.split(" (")[0].toLowerCase())).join(", "):""}.</span>`;
+    let html = "";
+    B.groups.forEach(g=>{
+      html += `<tr class="grp"><td colspan="5">${esc(g)}</td></tr>`;
+      B.summary.filter(r=>r.group===g).forEach((r,i)=>{
+        const key = r.indicator.split(" (")[0].toLowerCase().replace(/[^a-z]/g,"").slice(0,10);
+        const det = B.detail.filter(d=>d.group===g && key.startsWith(d.indicator.toLowerCase().replace(/[^a-z]/g,"").slice(0,10)));
+        const id = "bd_"+g.replace(/\W/g,"")+i;
+        html += `<tr class="bdrow" data-t="${id}"><td><b>${esc(r.indicator)}</b>${det.length?` <span class="tag">${det.length} series</span>`:""}</td><td><span class="rag rag-${r.signal}">${r.signal}</span></td><td><span class="rag rag-prev rag-${r.prev}">${r.prev}</span></td><td>${chg(r.signal,r.prev)}</td><td>${esc(r.comment)}</td></tr>`;
+        det.forEach(d=>{ html += `<tr class="det ${id}" hidden><td style="padding-left:22px" class="${d.refreshed?"":"carried"}">${esc(d.metric)}${d.refreshed?"":' <span class="tag">carried</span>'}</td><td><span class="rag rag-${d.signal}">${d.signal}</span></td><td><span class="rag rag-prev rag-${d.prev}">${d.prev}</span></td><td>${chg(d.signal,d.prev)}</td><td>${esc(d.reading)} <b>Watch:</b> ${esc(d.note)} <span class="cite">(${esc(d.source)}; ${esc(d.asof)})</span></td></tr>`; });
+      });
+    });
+    document.querySelector("#bdtbl tbody").innerHTML = html;
+    document.querySelectorAll("#bdtbl .bdrow").forEach(tr=>tr.addEventListener("click",()=>document.querySelectorAll("#bdtbl tr."+tr.dataset.t).forEach(x=>x.hidden=!x.hidden)));
+    document.getElementById("bdsrc").textContent = "Sources: " + B.sources;
   }
   // literature map
   document.querySelector("#littbl tbody").innerHTML = D.litmap.map(r=>`<tr><td><b>${esc(r.strand)}</b><div class="muted" style="font-size:12px">${esc(r.link)}</div></td><td><span class="st st-${r.status}">${r.status==="in"?"In":r.status==="context"?"Context":"Gap"}</span></td><td style="font-size:13px">${esc(r.papers)}</td><td style="font-size:13px">${esc(r.here)}</td></tr>`).join("");
