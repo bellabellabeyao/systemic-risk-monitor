@@ -13,7 +13,7 @@ signal / prev: "GREEN" | "AMBER" | "RED"; prev "" = not tracked at PREV_ASOF (ne
 Rule to place a row: level of an excess = Fragility; a shock or fast change = Triggers;
 a mechanism that forces selling or spreads losses = Amplifiers; a buffer, and whether it gives way = Threshold.
 """
-AS_OF = "9 Nov 2026 (US close)"
+AS_OF = "10 Nov 2026 (US close)"
 PREV_ASOF = "29 Jul 2026"
 
 # key, number, display name, question, model link (sysrisk.config.PILLARS value)
@@ -34,7 +34,7 @@ THEMES = [
      "Households deleveraged; corporate and government debt high. Total non-financial debt flat at 2.59x GDP.", "AMBER"),
     ("nonbank", "fragility", "broad", "Non-bank leverage (margin, hedge funds, private credit)",
      ["nbfi_leverage", "margin", "hf_repo", "hf_rv_lev", "bank_nbfi"],
-     "Hedge-fund leverage at records; Q3 private-credit tenders only ~40% met, record defaults; margin debt near its June record.", "AMBER"),
+     "Hedge-fund leverage at records; Q3 private-credit tenders only ~40% met, record defaults; Australia's regulator flags persistent opacity; margin debt near record.", "AMBER"),
     ("valuation", "fragility", "broad", "Valuation stretch (credit pricing, equities, housing)",
      ["ebp_sentiment", "eq_val", "house_gap", "low_vol"],
      "Credit priced for perfection, equities near record valuations (CAPE ~41); 30y mortgage 7.18%.", "RED"),
@@ -43,20 +43,20 @@ THEMES = [
     ("ai_fin", "fragility", "ai", "AI financing structure (off-balance-sheet, circular, debt-funded capex)", [],
      "Capex exceeds operating cash flow at three of four hyperscalers; Oracle raised $20bn of stock and 7-8.65% bonds; leases keep much off balance sheet.", ""),
     ("vol", "triggers", "broad", "Volatility shock (VIX, MOVE, FX vol)", ["vix", "move", "fx_vol"],
-     "VIX ~20 on 9 Nov (-22% on the day) as stocks rebounded, down from the 28.2 spike; MOVE peaked at 114 in Oct.", "GREEN"),
+     "VIX ~19.6 on 10 Nov, steady despite the hot CPI; down from the 28.2 spike; MOVE peaked at 114 in Oct.", "GREEN"),
     ("spread_chg", "triggers", "broad", "Credit spread widening", ["credit_widen", "em_stress"],
-     "HY 348bp on 5 Nov (+88bp from Aug low), CCC ~1,317bp on 6 Nov; still below the ~400bp line that would confirm credit following equities.", "AMBER"),
+     "HY 342bp on 6 Nov (348bp on 5 Nov, +82bp from Aug low), CCC ~1,317bp; still below the ~400bp line that would confirm credit following equities.", "AMBER"),
     ("stress", "triggers", "broad", "Realised stress (stress indices, bank equity, credit-line draws, lending)",
      ["stlfsi", "nfci", "bank_rel_dd", "ci_draw", "pc_mark", "sloos_ci", "cre_delinq"],
      "Stress indices still below normal; companies drawing credit lines fast; private-credit marks lagging HY.", "GREEN"),
     ("curve", "triggers", "broad", "Term spreads / yield curve", [],
-     "Curve positive but flattening: 2s10s ~+29bp on 9 Nov (+35bp on 6 Nov), 3m10y +67bp on 6 Nov; CPI on 10 Nov, cuts priced out.", "AMBER"),
+     "Bear flattening after hot Oct CPI: 2y +17bp to 4.73%, 10y 4.98%, 2s10s ~+25bp on 10 Nov; a December hike is now priced.", "AMBER"),
     ("ai_trig", "triggers", "ai", "AI repricing triggers (AI credit, demand signals, project stress)", [],
-     "Fired in equities on 5 Nov, rebounded 6 and 9 Nov; AI issuers' CDS still at records (Oracle ~288bp); lenders reported pulling back from new data-centre loans.", ""),
+     "Fired in equities on 5 Nov, part-rebounded; Nvidia -5.5% on 10 Nov; AI issuers' CDS at records; CoreWeave raised guidance but quarterly interest cost hit $846m.", ""),
     ("crowded", "amplifiers", "broad", "Crowded trades and positioning", ["lf_ust_short"],
-     "AI trade unwound last week (tech -8%), sharp 9 Nov rebound (Nasdaq +2.7%); Citi cut US equities and tech to neutral; short-yen and basis positions still large.", "AMBER"),
+     "AI trade unwound last week (tech -8%), 9 Nov rebound faded on 10 Nov (Nasdaq -0.7%); violent rotation inside chips; short-yen (USD/JPY ~158.8) still large.", "AMBER"),
     ("corr", "amplifiers", "broad", "Correlation and common drivers", ["absorption", "stock_bond", "dy_total", "granger_dgc"],
-     "Financials driven by a few common factors; stocks moving as one block (all sectors down 5 Nov, all up 9 Nov); bonds still hedge.", "GREEN"),
+     "Financials driven by a few common factors; stocks moving as one block; on 10 Nov stocks and bonds fell together on inflation.", "GREEN"),
     ("sifi", "amplifiers", "broad", "Spillovers from large institutions", ["srisk_gdp", "dcovar_max", "dcovar_private", "dealer_lev"],
      "Capital shortfall in a crash still low; tail spillovers mid-range.", "AMBER"),
     ("ai_amp", "amplifiers", "ai", "AI concentration and leverage on AI exposure", ["concentration"],
@@ -72,7 +72,7 @@ THEMES = [
     ("mkt_liq", "threshold", "broad", "Market liquidity and dollar funding", ["usd_6m"],
      "Dollar range-bound; Treasury depth not refreshed (Bloomberg).", "GREEN"),
     ("ai_abs", "threshold", "ai", "Absorption of AI credit losses (banks, insurers, credit supply)", [],
-     "Banks hedging and selling down data-centre loans (ING auction, bids 19 Nov); lenders reported pulling back from new deals; direct bank exposure still small.", ""),
+     "Banks hedging and selling down data-centre loans (ING auction, bids 19 Nov); Reuters confirms lenders wary of new AI deals; JPMorgan holds $29bn of data-centre loans.", ""),
 ]
 
 # ---------------------------------------------------------------- underlying series
@@ -85,16 +85,16 @@ DETAIL = [
      "Fed Z.1, 11 Sep 2026", "Q2 2026", "Z.1 table D.3", False),
     # nonbank
     ("nonbank", "Private credit", "RED", "AMBER",
-     "Q3 tenders: NAV BDCs asked $13.8bn (11.5% of NAV), ~40% met, $8.2bn unmet. Final filings to 5 Nov: Blue Owl OTIC 39% asked / 12.8% paid, Apollo ADS 33.9% paid, BCRED 49.9% paid. Fitch default rate ~6%, a record (carried).",
+     "Q3 tenders: NAV BDCs asked $13.8bn (11.5% of NAV), ~40% met, $8.2bn unmet. Final filings to 5 Nov: Blue Owl OTIC 39% asked / 12.8% paid, Apollo ADS 33.9% paid, BCRED 49.9% paid. Fitch default rate ~6%, a record (carried). Australia's ASIC (10 Nov): opacity and weak disclosure persist; six interim stop orders.",
      "Gates hold, so stress shows in marks, PIK and gates. Stanger: demand may have peaked in Q2. Watch Q4 tenders and Q3 BDC non-accruals.",
-     "SEC Schedule TO-I/A via CrowdfundedWealth tracker (upd. 7 Nov); Stanger via AITech Model 5 Oct; Valuation Research Q3 2026", "5 Nov 2026", "manual_overlay: bdc_nonaccrual", False),
+     "SEC Schedule TO-I/A via CrowdfundedWealth tracker (upd. 7 Nov); ABC News 10 Nov (ASIC); Valuation Research Q3 2026", "10 Nov 2026", "manual_overlay: bdc_nonaccrual", True),
     # valuation
     ("valuation", "Equity CAPE (Shiller)", "RED", "RED",
      "40.7 in Oct, 98.9th percentile since 1881; only 1999-2000 was higher.",
      "Signals low 10-year returns; not a timing tool.", "Shiller data via thetrading.tools", "Oct 2026", "multpl / Shiller ie_data", False),
     ("valuation", "Real estate price-to-income", "AMBER", "AMBER",
      "30y mortgage 7.18% (5 Nov), from 7.24% on 29 Oct and a 7.40% Oct peak; ~6.2% a year ago. Case-Shiller +2.1-2.7% y/y; real prices falling.",
-     "Affordability worse than July. Next PMMS 12 Nov.", "Freddie Mac PMMS via MoveWithMomentum 5 Nov; S&P Cotality Case-Shiller", "5 Nov 2026", "FRED: MORTGAGE30US", True),
+     "Affordability worse than July. Next PMMS 12 Nov.", "Freddie Mac PMMS via MoveWithMomentum 5 Nov; S&P Cotality Case-Shiller", "5 Nov 2026", "FRED: MORTGAGE30US", False),
     # em_imb
     ("em_imb", "EM external positions", "AMBER", "AMBER",
      "EMBI GD spread 187bp end-Q3 despite 10y +82bp in Q3; EM debt inflows above 2025's total.",
@@ -118,8 +118,8 @@ DETAIL = [
     # vol
     # spread_chg
     ("spread_chg", "US HY OAS (change)", "AMBER", "GREEN",
-     "348bp (5 Nov), from 340bp on 3 Nov, 314bp on 28 Oct and 260bp on 28 Aug. CCC 1,317bp on 6 Nov (1,320bp on 5 Nov, 1,297bp on 4 Nov): flat at the wides.",
-     "Speed matters: a gap above ~400bp would confirm credit is following equities.", "FRED BAMLH0A0HYM2, BAMLH0A3HYC (ICE BofA)", "6 Nov 2026", "FRED: BAMLH0A0HYM2", True),
+     "342bp (6 Nov), from 348bp on 5 Nov, 314bp on 28 Oct and 260bp on 28 Aug. CCC 1,317bp on 6 Nov (1,320bp on 5 Nov): flat at the wides. No print yet for 9-10 Nov.",
+     "Speed matters: a gap above ~400bp would confirm credit is following equities.", "FRED BAMLH0A0HYM2, BAMLH0A3HYC (ICE BofA), upd. 9 Nov", "6 Nov 2026", "FRED: BAMLH0A0HYM2", True),
     ("spread_chg", "CDX IG / iTraxx Crossover", "GREEN", "GREEN",
      "CDX IG 61bp; iTraxx Crossover 308bp (27 Oct), +21bp m/m. Pre-selloff.", "Watch Crossover fallen-angel risk.",
      "irates.today 27 Oct", "27 Oct 2026", "CDX IG CDSI GEN 5Y Corp", False),
@@ -128,33 +128,33 @@ DETAIL = [
      "SSGA Q3 EMD; NBC Oct 2026", "Oct 2026", "-", False),
     # curve
     ("curve", "2s10s spread", "AMBER", "AMBER",
-     "~+29bp on 9 Nov (10y 4.86% close, 2y ~4.57% intraday), from +35bp on 6 Nov. Near-term cuts priced out after Oct payrolls +165k; Oct CPI due 10 Nov (consensus 3.9% y/y). Fed at 3.75-4.00%, next meeting 9 Dec.",
-     "Bear flattening continues as the front end prices a hawkish Fed.",
-     "Pulsafi close 9 Nov; MPA Mag 9 Nov; FRED T10Y2Y", "9 Nov 2026", "FRED: T10Y2Y", True),
+     "~+25bp on 10 Nov (2y 4.73%, +17bp; 10y 4.98%, briefly above 5%), from ~+29bp on 9 Nov. Oct CPI hot: headline +0.4% m/m (cons. +0.3%), core +0.3% (cons. +0.2%), third 0.3% core month; no y/y published. Futures ~84% for a 25bp hike on 9 Dec, ~15% for 50bp; Waller open to 50bp. Fed at 3.75-4.00%.",
+     "Bear flattening as the front end prices hikes. A hiking Fed into an AI-credit wobble is the combination to watch.",
+     "Avalon Capital Research close 10 Nov; Yahoo Finance live 10 Nov (CME FedWatch); BLS CPI 10 Nov", "10 Nov 2026", "FRED: T10Y2Y", True),
     ("curve", "3m10y (NY Fed model)", "AMBER", "AMBER",
      "+67bp on 6 Nov (+69bp on 4 Nov, +74bp on 3 Nov), positive since the early-2026 inversion ended.", "Recessions tend to start after the re-steepening.",
      "FRED T10Y3M", "6 Nov 2026", "FRED: T10Y3M", False),
     # ai_trig
     ("ai_trig", "AI credit repricing (single-name CDS)", "RED", "",
-     "Oracle 5y CDS a record ~288bp (+26bp in a day), SoftBank ~424bp, CoreWeave above 1,000bp; Amazon, Alphabet, Meta and Nvidia CDS also at record wides. CoreWeave 2032 bonds ~77c, yields above 16%.",
-     "Credit priced AI risk before equities did; the 9 Nov equity bounce has not yet shown up in CDS. Watch CoreWeave results 10 Nov.",
-     "Reuters / S&P Global MI via Seeking Alpha (TradingView); CNBC 6 Nov", "6 Nov 2026", "BBG: ORCL / CRWV CDS 5Y", True),
+     "Oracle 5y CDS a record ~288bp, SoftBank ~424bp, CoreWeave above 1,000bp; Amazon, Alphabet, Meta and Nvidia CDS also at record wides (6 Nov, no newer CDS print). BofA (9 Nov): 10y hyperscaler bond spreads ~50bp wider this year vs ~20bp for high-grade non-AI industrials; Meta bonds below par.",
+     "Credit priced AI risk before equities did; the equity bounce has not shown up in CDS. Watch CoreWeave bonds after Q3 results.",
+     "Reuters 9 Nov (citing BofA); Reuters / S&P Global MI via TradingView; CNBC 6 Nov", "9 Nov 2026", "BBG: ORCL / CRWV CDS 5Y", True),
     ("ai_trig", "Demand, earnings and policy signals", "AMBER", "",
-     "9 Nov rebound: S&P 500 +2.35% to 7,550, Nasdaq +2.74%, chips led; Nvidia -4.3% on a board probe into its CEO. Citi cut US equities and global tech to neutral on AI exposure. Prior week: Qualcomm miss, Micron -12%, data-centre regulation risk after the midterms.",
-     "A capex guidance cut would be the decisive trigger; next tests CoreWeave results 10 Nov, Q4 guidance late Jan.",
-     "Motley Fool 9 Nov; TheStreet 9 Nov; investingLive 5 Nov", "9 Nov 2026", "-", True),
+     "10 Nov: S&P 500 -0.38% to 7,521, Nasdaq -0.74% (~11% below its 6 Oct record); Nvidia -5.5% to $168.89 as the board probe widened. CoreWeave Q3 (10 Nov): revenue $3.66bn, backlog ~$132.5bn, 2026 guidance raised, capex $37-39bn; but net loss $709m and interest cost $846m (Q4 guide $1.05-1.15bn). Citi cut US equities and tech to neutral (9 Nov).",
+     "Demand still strong; the pressure is funding cost, not orders. A capex guidance cut would be the decisive trigger; next test Q4 guidance late Jan.",
+     "JournalArta / Yahoo Finance closes 10 Nov; CoreWeave 8-K 10 Nov; TheStreet 9 Nov", "10 Nov 2026", "-", True),
     ("ai_trig", "Project and software-credit stress", "AMBER", "",
      "Oracle Project Jupiter force majeure (24 Sep); ~$18bn of loans on an Oracle-leased New Mexico site under pressure. 9 Nov press report: ~$13.4bn of fixed-rate data-centre debt matures in 2027 and would reprice ~2.85pp higher (BNEF, approximate); TeraWulf and Crusoe builds delayed.",
      "First project-level cracks. Watch more force majeure, lease deferrals, loan prices below 90.",
-     "ROIC.ai 24 Sep; FT via Disruption Banking 24 Sep; BusinessDay 9 Nov citing BloombergNEF", "9 Nov 2026", "narrative: ai_obs", True),
+     "ROIC.ai 24 Sep; FT via Disruption Banking 24 Sep; BusinessDay 9 Nov citing BloombergNEF", "9 Nov 2026", "narrative: ai_obs", False),
     # crowded
     ("crowded", "Crowded positioning", "RED", "AMBER",
-     "Week to 6 Nov: S&P 500 -2.7% (worst week since Apr 2025), tech sector -8.2%. 9 Nov rebound: Nasdaq-100 +3.4%, Russell 2000 +3.2%. Citi: Nasdaq positioning could reset into net-short territory. Short yen and near-record margin debt still in place (carried).",
-     "Unwind is part-way through, not finished. Watch spread to credit and the yen carry trade.", "TheStreet 9 Nov (citing Citi, Bloomberg); The Closing Print 6 Nov", "9 Nov 2026", "-", True),
+     "Week to 6 Nov: S&P 500 -2.7%, tech -8.2%. 9 Nov rebound (Nasdaq-100 +3.4%) faded on 10 Nov (Nasdaq -0.74%), with violent rotation inside the AI trade: AMD +13%, Applied Materials +11%, Nvidia -5.5%. Nvidia RSI ~23, most oversold since 2019. USD/JPY 158.8; near-record margin debt (carried).",
+     "Unwind is part-way through, not finished. Watch spread to credit and the yen carry trade.", "JournalArta 10 Nov; Yahoo Finance live 10 Nov; TheStreet 9 Nov (citing Citi)", "10 Nov 2026", "-", True),
     # corr
     ("corr", "Cross-asset correlation", "AMBER", "GREEN",
-     "9 Nov: all sectors up, ~75% of stocks rising; 10y flat at ~4.86%. 5 Nov: all 11 sectors red. Stocks moving as one block both ways; bonds no longer rallying on equity down days.",
-     "Stocks and bonds falling together would flag broad deleveraging.", "Motley Fool 9 Nov; TheStreet 9 Nov; The Closing Print 6 Nov", "9 Nov 2026", "model: stock_bond", True),
+     "10 Nov: stocks and bonds fell together on hot CPI (S&P -0.38%, 10y +~10bp to 4.98%, dollar +0.6%). 9 Nov: all sectors up; 5 Nov: all 11 sectors red. Stocks moving as one block; bonds not hedging on inflation days.",
+     "Stocks and bonds falling together on several days running would flag broad deleveraging; one inflation day is not that yet.", "JournalArta 10 Nov; Avalon 10 Nov; Motley Fool 9 Nov", "10 Nov 2026", "model: stock_bond", True),
     # sifi
     ("sifi", "G-SIB systemic footprint", "AMBER", "AMBER",
      "Size and cross-border activity remain structurally high.", "FSB 2026 list due mid-Nov.",
@@ -187,12 +187,12 @@ DETAIL = [
     # ai_abs
     ("ai_abs", "Bank and insurer exposure", "AMBER", "",
      "ING auctioning ~$500m of 12 data-centre loans incl. a $25m Stargate New Mexico slice, bids due 19 Nov. HSBC SRT on >$1bn; Barclays seeking insurance on >$10bn; Deutsche ~$2bn SRT. Some insurers near capacity.",
-     "Direct bank exposure to AI-adjacent industries is ~0.8% of assets (Chicago Fed): small, but rising and indirect via private credit.",
-     "Bloomberg via Briefs 6 Nov; Insurance Journal 30 Oct; Disruption Banking 24 Sep", "6 Nov 2026", "-", False),
+     "Direct bank exposure to AI-adjacent industries is ~0.8% of assets (Chicago Fed): small, but rising and indirect via private credit. JPMorgan: $29bn of data-centre loans at end-Q3, 12% of its CRE book (8% three years ago).",
+     "Bloomberg via Briefs 6 Nov; Reuters 9 Nov; Insurance Journal 30 Oct", "9 Nov 2026", "-", True),
     ("ai_abs", "Credit supply to the AI build-out", "AMBER", "",
-     "Banks and private lenders reported pulling back from new data-centre financing, with credit committees stalling deals (single press report, 9 Nov). Yields on AI-linked bonds and loans have jumped; large syndications have dragged for months.",
-     "If banks and insurers stop taking AI credit, the build-out loses funding and the trigger becomes systemic. Needs confirmation from a second source before moving to RED.",
-     "BusinessDay 9 Nov; Insurance Journal 30 Oct; Startup Fortune 11 Oct", "9 Nov 2026", "-", True),
+     "Second source now: Reuters (9 Nov) reports banks and investors growing wary of AI debt after the selloff; some lenders reluctant even with strong guarantors. Funding still flows: CoreWeave raised ~$4.2bn of convertibles and a $2.6bn loan in Q3; Nebius took a $3.5bn Citi loan in Oct. Goldman sees ~$420bn of hyperscaler debt issuance in 2027.",
+     "Wariness confirmed, but deals still close at a higher price. Move to RED on a pulled or failed syndication, or a weak ING auction (bids 19 Nov).",
+     "Reuters 9 Nov; BusinessDay 9 Nov; CoreWeave 8-K 10 Nov", "9 Nov 2026", "-", True),
 ]
 
 SOURCES = ("FRED / St. Louis Fed; Federal Reserve (Z.1 Sep 2026, H.4.1, FOMC 28 Oct 2026); NY Fed; IMF GFSR & WEO (Oct 2026); "
