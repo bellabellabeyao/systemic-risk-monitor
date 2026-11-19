@@ -37,8 +37,24 @@
  "L1": false,
  "L2": false,
  "summary": {
-  "Status": "Full comparison runs after the first public build; until then this is a partial check.",
-  "Partial check (19 Nov 2026)": "Treasury yields and DXY swapped in for Bloomberg, other prices unchanged: daily shocks median correlation 0.96 (0.90 to 0.98), 20-day sums 0.98 (0.97 to 0.99), same largest shock on 66% of days.",
-  "Yields: Treasury vs Bloomberg 5pm, daily changes": "2y 0.92, 10y real 0.93, 30y 0.94 correlation (timing: Treasury ~3:30pm vs Bloomberg 5pm New York)."
+  "Last Bloomberg check": "18 Nov 2026 close (pulled 19 Nov). Public build compared over the two years to that date.",
+  "Period compared": "18 Nov 2024 to 18 Nov 2026 (476 days)",
+  "Daily shocks: median correlation": "0.91 (range 0.81 to 0.96)",
+  "20-day sums: median correlation": "0.97 (range 0.91 to 0.98)",
+  "Growth: daily / 20-day correlation": "0.95 / 0.97",
+  "Monetary: daily / 20-day correlation": "0.90 / 0.98",
+  "Risk-off: daily / 20-day correlation": "0.82 / 0.91",
+  "Liquidity: daily / 20-day correlation": "0.89 / 0.97",
+  "US risk premium: daily / 20-day correlation": "0.93 / 0.97",
+  "Term premium: daily / 20-day correlation": "0.94 / 0.98",
+  "Oil supply: daily / 20-day correlation": "0.96 / 0.98",
+  "AI / tech: daily / 20-day correlation": "0.96 / 0.97",
+  "Global growth: daily / 20-day correlation": "0.87 / 0.96",
+  "Yen / carry: daily / 20-day correlation": "0.81 / 0.95",
+  "Same largest shock on the day": "54% of days",
+  "Latest ladder, the two builds": "Public: Level 0 (10-day liquidity shock at the 94th percentile, just over the 90th trigger). Bloomberg: Level −1 (89th, just under). A borderline reading; treat as a weak price signal only.",
+  "Gold, last 20 days": "Public −10.6% (COMEX futures) vs Bloomberg −9.1% (spot, 5pm). Liquidity share −1.9 vs −1.7 points; monetary −1.5 vs −1.4.",
+  "Biggest known gaps": "Daily risk-off and yen/carry shocks agree least (0.81–0.82): futures settle and FX bars close at different hours from equities. USDCNH uses onshore CNY, so the 11 Aug 2015 devaluation day no longer reads as a global-growth shock.",
+  "Yields: Treasury vs Bloomberg 5pm, daily changes": "2y 0.92, 10y real 0.93, 30y 0.94 correlation (Treasury ~3:30pm vs 5pm New York)."
  }
 }
