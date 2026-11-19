@@ -26,6 +26,8 @@ def estimate(panel: pd.DataFrame, ndraw: int = 100000, log=print) -> dict:
     shocks, SGN, NAMES, LAB = build(V)
     d = changes(panel, V); idx = d.index; T = len(d)
     ends = list(range(T - 1, WIN - 1, -STEP))[::-1]
+    if not ends:
+        raise RuntimeError(f'only {T} complete daily rows; need more than {WIN}')
     nv, ns = len(V), len(NAMES)
     contrib = np.full((T, nv, ns), np.nan); shock = np.full((T, ns), np.nan); meta = []
     ox = pd.DataFrame(index=panel.index)
@@ -242,6 +244,9 @@ def main():
         from xasset.data import load
         panel = load()
     print('panel', panel.shape, panel.index.min().date(), '->', panel.index.max().date())
+    global INFO
+    INFO = {c: [str(panel[c].first_valid_index())[:10], str(panel[c].last_valid_index())[:10], int(panel[c].notna().sum())] for c in panel}
+    INFO['_complete_change_rows'] = len(changes(panel, V))
     r = estimate(panel, a.ndraw)
     err = np.nanmax(np.abs(np.nansum(r['contrib'], 2) - r['data'].values)[WIN:])
     assert err < 1e-8, f'contributions do not add up: {err}'
@@ -259,5 +264,6 @@ if __name__ == '__main__':
     except Exception:
         # leave the reason on the site (no secrets involved) so a failed public build can be diagnosed
         o = Path(sys.argv[sys.argv.index('--out') + 1] if '--out' in sys.argv else 'site/xasset'); o.mkdir(parents=True, exist_ok=True)
-        (o / 'error.txt').write_text(pd.Timestamp.now('UTC').strftime('%Y-%m-%d %H:%M UTC') + '\n' + traceback.format_exc())
+        (o / 'error.txt').write_text(pd.Timestamp.now('UTC').strftime('%Y-%m-%d %H:%M UTC') + '\n' + traceback.format_exc()
+                                     + '\npanel columns (first, last, count):\n' + json.dumps(globals().get('INFO', {}), indent=0))
         raise
