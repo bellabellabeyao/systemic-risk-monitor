@@ -74,7 +74,9 @@ def yahoo(start='2008-01-01') -> pd.DataFrame:
     inv = {v: k for k, v in YAHOO.items()}
     px = px.rename(columns=inv)
     px.index = pd.to_datetime(px.index).tz_localize(None).normalize()
-    return px[[c for c in YAHOO if c in px.columns]]
+    px = px[[c for c in YAHOO if c in px.columns]]
+    print('Yahoo columns', {c: (str(px[c].first_valid_index())[:10], str(px[c].last_valid_index())[:10]) for c in px})
+    return px
 
 
 def nyfed_sofr(start='2018-04-02') -> pd.DataFrame:

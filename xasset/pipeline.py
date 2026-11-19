@@ -253,4 +253,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    import sys, traceback
+    try:
+        main()
+    except Exception:
+        # leave the reason on the site (no secrets involved) so a failed public build can be diagnosed
+        o = Path(sys.argv[sys.argv.index('--out') + 1] if '--out' in sys.argv else 'site/xasset'); o.mkdir(parents=True, exist_ok=True)
+        (o / 'error.txt').write_text(pd.Timestamp.now('UTC').strftime('%Y-%m-%d %H:%M UTC') + '\n' + traceback.format_exc())
+        raise
