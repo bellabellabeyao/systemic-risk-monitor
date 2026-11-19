@@ -1,0 +1,415 @@
+<meta name="dash-one-writer">
+<style>
+.xa { font-family: var(--font-anthropic-sans); color: var(--color-fg); max-width: 1100px; }
+.xa h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-sm); }
+.xa h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: var(--cds-gap-xl) 0 var(--cds-gap-xs); }
+.xa h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-xs); }
+.xa .xa-sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 0 0 var(--cds-gap-md); line-height: 1.5; }
+.xa .xa-lead { font-size: var(--cds-font-size-body); line-height: 1.7; margin: 0 0 var(--cds-gap-lg); }
+.xa .xa-lead b { font-variant-numeric: tabular-nums; }
+.xa-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--cds-gap-md); }
+.xa-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+.xa-card .k { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.xa-card .v { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 32px; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.xa-card .s { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.5; }
+.xa-row { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; margin: var(--cds-gap-sm) 0; }
+.xa-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-xs) 0 var(--cds-gap-sm); }
+.xa-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.xa-sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.xa-chart { position: relative; min-height: 120px; }
+.xa-chart text { font-size: 11px; fill: var(--cds-text-secondary); font-family: var(--font-anthropic-sans); }
+.xa-chart .lab { fill: var(--color-fg); font-size: 12px; }
+.xa-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: 6px 8px; font-size: 12px; line-height: 1.45; color: var(--color-fg); white-space: nowrap; z-index: 5; }
+.xa-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--cds-gap-md); }
+.xa-mini h4 { margin: 0; font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); }
+.xa-tw { overflow-x: auto; }
+.xa table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); }
+.xa th { text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); border-bottom: 1px solid var(--color-border-line); padding: 6px 8px; white-space: nowrap; }
+.xa td { border-bottom: 1px solid var(--color-border-line); padding: 6px 8px; vertical-align: top; font-variant-numeric: tabular-nums; }
+.xa td.num { text-align: right; white-space: nowrap; }
+.xa .xa-pbar { display: inline-block; width: 70px; height: 6px; background: var(--cds-chart-grid); border-radius: 3px; vertical-align: middle; margin-right: 6px; position: relative; overflow: hidden; }
+.xa .xa-pbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+.xa .xa-layer td { background: var(--color-panel); font-weight: var(--cds-font-weight-medium); color: var(--color-fg); }
+.xa .xa-ladder { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--cds-gap-sm); margin: var(--cds-gap-sm) 0; }
+.xa .xa-step { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); font-size: var(--cds-font-size-caption); line-height: 1.5; }
+.xa .xa-step b { display: block; font-size: var(--cds-font-size-body); margin-bottom: 2px; }
+.xa .xa-step.on { border-color: var(--color-warn); box-shadow: inset 0 0 0 1px var(--color-warn); }
+.xa details { margin-top: var(--cds-gap-xl); font-size: var(--cds-font-size-caption); line-height: 1.6; }
+.xa summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-body); }
+.xa #signtable td, .xa #signtable th { text-align: center; } .xa #signtable td:first-child, .xa #signtable th:first-child { text-align: left; }
+</style>
+
+<div class="xa" lang="en" data-read>
+<h1 id="top">Cross-asset shock decomposition + liquidity monitor</h1>
+<p class="xa-sub">Each day's moves in 13 market variables (US equities, semis, the Treasury curve, real yields, breakevens, the dollar, yen, yuan, gold, oil, copper and HY spreads) are split into ten shocks, and a four-layer monitor checks whether liquidity is breaking down. Built every weekday from public data; data to the <span data-draw="asof" data-source="kpi" data-field="value" data-where="metric=asof">—</span> close.</p>
+
+<p class="xa-lead" id="takeaway">
+The liquidity ladder is at <b data-draw="lvl" data-source="kpi" data-field="value" data-where="metric=level">—</b>: <span data-draw="lvlname">—</span>.
+Over the last 20 trading days gold moved <b data-draw="g20" data-source="kpi" data-field="value" data-where="metric=gold20">—</b>, of which the liquidity shock contributed <b data-draw="g20l" data-source="kpi" data-field="value" data-where="metric=gold20_liq">—</b> and the monetary shock <b data-draw="g20m" data-source="kpi" data-field="value" data-where="metric=gold20_mon">—</b>.
+The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-where="metric=usd20">—</b>, with <b data-draw="u20m" data-source="kpi" data-field="value" data-where="metric=usd20_mon">—</b> from the monetary shock and <b data-draw="u20l" data-source="kpi" data-field="value" data-where="metric=usd20_liq">—</b> from the liquidity shock.
+</p>
+
+<div class="xa-cards" id="cards">
+  <div class="xa-card" id="card-level"><div class="k">Liquidity escalation ladder (−1 to 3)</div><div class="v" data-draw="lvl2" data-source="kpi" data-field="value" data-where="metric=level">—</div><div class="s">−1 = no signal; 0 = crowded-position unwind; 1 = market liquidity deteriorating; 2 = funding stress; 3 = safe assets failing</div></div>
+  <div class="xa-card" id="card-liq"><div class="k">Model: liquidity shock, 10-day sum</div><div class="v" data-draw="liq10" data-source="kpi" data-field="value" data-where="metric=liq10">—</div><div class="s">In σ. Historical percentile <span data-draw="liqpct" data-source="monitor_latest" data-field="pct" data-where="indicator=Model: liquidity shock, 10d sum">—</span>; the 90th percentile triggers Level 0</div></div>
+  <div class="xa-card" id="card-gold"><div class="k">Gold, last 20 trading days</div><div class="v" data-draw="g20b" data-source="kpi" data-field="value" data-where="metric=gold20">—</div><div class="s">Liquidity shock contributed <span data-draw="g20lb" data-source="kpi" data-field="value" data-where="metric=gold20_liq">—</span> (log change; parts add up to the actual move)</div></div>
+  <div class="xa-card" id="card-usd"><div class="k">US dollar (DXY), last 20 trading days</div><div class="v" data-draw="u20b" data-source="kpi" data-field="value" data-where="metric=usd20">—</div><div class="s">Monetary shock <span data-draw="u20mb" data-source="kpi" data-field="value" data-where="metric=usd20_mon">—</span>, liquidity shock <span data-draw="u20lb" data-source="kpi" data-field="value" data-where="metric=usd20_liq">—</span></div></div>
+</div>
+
+<div class="xa-legend" id="legend">
+  <span><i class="xa-sw" data-k="Growth"></i>Growth</span>
+  <span><i class="xa-sw" data-k="Monetary"></i>Monetary (hawkish)</span>
+  <span><i class="xa-sw" data-k="Risk-off"></i>Risk-off</span>
+  <span><i class="xa-sw" data-k="Liquidity"></i>Liquidity / deleveraging</span>
+  <span><i class="xa-sw" data-k="US risk premium"></i>US risk premium</span>
+  <span><i class="xa-sw" data-k="Term premium"></i>Term premium</span>
+  <span><i class="xa-sw" data-k="Oil supply"></i>Oil supply</span>
+  <span><i class="xa-sw" data-k="AI / tech"></i>AI / tech</span>
+  <span><i class="xa-sw" data-k="Global growth"></i>Global (China) growth</span>
+  <span><i class="xa-sw" data-k="Yen / carry"></i>Yen / carry</span>
+  <span><i class="xa-sw" data-k="Other / unidentified"></i>Other / unidentified</span>
+  <span><i class="xa-sw" data-k="Unexplained by model"></i>Unexplained by model (outside assets only)</span>
+</div>
+
+<h2 id="day">One day: where each move came from</h2>
+<p class="xa-sub">One row per variable. The coloured segments add up to the day's actual move (number on the right, black tick). Prices are in %, yields, the curve slope and HY spreads in bp. Each row has its own scale. Hover a segment for its value.</p>
+<div class="xa-row"><select class="dash-select" data-draw="daysel" aria-label="Choose a date" data-source="daily_decomp"></select></div>
+<div class="xa-chart" data-draw="daybars" data-source="daily_decomp" id="daychart" style="min-height:430px"></div>
+
+<h2 id="cum">Over a window: what the market has been pricing</h2>
+<p class="xa-sub">Daily contributions summed over the chosen window.</p>
+<div class="xa-row"><select class="dash-select" id="winsel" aria-label="Choose a window">
+  <option value="Last 20 trading days">Last 20 trading days</option>
+  <option value="Since 1 Nov">Since 1 Nov</option>
+  <option value="Since gold peak (28 Jan)">Since gold peak (28 Jan)</option>
+</select></div>
+<div class="xa-chart" data-draw="cumbars" data-source="cum_decomp" id="cumchart" style="min-height:430px"></div>
+
+<h2 id="outside">Assets outside the model: last 20 trading days</h2>
+<p class="xa-sub">Aluminium, banks, energy equities, VIX and MOVE are not used to identify the shocks. Each is regressed on the identified shocks to see how much they explain. Grey is the part the model cannot explain, i.e. asset-specific drivers.</p>
+<div class="xa-chart" data-draw="outbars" data-source="outside_20d" id="outchart" style="min-height:180px"></div>
+
+<h2 id="roll">Shock intensity: 20-day sums over the last two years</h2>
+<p class="xa-sub">Each daily shock has unit variance; lines show their 20-day sum. The grey band is ±4.5, roughly a 1-in-100 reading.</p>
+<div class="xa-grid" data-source="shock_roll20" id="rollgrid">
+  <div class="xa-mini"><h4>Growth</h4><div class="xa-chart" data-draw="roll" data-shock="Growth" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Monetary (hawkish)</h4><div class="xa-chart" data-draw="roll" data-shock="Monetary" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Risk-off</h4><div class="xa-chart" data-draw="roll" data-shock="Risk-off" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Liquidity / deleveraging</h4><div class="xa-chart" data-draw="roll" data-shock="Liquidity" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>US risk premium</h4><div class="xa-chart" data-draw="roll" data-shock="US risk premium" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Term premium</h4><div class="xa-chart" data-draw="roll" data-shock="Term premium" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Oil supply</h4><div class="xa-chart" data-draw="roll" data-shock="Oil supply" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>AI / tech</h4><div class="xa-chart" data-draw="roll" data-shock="AI / tech" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Global (China) growth</h4><div class="xa-chart" data-draw="roll" data-shock="Global growth" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Yen / carry</h4><div class="xa-chart" data-draw="roll" data-shock="Yen / carry" style="min-height:110px"></div></div>
+</div>
+
+<h2 id="ladder">Liquidity escalation ladder</h2>
+<p class="xa-sub">Four layers, from slow-moving to fast. The highest level reached today is outlined.</p>
+<div class="xa-ladder" id="steps" data-source="kpi">
+  <div class="xa-step" data-lv="0"><b>Level 0 · Crowded-position unwind</b>Price signal only: the 10-day liquidity shock is in its top 10%, or there were ≥ 2 days in the last 10 with equities down, Treasuries sold and gold down.</div>
+  <div class="xa-step" data-lv="1"><b>Level 1 · Market liquidity deteriorating</b>MOVE or OFR safe-asset stress is in its worst 10% (or, from the last Bloomberg check, the UST liquidity index).</div>
+  <div class="xa-step" data-lv="2"><b>Level 2 · Funding stress</b>SOFR 99th percentile ≥ 15bp over IORB, or SOFR ≥ 8bp over IORB, or OFR funding stress in its tightest 5% (or, from the last Bloomberg check, a sudden EUR/JPY basis widening).</div>
+  <div class="xa-step" data-lv="3"><b>Level 3 · Safe assets failing</b>Levels 1 and 2 both on, plus ≥ 3 days in the last 10 with Treasuries sold alongside risk assets (or the liquidity shock in its top 2%).</div>
+</div>
+<div class="xa-chart" data-draw="ladderchart" data-source="ladder_history" id="ladderchart" style="min-height:190px"></div>
+<p class="xa-sub">Band: light grey = Level 0, light amber = Level 1, amber = Level 2, red = Level 3. Line = 10-day liquidity shock sum.</p>
+
+<h3 id="indicators">Latest readings by layer</h3>
+<p class="xa-sub">Percentiles are against history since 2008; 100 = the most stressed reading on record (flipped for indicators where lower means more stress). Rows marked "Bloomberg, carried" come from the last Bloomberg check and count in the ladder only for 7 days after it.</p>
+<div class="xa-tw">
+<table data-source="monitor_latest" data-row-key="indicator" id="montable">
+  <thead><tr><th data-field="indicator">Indicator</th><th data-field="value">Latest</th><th data-field="pct">Stress percentile</th><th data-field="rule">Ladder rule</th><th data-field="as_of">As of</th></tr></thead>
+  <tbody data-draw="montbody"></tbody>
+</table>
+</div>
+
+<h2 id="validation">Model check: past episodes</h2>
+<p class="xa-sub">The two largest shocks (by absolute size) in each episode window, and the highest ladder level reached. Shock values are sums of daily unit-variance shocks; a negative value means the shock ran in the opposite direction. The last two rows are the two latest days.</p>
+<div class="xa-tw">
+<table data-source="episodes" data-row-key="episode" id="eptable">
+  <thead><tr><th data-field="episode">Episode</th><th data-field="expected">Expected driver</th><th data-field="top">Model: #1</th><th data-field="top_val">Value</th><th data-field="second">Model: #2</th><th data-field="second_val">Value</th><th data-field="liq">Liquidity shock</th><th data-field="max_level">Max ladder level</th></tr></thead>
+  <tbody data-draw="eptbody"></tbody>
+</table>
+</div>
+
+<h2 id="calib">Accuracy: public build vs Bloomberg build</h2>
+<p class="xa-sub">Public closes are taken at different times of day (futures settle 1:00–2:30pm New York, FX bars end in the late London evening), while the Bloomberg build uses one 5pm New York snapshot for everything. This table compares the two builds on the same dates; it updates whenever a Bloomberg check is run.</p>
+<div class="xa-tw">
+<table data-source="calibration" data-row-key="check" id="caltable">
+  <thead><tr><th data-field="check">Check</th><th data-field="result">Result</th></tr></thead>
+  <tbody data-draw="calbody"></tbody>
+</table>
+</div>
+
+<details id="method">
+<summary>Method, shock definitions, data and limits</summary>
+<p><b>Model.</b> Daily changes in 13 variables: S&amp;P 500, semis (SOX, net of its rolling one-year beta to the S&amp;P), 2y UST yield, 30y–2y slope, 10y real yield (TIPS), 10y breakeven, the dollar (DXY), USDJPY, USDCNH, gold, Brent, copper and a HY spread proxy. Sign restrictions identify ten shocks; the remaining three are 'other / unidentified'. Rotations are drawn as in Rubio-Ramírez, Waggoner and Zha (2010) and accepted only if every named shock meets all of its signs; no penalty function is used. Each estimate uses a 2-year rolling window, re-estimated every 21 trading days, starting in 2012. Contributions are averaged over accepted rotations (capped at 300 per window), so they add up exactly to the actual move. The design follows Jarociński &amp; Karadi (2020) for monetary vs information shocks, Cieslak &amp; Pang (2021) for using the curve to separate monetary from term-premium shocks, Brandt et al. (ECB WP 2560, 2021) for adding foreign and global shocks, and Ready (2018) for oil.</p>
+<p><b>What each shock means.</b> Every shock is a <i>surprise</i> relative to what was priced, not a level. Positive values push in the direction named; negative values are the opposite (e.g. a negative monetary shock is a dovish surprise).</p>
+<ul>
+<li><b>Growth</b>: better US news. Equities, 2y yields and breakevens up, HY spreads tighter.</li>
+<li><b>Monetary (hawkish)</b>: the Fed path is repriced higher for reasons other than better growth. 2y and real yields up, curve flatter, breakevens down, dollar up, equities down.</li>
+<li><b>Risk-off</b>: classic flight to safety. Equities down, yields down, gold, dollar and yen up, HY wider.</li>
+<li><b>Liquidity / deleveraging</b>: a dash for cash. Equities and gold sold, long end sold while bills are bid (2y down, curve steeper, real yields up), breakevens down, dollar up, HY wider.</li>
+<li><b>US risk premium</b>: 'sell America'. Equities down, real yields up, dollar down, gold up.</li>
+<li><b>Term premium</b>: the long end reprices on supply or fiscal risk. Curve steeper with 2y also up, real yields up, equities and gold down.</li>
+<li><b>Oil supply</b>: oil up, breakevens up, equities down.</li>
+<li><b>AI / tech</b>: semis outperform their usual market beta and equities rise.</li>
+<li><b>Global (China) growth</b>: copper and oil up, yuan and other currencies stronger against the dollar, equities up.</li>
+<li><b>Yen / carry</b>: yen strengthens and the dollar weakens while equities fall, as in carry-trade unwinds.</li>
+</ul>
+<p><b>Sign restrictions</b> (+ up, − down, · unrestricted; for USDJPY and USDCNH, − means the yen or yuan strengthens):</p>
+<div class="xa-tw"><table data-source="restrictions" id="signtable">
+  <thead><tr><th data-field="shock">Shock</th><th>SPX</th><th>Semis</th><th>2y</th><th>Slope</th><th>Real</th><th>BE</th><th>USD</th><th>JPY</th><th>CNH</th><th>Gold</th><th>Oil</th><th>Cu</th><th>HY</th></tr></thead>
+  <tbody data-draw="signbody"></tbody>
+</table></div>
+<p><b>Data.</b> Yields are the US Treasury's daily par nominal and real (TIPS) curves, published the same evening; the breakeven is 10y nominal minus 10y real, as in FRED's T10YIE. Market prices are Yahoo Finance daily closes: S&amp;P 500, SOX, DXY, USDJPY, USDCNH, COMEX gold and copper, ICE Brent. FRED now carries only three years of ICE BofA HY spreads, so the HY variable is a proxy: the return of HYG minus that of IEI (similar-duration Treasuries), divided by a spread duration of 3.5, in bp of spread. Funding uses New York Fed SOFR and its 99th percentile, FRED IORB/IOER and NFCI, and the OFR Financial Stress Index. Two inputs have no public source and come from occasional Bloomberg checks: the UST liquidity index (GVLQUSD, a curve-fitting-error measure in the spirit of Hu, Pan and Wang, 2013) and the 3-month EUR and JPY cross-currency bases (computed from covered interest parity with forward points and SOFR, €STR and TONA OIS). They are shown as percentiles with their date and count in the ladder for 7 days.</p>
+<p><b>Limits.</b> Sign restrictions identify a range of answers; the numbers shown are averages, not exact values. More shocks spread each move across more sources, so single-shock contributions are smaller than in a simpler model. Fingerprints shift across regimes, hence the rolling window. Public closes are not taken at the same moment, so single days are noisier than windows; see the accuracy table. The 2013 taper still shows mainly as liquidity and US risk premium. The September 2024 China stimulus registers only a small global-growth shock, because semis and the yen moved at the same time. Positive AI / tech days include broad crisis rebounds, when semis rise more than their usual beta; the negative side (e.g. DeepSeek) is cleaner.</p>
+</details>
+</div>
+
+<script>
+window.XA = (function () {
+  const SH = ['Growth', 'Monetary', 'Risk-off', 'Liquidity', 'US risk premium', 'Term premium', 'Oil supply', 'AI / tech', 'Global growth', 'Yen / carry', 'Other / unidentified'];
+  const LV = { '-1': 'no signal (price, market-liquidity and funding indicators are all below their triggers)', '0': 'a crowded-position unwind (price signal only; funding and market-liquidity indicators are not flashing)', '1': 'market liquidity deteriorating', '2': 'funding stress', '3': 'safe assets failing' };
+  function col(s) {
+    if (s === 'Unexplained by model') return 'var(--cds-chart-muted)';
+    const i = SH.indexOf(s); const c = dash.colors || [];
+    if (!c.length || i < 0) return 'gray';
+    if (i < c.length) return c[i];
+    return 'color-mix(in srgb, ' + c[i % c.length] + ' 45%, var(--color-fg))';
+  }
+  function fmt(v, u) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    const a = Math.abs(v); const s = (v > 0 ? '+' : v < 0 ? '−' : '') + (a < 10 ? a.toFixed(2) : a.toFixed(1));
+    return u === '%' ? s + '%' : u ? s + ' ' + u : s;
+  }
+  function kpi(metric) {
+    const k = dash.data('kpi');
+    if (k.status !== 'ok' || !Array.isArray(k.data)) return null;
+    const r = k.data.find((x) => x.metric === metric); return r ? r.value : null;
+  }
+  function tip(el) {
+    let t = el.querySelector('.xa-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'xa-tip'; t.hidden = true; el.appendChild(t); }
+    return t;
+  }
+  function showTip(el, t, ev, lines) {
+    t.replaceChildren(...lines.map((s, i) => { const d = document.createElement('div'); d.textContent = s; if (i === 0) d.style.fontWeight = '600'; return d; }));
+    t.hidden = false;
+    const b = el.getBoundingClientRect(); let x = ev.clientX - b.left + 12, y = ev.clientY - b.top + 12;
+    const w = t.offsetWidth; if (x + w > el.clientWidth) x = Math.max(0, ev.clientX - b.left - w - 12);
+    t.style.left = x + 'px'; t.style.top = y + 'px';
+  }
+  function bars(el, rows, emptyMsg) {
+    el.replaceChildren();
+    if (!rows.length) { el.textContent = emptyMsg || '—'; return; }
+    const assets = [...new Set(rows.map((r) => r.asset))];
+    const W = Math.max(300, el.clientWidth), rowH = 32, labW = Math.min(170, W * 0.34), valW = 72;
+    const H = assets.length * rowH + 8, x0 = labW, x1 = W - valW;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img')
+      .attr('aria-label', 'Stacked bars splitting each move into shock contributions');
+    const t = tip(el);
+    assets.forEach((a, k) => {
+      const rr = rows.filter((r) => r.asset === a); const unit = rr[0].unit || '';
+      const act = rr[0].actual; const pos = d3.sum(rr, (r) => Math.max(0, r.value)), neg = d3.sum(rr, (r) => Math.min(0, r.value));
+      const m = Math.max(pos, -neg, Math.abs(act), 1e-6) * 1.05;
+      const x = d3.scaleLinear().domain([-m, m]).range([x0 + 4, x1 - 4]);
+      const g = svg.append('g').attr('transform', `translate(0,${k * rowH + 4})`);
+      g.append('text').attr('class', 'lab').attr('x', 0).attr('y', rowH / 2 + 4).text(a);
+      g.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 2).attr('y2', rowH - 4).style('stroke', 'var(--cds-chart-axis)');
+      let p = 0, n = 0;
+      rr.forEach((r) => {
+        const v = r.value; if (!v) return;
+        const a0 = v > 0 ? p : n + v, a1 = v > 0 ? p + v : n; if (v > 0) p += v; else n += v;
+        g.append('rect').attr('x', x(a0)).attr('width', Math.max(0.5, x(a1) - x(a0))).attr('y', 6).attr('height', rowH - 14)
+          .style('fill', col(r.shock))
+          .on('mousemove', (ev) => showTip(el, t, ev, [a + ' · ' + r.shock, 'Contribution ' + fmt(v, unit), 'Actual move ' + fmt(act, unit)]))
+          .on('mouseleave', () => { t.hidden = true; });
+      });
+      g.append('line').attr('x1', x(act)).attr('x2', x(act)).attr('y1', 2).attr('y2', rowH - 4).style('stroke', 'var(--color-fg)').style('stroke-width', 2);
+      g.append('text').attr('class', 'lab').attr('x', W).attr('text-anchor', 'end').attr('y', rowH / 2 + 4).style('font-variant-numeric', 'tabular-nums').text(fmt(act, unit));
+    });
+    el.appendChild(t);
+  }
+  return { SH, LV, col, fmt, kpi, bars, tip, showTip, state: { day: null } };
+})();
+
+dash.calc('kpi', {
+  title: 'Headline numbers',
+  description: 'Latest ladder level from the ladder history; gold and dollar 20-day moves and their liquidity and monetary contributions from the cumulative decomposition.',
+  inputs: ['ladder_history', 'cum_decomp'],
+  fn: (ladder, cum) => {
+    if (!ladder.length || !cum.length) return [];
+    const last = ladder[ladder.length - 1];
+    const w = cum.filter((r) => r.window === 'Last 20 trading days');
+    const part = (asset, shock) => { const r = w.find((x) => x.asset === asset && x.shock === shock); return r ? r.value : null; };
+    const act = (asset) => { const r = w.find((x) => x.asset === asset); return r ? r.actual : null; };
+    return [
+      { metric: 'asof', value: last.date }, { metric: 'level', value: last.level }, { metric: 'liq10', value: last.liq10 },
+      { metric: 'gold20', value: act('Gold') }, { metric: 'gold20_liq', value: part('Gold', 'Liquidity') }, { metric: 'gold20_mon', value: part('Gold', 'Monetary') },
+      { metric: 'usd20', value: act('US dollar (DXY)') }, { metric: 'usd20_mon', value: part('US dollar (DXY)', 'Monetary') }, { metric: 'usd20_liq', value: part('US dollar (DXY)', 'Liquidity') },
+    ];
+  },
+});
+</script>
+
+<script>
+const KP = [['asof', 'asof', null], ['lvl', 'level', 'lv'], ['lvl2', 'level', 'lv'], ['liq10', 'liq10', 's'], ['g20', 'gold20', '%'], ['g20b', 'gold20', '%'],
+  ['g20l', 'gold20_liq', '%'], ['g20lb', 'gold20_liq', '%'], ['g20m', 'gold20_mon', '%'], ['u20', 'usd20', '%'], ['u20b', 'usd20', '%'],
+  ['u20m', 'usd20_mon', '%'], ['u20mb', 'usd20_mon', '%'], ['u20l', 'usd20_liq', '%'], ['u20lb', 'usd20_liq', '%']];
+KP.forEach(([name, metric, u]) => dash.draw(name, (el) => {
+  const v = XA.kpi(metric);
+  if (v === null) { el.textContent = '—'; return; }
+  if (u === 'lv') el.textContent = 'Level ' + v;
+  else if (u === 's') el.textContent = (v > 0 ? '+' : '') + Number(v).toFixed(2) + ' σ';
+  else if (u === '%') el.textContent = XA.fmt(v, '%');
+  else el.textContent = String(v);
+}));
+dash.draw('lvlname', (el) => { const v = XA.kpi('level'); el.textContent = v === null ? '—' : XA.LV[String(v)]; });
+dash.draw('liqpct', (el) => {
+  const d = dash.data('monitor_latest'); if (d.status !== 'ok') { el.textContent = '—'; return; }
+  const r = d.data.find((x) => x.indicator === 'Model: liquidity shock, 10d sum'); el.textContent = r ? r.pct : '—';
+});
+dash.onData(() => {
+  document.querySelectorAll('.xa-sw[data-k]').forEach((s) => { s.style.background = XA.col(s.dataset.k); });
+  const lv = XA.kpi('level');
+  document.querySelectorAll('.xa-step[data-lv]').forEach((s) => s.classList.toggle('on', lv !== null && Number(s.dataset.lv) === lv));
+});
+</script>
+
+<script>
+dash.draw('daysel', (sel) => {
+  const d = dash.data('daily_decomp');
+  const days = d.status === 'ok' ? [...new Set(d.data.map((r) => r.date))].sort().reverse() : [];
+  sel.replaceChildren(...days.map((x) => new Option(x, x)));
+  if (!XA.state.day || !days.includes(XA.state.day)) XA.state.day = days[0] || null;
+  if (XA.state.day) sel.value = XA.state.day;
+  sel.onchange = () => { XA.state.day = sel.value; dash.draw('daybars'); };
+});
+dash.draw('daybars', (el) => {
+  const d = dash.data('daily_decomp');
+  if (d.status === 'error') { el.textContent = 'Failed to load'; return; }
+  if (d.status !== 'ok') { el.textContent = '—'; return; }
+  const day = XA.state.day || [...new Set(d.data.map((r) => r.date))].sort().pop();
+  XA.bars(el, d.data.filter((r) => r.date === day));
+});
+dash.draw('cumbars', (el) => {
+  const d = dash.data('cum_decomp');
+  if (d.status === 'error') { el.textContent = 'Failed to load'; return; }
+  if (d.status !== 'ok') { el.textContent = '—'; return; }
+  const ws = document.querySelector('#winsel'); const w = ws ? ws.value : 'Last 20 trading days';
+  XA.bars(el, d.data.filter((r) => r.window === w));
+});
+document.querySelectorAll('#winsel').forEach((s) => s.addEventListener('change', () => dash.draw('cumbars')));
+dash.draw('outbars', (el) => {
+  const d = dash.data('outside_20d');
+  if (d.status === 'error') { el.textContent = 'Failed to load'; return; }
+  if (d.status !== 'ok') { el.textContent = '—'; return; }
+  XA.bars(el, d.data);
+});
+</script>
+
+<script>
+dash.draw('roll', (el) => {
+  const d = dash.data('shock_roll20'); el.replaceChildren();
+  if (d.status !== 'ok') { el.textContent = d.status === 'error' ? 'Failed to load' : '—'; return; }
+  const s = el.dataset.shock;
+  const rows = d.data.filter((r) => r.shock === s && r.value !== null).map((r) => ({ t: new Date(r.date + 'T00:00:00Z'), v: r.value }));
+  if (!rows.length) { el.textContent = '—'; return; }
+  const W = Math.max(240, el.clientWidth), H = 110, m = { l: 28, r: 8, t: 6, b: 18 };
+  const x = d3.scaleUtc().domain(d3.extent(rows, (r) => r.t)).range([m.l, W - m.r]);
+  const ext = Math.max(6, d3.max(rows, (r) => Math.abs(r.v)));
+  const y = d3.scaleLinear().domain([-ext, ext]).range([H - m.b, m.t]);
+  const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', s + ' shock, 20-day sum over the last two years');
+  svg.append('rect').attr('x', m.l).attr('width', W - m.l - m.r).attr('y', y(4.5)).attr('height', y(-4.5) - y(4.5)).style('fill', 'var(--cds-chart-grid)').style('opacity', 0.5);
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).style('stroke', 'var(--cds-chart-axis)');
+  svg.append('path').datum(rows).attr('d', d3.line().x((r) => x(r.t)).y((r) => y(r.v))).style('fill', 'none').style('stroke', XA.col(s)).style('stroke-width', 1.5);
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor(W / 110))).tickFormat(d3.utcFormat('%b %Y')).tickSizeOuter(0)).call((g) => g.select('.domain').remove());
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(3).tickSize(0)).call((g) => g.select('.domain').remove());
+  const last = rows[rows.length - 1];
+  svg.append('circle').attr('cx', x(last.t)).attr('cy', y(last.v)).attr('r', 3).style('fill', XA.col(s));
+  const t = XA.tip(el); const fmtD = d3.utcFormat('%d %b %Y'); const bis = d3.bisector((r) => r.t).center;
+  svg.append('rect').attr('x', m.l).attr('width', W - m.l - m.r).attr('y', 0).attr('height', H).style('fill', 'transparent')
+    .on('mousemove', (ev) => { const [px] = d3.pointer(ev); const r = rows[bis(rows, x.invert(px))]; XA.showTip(el, t, ev, [fmtD(r.t), s + ', 20-day sum ' + (r.v > 0 ? '+' : '') + r.v.toFixed(2)]); })
+    .on('mouseleave', () => { t.hidden = true; });
+  el.appendChild(t);
+});
+
+dash.draw('ladderchart', (el) => {
+  const d = dash.data('ladder_history'); el.replaceChildren();
+  if (d.status !== 'ok') { el.textContent = d.status === 'error' ? 'Failed to load' : '—'; return; }
+  const rows = d.data.map((r) => ({ t: new Date(r.date + 'T00:00:00Z'), lv: r.level, q: r.liq10 }));
+  const W = Math.max(300, el.clientWidth), H = 190, m = { l: 28, r: 8, t: 8, b: 20 }, band = 22;
+  const x = d3.scaleUtc().domain(d3.extent(rows, (r) => r.t)).range([m.l, W - m.r]);
+  const q = rows.filter((r) => r.q !== null);
+  const y = d3.scaleLinear().domain(d3.extent(q, (r) => r.q)).nice().range([H - m.b - band - 6, m.t]);
+  const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', 'Liquidity ladder level and 10-day liquidity shock sum since 2012');
+  const LC = { 0: 'var(--cds-chart-muted)', 1: 'var(--color-warn)', 2: 'var(--color-warn)', 3: 'var(--color-bad)' };
+  const LO = { 0: 0.35, 1: 0.35, 2: 0.9, 3: 1 };
+  const yb = H - m.b - band;
+  rows.forEach((r, i) => {
+    if (r.lv < 0) return; const nx = i + 1 < rows.length ? x(rows[i + 1].t) : x(r.t) + 1;
+    svg.append('rect').attr('x', x(r.t)).attr('width', Math.max(0.6, nx - x(r.t))).attr('y', yb).attr('height', band).style('fill', LC[r.lv]).style('opacity', LO[r.lv]);
+  });
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).style('stroke', 'var(--cds-chart-axis)');
+  svg.append('path').datum(q).attr('d', d3.line().x((r) => x(r.t)).y((r) => y(r.q))).style('fill', 'none').style('stroke', XA.col('Liquidity')).style('stroke-width', 1);
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(Math.max(3, Math.floor(W / 90))).tickFormat(d3.utcFormat('%Y')).tickSizeOuter(0)).call((g) => g.select('.domain').remove());
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickSize(0)).call((g) => g.select('.domain').remove());
+  const t = XA.tip(el); const fmtD = d3.utcFormat('%d %b %Y'); const bis = d3.bisector((r) => r.t).center;
+  svg.append('rect').attr('x', m.l).attr('width', W - m.l - m.r).attr('y', 0).attr('height', H).style('fill', 'transparent')
+    .on('mousemove', (ev) => { const [px] = d3.pointer(ev); const r = rows[bis(rows, x.invert(px))];
+      XA.showTip(el, t, ev, [fmtD(r.t), 'Ladder: Level ' + r.lv, '10-day liquidity shock: ' + (r.q === null ? '—' : r.q.toFixed(2) + ' σ')]); })
+    .on('mouseleave', () => { t.hidden = true; });
+  el.appendChild(t);
+});
+</script>
+
+<script>
+dash.draw('montbody', (tb) => {
+  const d = dash.data('monitor_latest'); tb.replaceChildren();
+  if (d.status !== 'ok') return;
+  let layer = null;
+  d.data.forEach((r) => {
+    if (r.layer !== layer) { layer = r.layer; const tr = tb.insertRow(); tr.className = 'xa-layer'; const c = tr.insertCell(); c.colSpan = 5; c.textContent = r.layer; }
+    const tr = tb.insertRow();
+    tr.insertCell().textContent = r.indicator;
+    const v = tr.insertCell(); v.className = 'num';
+    v.textContent = r.value === null || r.value === undefined ? '—' : (Math.abs(r.value) >= 100 ? r.value.toFixed(0) : r.value.toFixed(2)) + ' ' + r.unit;
+    const p = tr.insertCell(); p.className = 'num';
+    const bar = document.createElement('span'); bar.className = 'xa-pbar'; const f = document.createElement('i');
+    f.style.width = r.pct + '%'; f.style.background = r.pct >= 90 ? 'var(--color-bad)' : r.pct >= 75 ? 'var(--color-warn)' : 'var(--cds-chart-muted)';
+    bar.appendChild(f); p.appendChild(bar); p.appendChild(document.createTextNode(String(r.pct)));
+    tr.insertCell().textContent = r.rule; tr.insertCell().textContent = r.as_of;
+  });
+});
+dash.draw('eptbody', (tb) => {
+  const d = dash.data('episodes'); tb.replaceChildren();
+  if (d.status !== 'ok') return;
+  d.data.forEach((r) => {
+    const tr = tb.insertRow();
+    [r.episode, r.expected || '—', r.top].forEach((s) => { tr.insertCell().textContent = s; });
+    const a = tr.insertCell(); a.className = 'num'; a.textContent = r.top_val.toFixed(1);
+    tr.insertCell().textContent = r.second;
+    const b = tr.insertCell(); b.className = 'num'; b.textContent = r.second_val.toFixed(1);
+    const c = tr.insertCell(); c.className = 'num'; c.textContent = r.liq.toFixed(1);
+    const e = tr.insertCell(); e.className = 'num'; e.textContent = 'Level ' + r.max_level;
+  });
+});
+dash.draw('calbody', (tb) => {
+  const d = dash.data('calibration'); tb.replaceChildren();
+  if (d.status !== 'ok') return;
+  if (!d.data.length) { const c = tb.insertRow().insertCell(); c.colSpan = 2; c.textContent = 'No Bloomberg check yet.'; return; }
+  d.data.forEach((r) => { const tr = tb.insertRow(); tr.insertCell().textContent = r.check; tr.insertCell().textContent = r.result; });
+});
+dash.draw('signbody', (tb) => {
+  const d = dash.data('restrictions'); tb.replaceChildren();
+  if (d.status !== 'ok') return;
+  const shocks = [...new Set(d.data.map((r) => r.shock))];
+  shocks.forEach((s) => {
+    const tr = tb.insertRow(); tr.dataset.key = encodeURIComponent(s);
+    tr.insertCell().textContent = s;
+    d.data.filter((r) => r.shock === s).forEach((r) => { tr.insertCell().textContent = r.sign; });
+  });
+});
+</script>

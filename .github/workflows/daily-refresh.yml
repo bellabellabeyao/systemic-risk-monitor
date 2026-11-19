@@ -6,7 +6,7 @@ on:
   workflow_dispatch:           # "Run workflow" button for a manual refresh
   push:                        # rebuild as soon as code changes land on main
     branches: [main]
-    paths: ["sysrisk/**", "tools/build_signal_board_xlsx.py", "requirements-ci.txt", ".github/workflows/**"]
+    paths: ["sysrisk/**", "xasset/**", "tools/build_signal_board_xlsx.py", "requirements-ci.txt", ".github/workflows/**"]
 
 permissions:
   contents: read
@@ -42,6 +42,11 @@ jobs:
         run: |
           python tools/build_signal_board_xlsx.py --out site/Systemic_Risk_Dashboard.xlsx --results output/results.pkl \
           || python tools/build_signal_board_xlsx.py --out site/Systemic_Risk_Dashboard.xlsx
+
+      - name: Cross-asset decomposition + liquidity ladder (public data; never blocks the main page)
+        continue-on-error: true
+        timeout-minutes: 25
+        run: python -m xasset.pipeline --out site/xasset
 
       - name: Keep the data alongside the page
         run: cp output/*.csv site/ 2>/dev/null || true

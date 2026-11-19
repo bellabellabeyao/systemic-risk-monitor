@@ -74,3 +74,17 @@ The judgement series are refreshed by a daily Claude scheduled task that researc
 
 If a run fails, open it in the Actions tab; the log shows which data source failed. Yahoo rate limits
 are retried with backoff; a failed run leaves the previous day's page live.
+
+## Cross-asset shock decomposition + liquidity ladder (`xasset/`)
+
+A second page at `/xasset/` splits each day's moves in 13 market variables (S&P 500, beta-adjusted semis, 2y, 30y−2y,
+10y real, 10y breakeven, DXY, USDJPY, USDCNH, gold, Brent, copper, HY spread proxy) into ten sign-restricted shocks
+(growth, monetary, risk-off, liquidity, US risk premium, term premium, oil supply, AI/tech, global growth, yen/carry),
+and runs a four-layer liquidity escalation ladder (price signature, intermediaries, market liquidity, funding).
+
+- Built on every daily run from public data only (`xasset/data.py`: Treasury/FRED yields, Yahoo prices, NY Fed SOFR, OFR FSI).
+  The step is `continue-on-error`, so it can never block the main page.
+- `xasset/calibration.json` is written privately by `python -m xasset.calibrate` from a Bloomberg pull. It holds derived
+  numbers only: how closely the public build matches the Bloomberg build, and the Bloomberg-only liquidity inputs
+  (UST liquidity index, EUR/JPY cross-currency basis) as percentiles, which count in the ladder for 7 days.
+- Offline checks: `python tests/test_xasset.py`.

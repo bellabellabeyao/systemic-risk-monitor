@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cross-asset shock decomposition + liquidity monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+:root {
+  --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --font-anthropic-serif: Georgia, "Times New Roman", serif;
+  --color-fg: #1f1e1d; --color-fg-muted: #6b6a68; --color-panel: #f7f6f3; --color-border-line: #e3e1dc;
+  --color-warn: #c98a1b; --color-bad: #c4452f; --cds-chart-grid: #ecebe7; --cds-chart-axis: #bdbab3; --cds-chart-muted: #b4b1aa;
+  --cds-text-secondary: #6b6a68; --cds-surface-popover: #fff; --cds-border: #e3e1dc; --cds-shadow-popover: 0 4px 12px rgba(0,0,0,.08);
+  --cds-radius: 8px; --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 12px; --cds-gap-lg: 16px; --cds-gap-xl: 28px;
+  --cds-pad-md: 10px; --cds-pad-lg: 14px; --cds-font-size-title: 28px; --cds-font-size-heading: 19px; --cds-font-size-body: 15px;
+  --cds-font-size-caption: 13px; --cds-font-weight-medium: 600; color-scheme: light dark; }
+@media (prefers-color-scheme: dark) { :root {
+  --color-fg: #ecebe7; --color-fg-muted: #a3a19c; --color-panel: #26251f; --color-border-line: #3a3934; --cds-chart-grid: #33322d;
+  --cds-chart-axis: #5a5852; --cds-chart-muted: #6e6c66; --cds-text-secondary: #a3a19c; --cds-surface-popover: #2b2a25; --cds-border: #3a3934; } }
+body { margin: 0; padding: 24px; background: Canvas; color: var(--color-fg); font-family: var(--font-anthropic-sans); }
+.dash-select { font: inherit; font-size: 14px; padding: 5px 8px; border: 1px solid var(--color-border-line); border-radius: 6px; background: var(--color-panel); color: var(--color-fg); }
+.xa-top { font-size: 13px; color: var(--color-fg-muted); margin-bottom: 14px; max-width: 1100px; }
+.xa-top a { color: inherit; }
+</style>
+<script>
+window.dash = (function () {
+  const DS = ['daily_decomp', 'cum_decomp', 'outside_20d', 'shock_roll20', 'ladder_history', 'monitor_latest', 'episodes', 'restrictions', 'calibration'];
+  const st = {}; DS.forEach((n) => { st[n] = { status: 'loading' }; });
+  const draws = {}, calcs = {}, subs = [];
+  const colors = ['#2a78b5', '#d1553a', '#7a5bb5', '#c9902a', '#3f9b6b', '#b5487a', '#6b7f2a', '#2a9bb5', '#a86a3a', '#5a6fd1', '#8c8c8c'];
+  function data(n) { if (calcs[n]) return calcs[n].v || { status: 'loading' }; return st[n] || { status: 'error' }; }
+  function runCalcs() {
+    for (const c of Object.values(calcs)) {
+      const ins = c.inputs.map((i) => st[i]);
+      if (ins.some((x) => x.status !== 'ok')) { c.v = { status: ins.some((x) => x.status === 'error') ? 'error' : 'loading' }; continue; }
+      try { c.v = { status: 'ok', data: c.fn(...ins.map((x) => x.data)) }; } catch (e) { c.v = { status: 'error' }; }
+    }
+  }
+  function drawOne(n) { document.querySelectorAll('[data-draw="' + n + '"]').forEach((el) => { try { draws[n](el); } catch (e) { console.error(n, e); } }); }
+  function all() { runCalcs(); Object.keys(draws).forEach(drawOne); subs.forEach((f) => f()); }
+  const api = { colors, data, draw(n, fn) { if (fn) draws[n] = fn; if (draws[n]) drawOne(n); }, calc(n, c) { calcs[n] = c; }, onData(f) { subs.push(f); } };
+  document.addEventListener('DOMContentLoaded', () => {
+    Promise.all(DS.map((n) => fetch(n + '.json').then((r) => r.json()).then((j) => { st[n] = { status: 'ok', data: j.rows }; }).catch(() => { st[n] = { status: 'error' }; }))).then(all);
+    fetch('status.json').then((r) => r.json()).then((s) => { const e = document.getElementById('xa-built'); if (e) e.textContent = 'Data to ' + s.as_of + ' · built ' + s.built_at.replace('T', ' ').replace('Z', ' UTC'); }).catch(() => {});
+  });
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(all, 200); });
+  return api;
+})();
+</script>
+</head>
+<body>
+<div class="xa-top"><a href="../">← Systemic Risk Monitor</a> · Public-data build, refreshed every weekday · <span id="xa-built"></span></div>
+<!--PAGE-->
+</body>
+</html>
