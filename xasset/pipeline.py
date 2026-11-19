@@ -253,7 +253,12 @@ def main():
     cf = HERE / 'calibration.json'
     calib = json.loads(cf.read_text()) if cf.exists() else None
     m = monitor(panel, r, calib)
-    st = export(r, m, Path(a.out), calib, SOURCE)
+    src = SOURCE
+    if not a.panel:
+        from xasset.data import USED
+        if USED.get('USDCNH', 'CNH=X') != 'CNH=X':
+            src += f" USDCNH from Yahoo {USED['USDCNH']}" + (' (onshore yuan; Yahoo has no offshore series)' if USED['USDCNH'] == 'CNY=X' else '') + '.'
+    st = export(r, m, Path(a.out), calib, src)
     print(json.dumps(st, indent=1))
 
 

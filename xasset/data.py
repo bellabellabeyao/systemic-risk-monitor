@@ -18,6 +18,8 @@ import pandas as pd
 YAHOO = {'SPX': '^GSPC', 'SOX': '^SOX', 'USD': 'DX-Y.NYB', 'USDJPY': 'JPY=X', 'USDCNH': 'CNH=X', 'GOLD': 'GC=F',
          'BRENT': 'BZ=F', 'COPPER': 'HG=F', 'HYG': 'HYG', 'IEI': 'IEI', 'VIX': '^VIX', 'MOVE': '^MOVE',
          'BKX': '^BKX', 'XBD': '^XBD', 'ENERGY_EQ': 'XLE', 'ALU': 'ALI=F'}
+FALLBACK = {'USDCNH': ['USDCNH=X', 'CNY=X']}
+USED: dict = {}   # which Yahoo ticker actually supplied each series
 CORE = ['SPX', 'SOX', 'USD', 'USDJPY', 'USDCNH', 'GOLD', 'BRENT', 'COPPER', 'HYG', 'IEI', 'UST2', 'UST30', 'UST10', 'REAL10']
 HY_DURATION = 3.5   # approx. spread duration of HYG; turns the HYG-vs-IEI return gap into bp of spread
 TSY = ("https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/{y}/all"
@@ -75,6 +77,18 @@ def yahoo(start='2008-01-01') -> pd.DataFrame:
     px = px.rename(columns=inv)
     px.index = pd.to_datetime(px.index).tz_localize(None).normalize()
     px = px[[c for c in YAHOO if c in px.columns]]
+    # Yahoo's offshore-yuan series is patchy: fall back to other spellings, then onshore USDCNY (moves almost one for one)
+    USED['USDCNH'] = 'CNH=X'
+    if 'USDCNH' not in px or px['USDCNH'].notna().sum() < 1000:
+        for t in FALLBACK['USDCNH']:
+            try:
+                x = FreeProvider().ohlc([t], start)['close']
+                if t in x and x[t].notna().sum() >= 1000:
+                    x.index = pd.to_datetime(x.index).tz_localize(None).normalize()
+                    px['USDCNH'] = x[t].reindex(px.index); USED['USDCNH'] = t
+                    break
+            except Exception as e:
+                warnings.warn(f'Yahoo {t} failed: {e}')
     print('Yahoo columns', {c: (str(px[c].first_valid_index())[:10], str(px[c].last_valid_index())[:10]) for c in px})
     return px
 
