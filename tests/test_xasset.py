@@ -36,6 +36,15 @@ def test_identify_adds_up():
     assert all(np.all(np.sign(cols[:2, j]) == SGN[j, :2]) for j in range(2))
 
 
+def test_assemble_carries_late_hy_one_day():
+    d = pd.bdate_range('2020-01-01', periods=10)
+    px = pd.DataFrame({c: np.linspace(100, 110, 10) for c in CORE if c not in ('UST2', 'UST10', 'UST30', 'REAL10')}, index=d)
+    px.loc[d[-1], ['HYG', 'IEI']] = np.nan
+    tsy = pd.DataFrame({'UST2': 1.0, 'UST10': 2.0, 'UST30': 2.5, 'REAL10': 0.5}, index=d)
+    p = assemble(px, tsy)
+    assert p.index.max() == d[-1] and p['HYPROXY'].diff().iloc[-1] == 0
+
+
 if __name__ == '__main__':
-    for f in [test_restrictions, test_assemble_cuts_stale_rows, test_identify_adds_up]:
+    for f in [test_restrictions, test_assemble_cuts_stale_rows, test_assemble_carries_late_hy_one_day, test_identify_adds_up]:
         f(); print('ok', f.__name__)

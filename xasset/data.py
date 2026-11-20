@@ -21,7 +21,9 @@ YAHOO = {'SPX': '^GSPC', 'SOX': '^SOX', 'USD': 'DX-Y.NYB', 'USDJPY': 'JPY=X', 'U
 FALLBACK = {'USDCNH': ['USDCNH=X', 'CNY=X']}
 USED: dict = {}
 LAST: dict = {}
-PATCHED: list = []   # tickers whose latest bar came from a second, single-ticker request   # last real print of each core series (shown in status.json)   # which Yahoo ticker actually supplied each series
+PATCHED: list = []
+SOFT = ['HYG', 'IEI']
+STALE: list = []   # soft series carried forward on the last day   # tickers whose latest bar came from a second, single-ticker request   # last real print of each core series (shown in status.json)   # which Yahoo ticker actually supplied each series
 CORE = ['SPX', 'SOX', 'USD', 'USDJPY', 'USDCNH', 'GOLD', 'BRENT', 'COPPER', 'HYG', 'IEI', 'UST2', 'UST30', 'UST10', 'REAL10']
 HY_DURATION = 3.5   # approx. spread duration of HYG; turns the HYG-vs-IEI return gap into bp of spread
 TSY = ("https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/{y}/all"
@@ -133,7 +135,14 @@ def assemble(px: pd.DataFrame, tsy: pd.DataFrame, sofr: pd.DataFrame | None = No
     p = px.reindex(idx).join(tsy.reindex(idx))
     allp = pd.concat([px, tsy], axis=1)
     LAST.clear(); LAST.update({c: str(allp[c].dropna().index.max().date()) for c in CORE if c in allp})
-    last = min(allp[c].dropna().index.max() for c in CORE if c in p)
+    # HYG/IEI only feed the HY spread proxy: if just they are one day late, carry them (HY change 0 that day, flagged in
+    # status.json) instead of holding back the other twelve variables. Every run rebuilds history, so this heals itself.
+    hard = [c for c in CORE if c in p and c not in SOFT]
+    last = min(allp[c].dropna().index.max() for c in hard)
+    soft_last = min(allp[c].dropna().index.max() for c in SOFT if c in allp)
+    if soft_last < last and len(idx[(idx > soft_last) & (idx <= last)]) > 1:
+        last = soft_last
+    STALE.clear(); STALE.extend([c for c in SOFT if c in allp and allp[c].dropna().index.max() < last])
     p = p.ffill(limit=2)
     p = p[p.index <= last]
     p['BE10'] = p['UST10'] - p['REAL10']                       # same definition as FRED T10YIE

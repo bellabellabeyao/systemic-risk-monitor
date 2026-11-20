@@ -260,8 +260,8 @@ def main():
             src += f" USDCNH from Yahoo {USED['USDCNH']}" + (' (onshore yuan; Yahoo has no offshore series)' if USED['USDCNH'] == 'CNY=X' else '') + '.'
     st = export(r, m, Path(a.out), calib, src)
     if not a.panel:
-        from xasset.data import LAST, PATCHED
-        st['last_print'] = LAST; st['patched'] = PATCHED
+        from xasset.data import LAST, PATCHED, STALE
+        st['last_print'] = LAST; st['patched'] = PATCHED; st['carried_last_day'] = STALE
         st['cut_by'] = sorted(k for k, v in LAST.items() if v == min(LAST.values()))
         (Path(a.out) / 'status.json').write_text(json.dumps(st, indent=1))
     print(json.dumps(st, indent=1))
