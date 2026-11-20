@@ -20,7 +20,8 @@ YAHOO = {'SPX': '^GSPC', 'SOX': '^SOX', 'USD': 'DX-Y.NYB', 'USDJPY': 'JPY=X', 'U
          'BKX': '^BKX', 'XBD': '^XBD', 'ENERGY_EQ': 'XLE', 'ALU': 'ALI=F'}
 FALLBACK = {'USDCNH': ['USDCNH=X', 'CNY=X']}
 USED: dict = {}
-LAST: dict = {}   # last real print of each core series (shown in status.json)   # which Yahoo ticker actually supplied each series
+LAST: dict = {}
+PATCHED: list = []   # tickers whose latest bar came from a second, single-ticker request   # last real print of each core series (shown in status.json)   # which Yahoo ticker actually supplied each series
 CORE = ['SPX', 'SOX', 'USD', 'USDJPY', 'USDCNH', 'GOLD', 'BRENT', 'COPPER', 'HYG', 'IEI', 'UST2', 'UST30', 'UST10', 'REAL10']
 HY_DURATION = 3.5   # approx. spread duration of HYG; turns the HYG-vs-IEI return gap into bp of spread
 TSY = ("https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/{y}/all"
@@ -90,6 +91,20 @@ def yahoo(start='2008-01-01') -> pd.DataFrame:
                     break
             except Exception as e:
                 warnings.warn(f'Yahoo {t} failed: {e}')
+    # Yahoo's bulk download sometimes misses the latest bar of a few tickers (seen for HYG/IEI): re-ask those one by one
+    try:
+        import yfinance as yf
+        ref = px['SPX'].dropna().index.max()
+        for c, t in YAHOO.items():
+            if c in CORE and c in px and px[c].dropna().index.max() < ref:
+                h = yf.Ticker(t).history(period='1mo', auto_adjust=True)['Close']
+                h.index = pd.to_datetime(h.index).tz_localize(None).normalize()
+                h = h[h.index > px[c].dropna().index.max()]
+                if len(h):
+                    px = px.reindex(px.index.union(h.index)); px.loc[h.index, c] = h.values
+                    PATCHED.append(t)
+    except Exception as e:
+        warnings.warn(f'Yahoo latest-bar patch failed: {e}')
     print('Yahoo columns', {c: (str(px[c].first_valid_index())[:10], str(px[c].last_valid_index())[:10]) for c in px})
     return px
 
