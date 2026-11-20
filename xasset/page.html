@@ -36,6 +36,7 @@
 .xa .xa-step.on { border-color: var(--color-warn); box-shadow: inset 0 0 0 1px var(--color-warn); }
 .xa details { margin-top: var(--cds-gap-xl); font-size: var(--cds-font-size-caption); line-height: 1.6; }
 .xa summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-body); }
+.xa .xa-chk { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); display: inline-flex; align-items: center; gap: 4px; }
 .xa #signtable td, .xa #signtable th { text-align: center; } .xa #signtable td:first-child, .xa #signtable th:first-child { text-align: left; }
 </style>
 
@@ -71,23 +72,24 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
   <span><i class="xa-sw" data-k="Unexplained by model"></i>Unexplained by model (outside assets only)</span>
 </div>
 
-<h2 id="day">One day: where each move came from</h2>
-<p class="xa-sub">One row per variable. The coloured segments add up to the day's actual move (number on the right, black tick). Prices are in %, yields, the curve slope and HY spreads in bp. Each row has its own scale. Hover a segment for its value.</p>
-<div class="xa-row"><select class="dash-select" data-draw="daysel" aria-label="Choose a date" data-source="daily_decomp"></select></div>
-<div class="xa-chart" data-draw="daybars" data-source="daily_decomp" id="daychart" style="min-height:430px"></div>
+<h2 id="day">One day: where an asset's move came from</h2>
+<p class="xa-sub">Pick an asset and a date. The five largest shocks step from zero to the day's actual move (black bar); the rest are folded into one grey bar. Tick "Show all shocks" to split it. Prices are in %, yields, the curve slope and HY spreads in bp. Hover a bar for details.</p>
+<div class="xa-row"><select class="dash-select" data-draw="assetsel" aria-label="Choose an asset" data-source="daily_decomp"></select><select class="dash-select" data-draw="daysel" aria-label="Choose a date" data-source="daily_decomp"></select><label class="xa-chk"><input type="checkbox" class="xa-all"> Show all shocks</label></div>
+<div class="xa-chart" data-draw="daybars" data-source="daily_decomp" id="daychart" style="min-height:300px"></div>
 
 <h2 id="cum">Over a window: what the market has been pricing</h2>
-<p class="xa-sub">Daily contributions summed over the chosen window.</p>
-<div class="xa-row"><select class="dash-select" id="winsel" aria-label="Choose a window">
+<p class="xa-sub">The same waterfall with daily contributions summed over the chosen window.</p>
+<div class="xa-row"><select class="dash-select" data-draw="assetsel" aria-label="Choose an asset" data-source="cum_decomp"></select><select class="dash-select" id="winsel" aria-label="Choose a window">
   <option value="Last 20 trading days">Last 20 trading days</option>
   <option value="Since 1 Nov">Since 1 Nov</option>
   <option value="Since gold peak (28 Jan)">Since gold peak (28 Jan)</option>
-</select></div>
-<div class="xa-chart" data-draw="cumbars" data-source="cum_decomp" id="cumchart" style="min-height:430px"></div>
+</select><label class="xa-chk"><input type="checkbox" class="xa-all"> Show all shocks</label></div>
+<div class="xa-chart" data-draw="cumbars" data-source="cum_decomp" id="cumchart" style="min-height:300px"></div>
 
 <h2 id="outside">Assets outside the model: last 20 trading days</h2>
-<p class="xa-sub">Aluminium, banks, energy equities, VIX and MOVE are not used to identify the shocks. Each is regressed on the identified shocks to see how much they explain. Grey is the part the model cannot explain, i.e. asset-specific drivers.</p>
-<div class="xa-chart" data-draw="outbars" data-source="outside_20d" id="outchart" style="min-height:180px"></div>
+<p class="xa-sub">Aluminium, banks, energy equities, VIX and MOVE are not used to identify the shocks. Each is regressed on the identified shocks to see how much they explain. The dark grey "Unexplained by model" bar is the asset-specific part.</p>
+<div class="xa-row"><select class="dash-select" data-draw="outsel" aria-label="Choose an outside asset" data-source="outside_20d"></select><label class="xa-chk"><input type="checkbox" class="xa-all"> Show all shocks</label></div>
+<div class="xa-chart" data-draw="outbars" data-source="outside_20d" id="outchart" style="min-height:300px"></div>
 
 <h2 id="roll">Shock intensity: 20-day sums over the last two years</h2>
 <p class="xa-sub">Each daily shock has unit variance; lines show their 20-day sum. The grey band is ±4.5, roughly a 1-in-100 reading.</p>
@@ -279,6 +281,62 @@ dash.onData(() => {
 </script>
 
 <script>
+XA.state.asset = 'Gold'; XA.state.out = null; XA.state.all = false;
+XA.wf = function (el, rows) {
+  el.replaceChildren();
+  if (!rows.length) { el.textContent = '—'; return; }
+  const unit = rows[0].unit || '', act = rows[0].actual, asset = rows[0].asset;
+  const keep = (r) => r.shock === 'Unexplained by model';
+  const named = rows.filter((r) => r.shock !== 'Other / unidentified' && !keep(r)).sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  const other = rows.filter((r) => r.shock === 'Other / unidentified');
+  let items;
+  if (XA.state.all) items = named.concat(other).map((r) => ({ n: r.shock, v: r.value || 0, c: XA.col(r.shock) }));
+  else {
+    const top = named.slice(0, 5), restRows = named.slice(5).concat(other);
+    items = top.map((r) => ({ n: r.shock, v: r.value || 0, c: XA.col(r.shock) }));
+    items.push({ n: 'All other shocks', v: d3.sum(restRows, (r) => r.value || 0), c: 'var(--cds-chart-muted)', sub: restRows.map((r) => r.shock + ' ' + XA.fmt(r.value, unit)) });
+  }
+  rows.filter(keep).forEach((r) => items.push({ n: r.shock, v: r.value || 0, c: 'color-mix(in srgb, var(--cds-chart-muted) 55%, var(--color-fg))' }));
+  const force = d3.sum(rows, (r) => Math.abs(r.value || 0)) || 1;
+  let cum = 0; items.forEach((it) => { it.s = cum; cum += it.v; it.e = cum; });
+  const W = Math.max(320, el.clientWidth), labW = Math.min(170, W * 0.32), valW = 70, bh = 26, gap = 8;
+  const H = (items.length + 1) * (bh + gap) + 8;
+  const ext = d3.extent([0, act, ...items.flatMap((b) => [b.s, b.e])]);
+  const pad = (ext[1] - ext[0]) * 0.02 || 1e-6;
+  const x = d3.scaleLinear().domain([ext[0] - pad, ext[1] + pad]).range([labW + 4, W - valW]);
+  const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img')
+    .attr('aria-label', 'Waterfall: shock contributions to ' + asset + ', adding up to ' + XA.fmt(act, unit));
+  const t = XA.tip(el);
+  svg.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', H).style('stroke', 'var(--cds-chart-axis)');
+  const lab = (g, xv, y, txt, bold) => g.append('text').attr('class', 'lab').attr('x', xv).attr('y', y).attr('text-anchor', 'start')
+    .style('font-variant-numeric', 'tabular-nums').style('font-weight', bold ? 600 : 400).text(txt);
+  items.forEach((b, k) => {
+    const y = 4 + k * (bh + gap), a0 = Math.min(b.s, b.e), a1 = Math.max(b.s, b.e);
+    const g = svg.append('g');
+    g.append('text').attr('class', 'lab').attr('x', labW - 6).attr('y', y + bh / 2 + 4).attr('text-anchor', 'end').text(b.n);
+    g.append('rect').attr('x', x(a0)).attr('y', y).attr('width', Math.max(1, x(a1) - x(a0))).attr('height', bh).attr('rx', 3).style('fill', b.c)
+      .on('mousemove', (ev) => XA.showTip(el, t, ev, [asset + ' · ' + b.n, 'Contribution ' + XA.fmt(b.v, unit), Math.round(Math.abs(b.v) / force * 100) + '% of all forces on this asset'].concat(b.sub ? ['Includes: ' + b.sub.join(', ')] : [])))
+      .on('mouseleave', () => { t.hidden = true; });
+    const lx = x(a1) + 6 + 60 < W ? x(a1) + 6 : x(a0) - 6;
+    lab(g, lx, y + bh / 2 + 4, XA.fmt(b.v, unit)).attr('text-anchor', lx < x(a0) ? 'end' : 'start');
+    if (k < items.length - 1) g.append('line').attr('x1', x(b.e)).attr('x2', x(b.e)).attr('y1', y + bh).attr('y2', y + bh + gap).style('stroke', 'var(--cds-chart-axis)').style('stroke-dasharray', '2 2');
+  });
+  const ya = 4 + items.length * (bh + gap), g = svg.append('g');
+  g.append('text').attr('class', 'lab').attr('x', labW - 6).attr('y', ya + bh / 2 + 4).attr('text-anchor', 'end').style('font-weight', 600).text('Actual move');
+  g.append('rect').attr('x', Math.min(x(0), x(act))).attr('y', ya).attr('width', Math.max(1, Math.abs(x(act) - x(0)))).attr('height', bh).attr('rx', 3).style('fill', 'var(--color-fg)');
+  const ax = Math.max(x(0), x(act)) + 6 + 60 < W ? Math.max(x(0), x(act)) + 6 : Math.min(x(0), x(act)) - 6;
+  lab(g, ax, ya + bh / 2 + 4, XA.fmt(act, unit), true).attr('text-anchor', ax < Math.min(x(0), x(act)) ? 'end' : 'start');
+  el.appendChild(t);
+};
+const xaRedraw = () => ['assetsel', 'daybars', 'cumbars', 'outsel', 'outbars'].forEach((n) => dash.draw(n));
+dash.draw('assetsel', (sel) => {
+  const d = dash.data('daily_decomp');
+  const assets = d.status === 'ok' ? [...new Set(d.data.map((r) => r.asset))] : [];
+  sel.replaceChildren(...assets.map((x) => new Option(x, x)));
+  if (assets.length && !assets.includes(XA.state.asset)) XA.state.asset = assets[0];
+  sel.value = XA.state.asset;
+  sel.onchange = () => { XA.state.asset = sel.value; xaRedraw(); };
+});
 dash.draw('daysel', (sel) => {
   const d = dash.data('daily_decomp');
   const days = d.status === 'ok' ? [...new Set(d.data.map((r) => r.date))].sort().reverse() : [];
@@ -287,27 +345,39 @@ dash.draw('daysel', (sel) => {
   if (XA.state.day) sel.value = XA.state.day;
   sel.onchange = () => { XA.state.day = sel.value; dash.draw('daybars'); };
 });
+dash.draw('outsel', (sel) => {
+  const d = dash.data('outside_20d');
+  const assets = d.status === 'ok' ? [...new Set(d.data.map((r) => r.asset))] : [];
+  sel.replaceChildren(...assets.map((x) => new Option(x, x)));
+  if (!XA.state.out || !assets.includes(XA.state.out)) XA.state.out = assets[0] || null;
+  if (XA.state.out) sel.value = XA.state.out;
+  sel.onchange = () => { XA.state.out = sel.value; dash.draw('outbars'); };
+});
 dash.draw('daybars', (el) => {
   const d = dash.data('daily_decomp');
   if (d.status === 'error') { el.textContent = 'Failed to load'; return; }
   if (d.status !== 'ok') { el.textContent = '—'; return; }
   const day = XA.state.day || [...new Set(d.data.map((r) => r.date))].sort().pop();
-  XA.bars(el, d.data.filter((r) => r.date === day));
+  XA.wf(el, d.data.filter((r) => r.date === day && r.asset === XA.state.asset));
 });
 dash.draw('cumbars', (el) => {
   const d = dash.data('cum_decomp');
   if (d.status === 'error') { el.textContent = 'Failed to load'; return; }
   if (d.status !== 'ok') { el.textContent = '—'; return; }
   const ws = document.querySelector('#winsel'); const w = ws ? ws.value : 'Last 20 trading days';
-  XA.bars(el, d.data.filter((r) => r.window === w));
+  XA.wf(el, d.data.filter((r) => r.window === w && r.asset === XA.state.asset));
 });
-document.querySelectorAll('#winsel').forEach((s) => s.addEventListener('change', () => dash.draw('cumbars')));
 dash.draw('outbars', (el) => {
   const d = dash.data('outside_20d');
   if (d.status === 'error') { el.textContent = 'Failed to load'; return; }
   if (d.status !== 'ok') { el.textContent = '—'; return; }
-  XA.bars(el, d.data);
+  XA.wf(el, d.data.filter((r) => r.asset === XA.state.out));
 });
+document.querySelectorAll('#winsel').forEach((s) => s.addEventListener('change', () => dash.draw('cumbars')));
+document.querySelectorAll('.xa-all').forEach((c) => c.addEventListener('change', () => {
+  XA.state.all = c.checked; document.querySelectorAll('.xa-all').forEach((o) => { o.checked = c.checked; });
+  ['daybars', 'cumbars', 'outbars'].forEach((n) => dash.draw(n));
+}));
 </script>
 
 <script>
