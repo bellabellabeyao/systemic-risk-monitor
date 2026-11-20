@@ -19,7 +19,8 @@ YAHOO = {'SPX': '^GSPC', 'SOX': '^SOX', 'USD': 'DX-Y.NYB', 'USDJPY': 'JPY=X', 'U
          'BRENT': 'BZ=F', 'COPPER': 'HG=F', 'HYG': 'HYG', 'IEI': 'IEI', 'VIX': '^VIX', 'MOVE': '^MOVE',
          'BKX': '^BKX', 'XBD': '^XBD', 'ENERGY_EQ': 'XLE', 'ALU': 'ALI=F'}
 FALLBACK = {'USDCNH': ['USDCNH=X', 'CNY=X']}
-USED: dict = {}   # which Yahoo ticker actually supplied each series
+USED: dict = {}
+LAST: dict = {}   # last real print of each core series (shown in status.json)   # which Yahoo ticker actually supplied each series
 CORE = ['SPX', 'SOX', 'USD', 'USDJPY', 'USDCNH', 'GOLD', 'BRENT', 'COPPER', 'HYG', 'IEI', 'UST2', 'UST30', 'UST10', 'REAL10']
 HY_DURATION = 3.5   # approx. spread duration of HYG; turns the HYG-vs-IEI return gap into bp of spread
 TSY = ("https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/{y}/all"
@@ -115,7 +116,9 @@ def assemble(px: pd.DataFrame, tsy: pd.DataFrame, sofr: pd.DataFrame | None = No
     Rows after the last real print of any core series are cut, so a late source never shows as a zero move."""
     idx = px['SPX'].dropna().index
     p = px.reindex(idx).join(tsy.reindex(idx))
-    last = min(pd.concat([px, tsy], axis=1)[c].dropna().index.max() for c in CORE if c in p)
+    allp = pd.concat([px, tsy], axis=1)
+    LAST.clear(); LAST.update({c: str(allp[c].dropna().index.max().date()) for c in CORE if c in allp})
+    last = min(allp[c].dropna().index.max() for c in CORE if c in p)
     p = p.ffill(limit=2)
     p = p[p.index <= last]
     p['BE10'] = p['UST10'] - p['REAL10']                       # same definition as FRED T10YIE
