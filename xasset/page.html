@@ -37,7 +37,10 @@
 .xa details { margin-top: var(--cds-gap-xl); font-size: var(--cds-font-size-caption); line-height: 1.6; }
 .xa summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-body); }
 .xa .xa-chk { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); display: inline-flex; align-items: center; gap: 4px; }
-.xa #signtable td, .xa #signtable th { text-align: center; } .xa #signtable td:first-child, .xa #signtable th:first-child { text-align: left; }
+.xa #signtable td, .xa #signtable th { text-align: center; } .xa #signtable td:first-child, .xa #signtable th:first-child { text-align: left; white-space: nowrap; }
+.xa #signtable .st { text-align: left; min-width: 220px; color: var(--color-fg-muted); }
+.xa #signtable .sg-p { background: color-mix(in srgb, #2a78d6 22%, transparent); font-weight: 600; }
+.xa #signtable .sg-n { background: color-mix(in srgb, #e34948 22%, transparent); font-weight: 600; }
 </style>
 
 <div class="xa" lang="en" data-read>
@@ -160,14 +163,17 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 <li><b>Global (China) growth</b>: copper and oil up, yuan and other currencies stronger against the dollar, equities up.</li>
 <li><b>Yen / carry</b>: yen strengthens and the dollar weakens while equities fall, as in carry-trade unwinds.</li>
 </ul>
-<p><b>Sign restrictions</b> (+ up, − down, · unrestricted; for USDJPY and USDCNH, − means the yen or yuan strengthens):</p>
+<p><b>Sign restrictions.</b> The full table of signs that define each shock is in the <a href="#appendix">appendix</a> below.</p>
+<p><b>Data.</b> Yields are the US Treasury's daily par nominal and real (TIPS) curves, published the same evening; the breakeven is 10y nominal minus 10y real, as in FRED's T10YIE. Market prices are Yahoo Finance daily closes: S&amp;P 500, SOX, DXY, USDJPY, USDCNH (onshore USDCNY when Yahoo has no offshore series; the two move almost one for one), COMEX gold and copper, ICE Brent. FRED now carries only three years of ICE BofA HY spreads, so the HY variable is a proxy: the return of HYG minus that of IEI (similar-duration Treasuries), divided by a spread duration of 3.5, in bp of spread. Funding uses New York Fed SOFR and its 99th percentile, FRED IORB/IOER and NFCI, and the OFR Financial Stress Index. Two inputs have no public source and come from occasional Bloomberg checks: the UST liquidity index (GVLQUSD, a curve-fitting-error measure in the spirit of Hu, Pan and Wang, 2013) and the 3-month EUR and JPY cross-currency bases (computed from covered interest parity with forward points and SOFR, €STR and TONA OIS). They are shown as percentiles with their date and count in the ladder for 7 days.</p>
+<p><b>Limits.</b> Sign restrictions identify a range of answers; the numbers shown are averages, not exact values. More shocks spread each move across more sources, so single-shock contributions are smaller than in a simpler model. Fingerprints shift across regimes, hence the rolling window. Public closes are not taken at the same moment, so single days are noisier than windows; see the accuracy table. The 2013 taper shows as US risk premium and monetary in roughly equal parts. The September 2024 China stimulus registers only a small global-growth shock, because semis and the yen moved at the same time. Positive AI / tech days include broad crisis rebounds, when semis rise more than their usual beta; the negative side (e.g. DeepSeek) is cleaner.</p>
+</details>
+
+<h2 id="appendix">Appendix: what defines each shock</h2>
+<p class="xa-sub">Each shock is identified only by the direction it must push these assets on the same day: + up, − down, blank = left free for the model to estimate. For USDJPY and USDCNH, − means the yen or yuan strengthens; for HY, + means spreads widen. Any shock can also run in reverse on a given day (a negative monetary shock is a dovish surprise). The three 'other / unidentified' shocks have no signs.</p>
 <div class="xa-tw"><table data-source="restrictions" id="signtable">
-  <thead><tr><th data-field="shock">Shock</th><th>SPX</th><th>Semis</th><th>2y</th><th>Slope</th><th>Real</th><th>BE</th><th>USD</th><th>JPY</th><th>CNH</th><th>Gold</th><th>Oil</th><th>Cu</th><th>HY</th></tr></thead>
+  <thead><tr><th data-field="shock">Shock</th><th>SPX</th><th>Semis (β-adj.)</th><th>2y</th><th>30y−2y</th><th>10y real</th><th>10y BE</th><th>DXY</th><th>USDJPY</th><th>USDCNH</th><th>Gold</th><th>Brent</th><th>Copper</th><th>HY spread</th><th class="st">Story</th><th class="st">Tells it apart from</th></tr></thead>
   <tbody data-draw="signbody"></tbody>
 </table></div>
-<p><b>Data.</b> Yields are the US Treasury's daily par nominal and real (TIPS) curves, published the same evening; the breakeven is 10y nominal minus 10y real, as in FRED's T10YIE. Market prices are Yahoo Finance daily closes: S&amp;P 500, SOX, DXY, USDJPY, USDCNH (onshore USDCNY when Yahoo has no offshore series; the two move almost one for one), COMEX gold and copper, ICE Brent. FRED now carries only three years of ICE BofA HY spreads, so the HY variable is a proxy: the return of HYG minus that of IEI (similar-duration Treasuries), divided by a spread duration of 3.5, in bp of spread. Funding uses New York Fed SOFR and its 99th percentile, FRED IORB/IOER and NFCI, and the OFR Financial Stress Index. Two inputs have no public source and come from occasional Bloomberg checks: the UST liquidity index (GVLQUSD, a curve-fitting-error measure in the spirit of Hu, Pan and Wang, 2013) and the 3-month EUR and JPY cross-currency bases (computed from covered interest parity with forward points and SOFR, €STR and TONA OIS). They are shown as percentiles with their date and count in the ladder for 7 days.</p>
-<p><b>Limits.</b> Sign restrictions identify a range of answers; the numbers shown are averages, not exact values. More shocks spread each move across more sources, so single-shock contributions are smaller than in a simpler model. Fingerprints shift across regimes, hence the rolling window. Public closes are not taken at the same moment, so single days are noisier than windows; see the accuracy table. The 2013 taper still shows mainly as liquidity and US risk premium. The September 2024 China stimulus registers only a small global-growth shock, because semis and the yen moved at the same time. Positive AI / tech days include broad crisis rebounds, when semis rise more than their usual beta; the negative side (e.g. DeepSeek) is cleaner.</p>
-</details>
 </div>
 
 <script>
@@ -234,7 +240,19 @@ window.XA = (function () {
     });
     el.appendChild(t);
   }
-  return { SH, LV, col, fmt, kpi, bars, tip, showTip, state: { day: null } };
+  const STORY = {
+    'Growth': ['Better US data: demand and inflation expectations up, credit tighter.', 'Monetary: here breakevens rise and equities rise with yields.'],
+    'Monetary': ['Fed path repriced higher for reasons other than growth.', 'Growth: equities fall and breakevens drop; term premium: the curve flattens.'],
+    'Risk-off': ['Flight to safety: Treasuries, gold, the dollar and the yen are bought.', 'Liquidity: here gold and long Treasuries rise instead of being sold.'],
+    'Liquidity': ['Dash for cash: levered holders sell even safe assets to raise dollars.', 'Risk-off: gold is sold and the long end sold while bills are bid.'],
+    'US risk premium': ["'Sell America': US stocks, bonds and the dollar sold together, gold bought.", 'Monetary: here the dollar falls while US real yields rise.'],
+    'Term premium': ['Long end sold on supply or fiscal worries.', 'Monetary: the curve steepens; liquidity: the 2y rises rather than falls.'],
+    'Oil supply': ['Oil supply shock lifts inflation expectations and hurts equities.', 'Growth / global growth: oil rises while equities fall.'],
+    'AI / tech': ['AI-specific news: semis move beyond their usual market beta.', 'Growth: only semis need to outperform; yields are free.'],
+    'Global growth': ['China and world demand: metals and oil up, yuan and others stronger.', 'US growth: driven by copper, oil and FX, not US yields.'],
+    'Yen / carry': ['Carry-trade unwind: yen bought back, risky assets sold.', 'Risk-off: here the dollar falls with equities instead of rising.'],
+  };
+  return { SH, LV, STORY, col, fmt, kpi, bars, tip, showTip, state: { day: null } };
 })();
 
 dash.calc('kpi', {
@@ -479,7 +497,12 @@ dash.draw('signbody', (tb) => {
   shocks.forEach((s) => {
     const tr = tb.insertRow(); tr.dataset.key = encodeURIComponent(s);
     tr.insertCell().textContent = s;
-    d.data.filter((r) => r.shock === s).forEach((r) => { tr.insertCell().textContent = r.sign; });
+    d.data.filter((r) => r.shock === s).forEach((r) => {
+      const c = tr.insertCell(); c.textContent = r.sign === '·' ? '' : r.sign;
+      if (r.sign === '+') c.className = 'sg-p'; else if (r.sign === '−') c.className = 'sg-n';
+    });
+    const st = XA.STORY[s] || ['', ''];
+    st.forEach((txt) => { const c = tr.insertCell(); c.className = 'st'; c.textContent = txt; });
   });
 });
 </script>
