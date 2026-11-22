@@ -37,17 +37,19 @@
  "L1": false,
  "L2": false,
  "summary": {
+  "Last Bloomberg check": "18 Nov 2026 close (pulled 19 Nov), nine-shock model. Public build compared over the two years to that date.",
   "Period compared": "18 Nov 2024 to 18 Nov 2026 (476 days)",
-  "Daily shocks: median correlation": "0.88 (range 0.62 to 0.96)",
-  "20-day sums: median correlation": "0.94 (range 0.77 to 0.98)",
-  "Growth: daily / 20-day correlation": "0.91 / 0.95",
-  "Monetary: daily / 20-day correlation": "0.87 / 0.98",
-  "Risk-off / carry: daily / 20-day correlation": "0.62 / 0.77",
-  "Liquidity: daily / 20-day correlation": "0.87 / 0.95",
-  "US risk premium: daily / 20-day correlation": "0.90 / 0.93",
-  "Term premium: daily / 20-day correlation": "0.87 / 0.92",
-  "Oil supply: daily / 20-day correlation": "0.92 / 0.94",
+  "Daily shocks: median correlation": "0.89 (range 0.66 to 0.96)",
+  "20-day sums: median correlation": "0.95 (range 0.83 to 0.97)",
+  "Growth: daily / 20-day correlation": "0.90 / 0.95",
+  "Monetary: daily / 20-day correlation": "0.88 / 0.97",
+  "Risk-off / carry: daily / 20-day correlation": "0.66 / 0.83",
+  "Liquidity: daily / 20-day correlation": "0.89 / 0.95",
+  "US risk premium: daily / 20-day correlation": "0.91 / 0.95",
+  "Term premium: daily / 20-day correlation": "0.89 / 0.95",
+  "Oil supply: daily / 20-day correlation": "0.93 / 0.95",
   "AI / tech: daily / 20-day correlation": "0.96 / 0.97",
-  "Same largest shock on the day": "57% of days"
+  "Global growth: daily / 20-day correlation": "0.85 / 0.91",
+  "Same largest shock on the day": "58% of days"
  }
 }
