@@ -24,7 +24,7 @@ body { margin: 0; padding: 24px; background: Canvas; color: var(--color-fg); fon
 </style>
 <script>
 window.dash = (function () {
-  const DS = ['daily_decomp', 'cum_decomp', 'outside_20d', 'shock_roll20', 'ladder_history', 'monitor_latest', 'episodes', 'restrictions', 'calibration'];
+  const DS = ['daily_decomp', 'cum_decomp', 'outside_20d', 'shock_roll20', 'ladder_history', 'monitor_latest', 'episodes', 'restrictions', 'calibration', 'contrib_history'];
   const st = {}; DS.forEach((n) => { st[n] = { status: 'loading' }; });
   const draws = {}, calcs = {}, subs = [];
   const colors = ['#2a78b5', '#d1553a', '#7a5bb5', '#c9902a', '#3f9b6b', '#b5487a', '#6b7f2a', '#2a9bb5', '#a86a3a', '#5a6fd1', '#8c8c8c'];

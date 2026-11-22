@@ -32,7 +32,12 @@ SPECS = {
         'AI / tech':        dict(TECH=+1, EQ=+1),
     },
 }
-SPEC = 'v2'
+# v3: v2 with global (China) growth kept separate. It was never confused with US growth; folding it in pushed copper,
+# oil and yuan moves into 'other'.
+SPECS['v3'] = {k: v for k, v in SPECS['v2'].items()}
+SPECS['v3']['Growth'] = dict(EQ=+1, Y2=+1, BE=+1, HY=-1)
+SPECS['v3']['Global growth'] = dict(EQ=+1, USD=-1, OIL=+1, CU=+1, CNH=-1)
+SPEC = 'v3'
 
 # Narrative restrictions: (day, shock name(s) by spec, sign, variable it must be the largest contributor to).
 NARR = [

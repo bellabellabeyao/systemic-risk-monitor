@@ -34,8 +34,18 @@
 .xa .xa-step { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); font-size: var(--cds-font-size-caption); line-height: 1.5; }
 .xa .xa-step b { display: block; font-size: var(--cds-font-size-body); margin-bottom: 2px; }
 .xa .xa-step.on { border-color: var(--color-warn); box-shadow: inset 0 0 0 1px var(--color-warn); }
+.xa .xa-steps { padding-left: 1.2em; } .xa .xa-steps li { margin-bottom: 6px; }
 .xa details { margin-top: var(--cds-gap-xl); font-size: var(--cds-font-size-caption); line-height: 1.6; }
 .xa summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-body); }
+.xa-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--color-border-line); margin: var(--cds-gap-md) 0 var(--cds-gap-lg); }
+.xa-tab { font: inherit; font-size: var(--cds-font-size-body); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; color: var(--color-fg-muted); cursor: pointer; }
+.xa-tab.on { color: var(--color-fg); border-bottom-color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+.xa.v-dec .t-liq { display: none; }
+.xa.v-liq > :not(.t-liq):not(.xa-tabs):not(#top):not(#xa-intro) { display: none; }
+.xa .xa-sum p { font-size: var(--cds-font-size-body); line-height: 1.7; margin: 0 0 var(--cds-gap-sm); }
+.xa-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; margin-bottom: var(--cds-gap-lg); }
+.xa-chip { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 6px 10px; font-size: var(--cds-font-size-caption); }
+.xa-chip .k { color: var(--color-fg-muted); } .xa-chip .v { color: var(--color-fg); margin-top: 2px; }
 .xa .xa-chk { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); display: inline-flex; align-items: center; gap: 4px; }
 .xa #signtable td, .xa #signtable th { text-align: center; } .xa #signtable td:first-child, .xa #signtable th:first-child { text-align: left; white-space: nowrap; }
 .xa #signtable .st { text-align: left; min-width: 220px; color: var(--color-fg-muted); }
@@ -43,25 +53,30 @@
 .xa #signtable .sg-n { background: color-mix(in srgb, #e34948 22%, transparent); font-weight: 600; }
 </style>
 
-<div class="xa" lang="en" data-read>
+<div class="xa v-dec" lang="en" data-read>
 <h1 id="top">Cross-asset shock decomposition + liquidity monitor</h1>
-<p class="xa-sub">Each day's moves in 13 market variables (US equities, semis, the Treasury curve, real yields, breakevens, the dollar, yen, yuan, gold, oil, copper and HY spreads) are split into eight shocks, and a four-layer monitor checks whether liquidity is breaking down. Built every weekday from public data; data to the <span data-draw="asof" data-source="kpi" data-field="value" data-where="metric=asof">—</span> close.</p>
+<p class="xa-sub" id="xa-intro">Each day's moves in 13 market variables (US equities, semis, the Treasury curve, real yields, breakevens, the dollar, yen, yuan, gold, oil, copper and HY spreads) are split into nine shocks. A second tab runs a four-layer monitor of whether liquidity is breaking down. Data to the <span data-draw="asof" data-source="kpi" data-field="value" data-where="metric=asof">—</span> close.</p>
+<div class="xa-tabs" role="tablist"><button type="button" class="xa-tab on" data-view="dec" role="tab" aria-selected="true">Shock decomposition</button><button type="button" class="xa-tab" data-view="liq" role="tab" aria-selected="false">Liquidity monitor</button></div>
+
+<div class="t-liq">
 
 <p class="xa-lead" id="takeaway">
 The liquidity ladder is at <b data-draw="lvl" data-source="kpi" data-field="value" data-where="metric=level">—</b>: <span data-draw="lvlname">—</span>.
-Over the last 20 trading days gold moved <b data-draw="g20" data-source="kpi" data-field="value" data-where="metric=gold20">—</b>, of which the liquidity shock contributed <b data-draw="g20l" data-source="kpi" data-field="value" data-where="metric=gold20_liq">—</b> and the monetary shock <b data-draw="g20m" data-source="kpi" data-field="value" data-where="metric=gold20_mon">—</b>.
-The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-where="metric=usd20">—</b>, with <b data-draw="u20m" data-source="kpi" data-field="value" data-where="metric=usd20_mon">—</b> from the monetary shock and <b data-draw="u20l" data-source="kpi" data-field="value" data-where="metric=usd20_liq">—</b> from the liquidity shock.
 </p>
 
 <div class="xa-cards" id="cards">
   <div class="xa-card" id="card-level"><div class="k">Liquidity escalation ladder (−1 to 3)</div><div class="v" data-draw="lvl2" data-source="kpi" data-field="value" data-where="metric=level">—</div><div class="s">−1 = no signal; 0 = crowded-position unwind; 1 = market liquidity deteriorating; 2 = funding stress; 3 = safe assets failing</div></div>
   <div class="xa-card" id="card-liq"><div class="k">Model: liquidity shock, 10-day sum</div><div class="v" data-draw="liq10" data-source="kpi" data-field="value" data-where="metric=liq10">—</div><div class="s">In σ. Historical percentile <span data-draw="liqpct" data-source="monitor_latest" data-field="pct" data-where="indicator=Model: liquidity shock, 10d sum">—</span>; the 90th percentile triggers Level 0</div></div>
-  <div class="xa-card" id="card-gold"><div class="k">Gold, last 20 trading days</div><div class="v" data-draw="g20b" data-source="kpi" data-field="value" data-where="metric=gold20">—</div><div class="s">Liquidity shock contributed <span data-draw="g20lb" data-source="kpi" data-field="value" data-where="metric=gold20_liq">—</span> (log change; parts add up to the actual move)</div></div>
-  <div class="xa-card" id="card-usd"><div class="k">US dollar (DXY), last 20 trading days</div><div class="v" data-draw="u20b" data-source="kpi" data-field="value" data-where="metric=usd20">—</div><div class="s">Monetary shock <span data-draw="u20mb" data-source="kpi" data-field="value" data-where="metric=usd20_mon">—</span>, liquidity shock <span data-draw="u20lb" data-source="kpi" data-field="value" data-where="metric=usd20_liq">—</span></div></div>
+</div>
 </div>
 
+<h2 id="summary">Summary: what the market has been pricing</h2>
+<div class="xa-sum" data-draw="summary" data-source="cum_decomp"></div>
+<p class="xa-sub">Main driver of each asset over the last 20 trading days:</p>
+<div class="xa-chips" data-draw="topchips" data-source="cum_decomp"></div>
+
 <div class="xa-legend" id="legend">
-  <span><i class="xa-sw" data-k="Growth"></i>Growth (US and global)</span>
+  <span><i class="xa-sw" data-k="Growth"></i>Growth (US)</span>
   <span><i class="xa-sw" data-k="Monetary"></i>Monetary (hawkish)</span>
   <span><i class="xa-sw" data-k="Risk-off / carry"></i>Risk-off / carry unwind</span>
   <span><i class="xa-sw" data-k="Liquidity"></i>Liquidity / deleveraging</span>
@@ -69,7 +84,8 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
   <span><i class="xa-sw" data-k="Term premium"></i>Term premium</span>
   <span><i class="xa-sw" data-k="Oil supply"></i>Oil supply</span>
   <span><i class="xa-sw" data-k="AI / tech"></i>AI / tech</span>
-  <span><i class="xa-sw" data-k="Other / unidentified"></i>Other / unidentified</span>
+  <span><i class="xa-sw" data-k="Global growth"></i>Global growth</span>
+  <span><i class="xa-sw" data-k="Unexplained / asset-specific"></i>Unexplained / asset-specific</span>
   <span><i class="xa-sw" data-k="Unexplained by model"></i>Unexplained by model (outside assets only)</span>
 </div>
 
@@ -87,6 +103,13 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 </select><label class="xa-chk"><input type="checkbox" class="xa-all"> Show all shocks</label></div>
 <div class="xa-chart" data-draw="cumbars" data-source="cum_decomp" id="cumchart" style="min-height:300px"></div>
 
+<h2 id="hist">History: what has been driving an asset</h2>
+<p class="xa-sub">Each bar is one month (or week) for the asset picked above. The coloured pieces are the shocks: above zero pushed the asset up, below zero pushed it down. The black dot is the actual move. Untick "Show unexplained" to hide the asset-specific part; the hollow ring then marks the part the nine shocks explain. Hover a bar for details.</p>
+<div class="xa-row"><select class="dash-select" data-draw="assetsel" aria-label="Choose an asset" data-source="contrib_history"></select><select class="dash-select" id="histfreq" aria-label="Choose bar length"><option value="M">Monthly, last 12 months</option><option value="W">Weekly, last 26 weeks</option></select><label class="xa-chk"><input type="checkbox" id="histunexp" checked> Show unexplained</label></div>
+<div class="xa-chart" data-draw="histbars" data-source="contrib_history" id="histchart2" style="min-height:340px"></div>
+<p class="xa-lead" data-draw="histread" data-source="contrib_history"></p>
+<p class="xa-sub" data-draw="histnote2" data-source="contrib_history"></p>
+
 <h2 id="outside">Assets outside the model: last 20 trading days</h2>
 <p class="xa-sub">Aluminium, banks, energy equities, VIX and MOVE are not used to identify the shocks. Each is regressed on the identified shocks to see how much they explain. The dark grey "Unexplained by model" bar is the asset-specific part.</p>
 <div class="xa-row"><select class="dash-select" data-draw="outsel" aria-label="Choose an outside asset" data-source="outside_20d"></select><label class="xa-chk"><input type="checkbox" class="xa-all"> Show all shocks</label></div>
@@ -95,7 +118,7 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 <h2 id="roll">Shock intensity: 20-day sums over the last two years</h2>
 <p class="xa-sub">Each daily shock has unit variance; lines show their 20-day sum. The grey band is ±4.5, roughly a 1-in-100 reading.</p>
 <div class="xa-grid" data-source="shock_roll20" id="rollgrid">
-  <div class="xa-mini"><h4>Growth (US and global)</h4><div class="xa-chart" data-draw="roll" data-shock="Growth" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Growth (US)</h4><div class="xa-chart" data-draw="roll" data-shock="Growth" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>Monetary (hawkish)</h4><div class="xa-chart" data-draw="roll" data-shock="Monetary" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>Risk-off / carry unwind</h4><div class="xa-chart" data-draw="roll" data-shock="Risk-off / carry" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>Liquidity / deleveraging</h4><div class="xa-chart" data-draw="roll" data-shock="Liquidity" style="min-height:110px"></div></div>
@@ -103,8 +126,10 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
   <div class="xa-mini"><h4>Term premium</h4><div class="xa-chart" data-draw="roll" data-shock="Term premium" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>Oil supply</h4><div class="xa-chart" data-draw="roll" data-shock="Oil supply" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>AI / tech</h4><div class="xa-chart" data-draw="roll" data-shock="AI / tech" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Global growth</h4><div class="xa-chart" data-draw="roll" data-shock="Global growth" style="min-height:110px"></div></div>
 </div>
 
+<div class="t-liq">
 <h2 id="ladder">Liquidity escalation ladder</h2>
 <p class="xa-sub">Four layers, from slow-moving to fast. The highest level reached today is outlined.</p>
 <div class="xa-ladder" id="steps" data-source="kpi">
@@ -123,6 +148,7 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
   <thead><tr><th data-field="indicator">Indicator</th><th data-field="value">Latest</th><th data-field="pct">Stress percentile</th><th data-field="rule">Ladder rule</th><th data-field="as_of">As of</th></tr></thead>
   <tbody data-draw="montbody"></tbody>
 </table>
+</div>
 </div>
 
 <h2 id="validation">Model check: past episodes</h2>
@@ -143,12 +169,17 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 </table>
 </div>
 
-<details id="method">
-<summary>Method, shock definitions, data and limits</summary>
-<p><b>Model.</b> Daily changes in 13 variables: S&amp;P 500, semis (SOX, net of its rolling one-year beta to the S&amp;P), 2y UST yield, 30y–2y slope, 10y real yield (TIPS), 10y breakeven, the dollar (DXY), USDJPY, USDCNH, gold, Brent, copper and a HY spread proxy. Sign restrictions identify eight shocks; the remaining five are 'other / unidentified'. Rotations are drawn as in Rubio-Ramírez, Waggoner and Zha (2010) and accepted only if every named shock meets all of its signs; no penalty function is used. On eight well-known days a narrative restriction (Antolín-Díaz and Rubio-Ramírez, 2018) also requires the named shock to have the right sign and to be the largest contributor to one variable; windows that contain those days keep only rotations that pass. An earlier version had ten shocks: yen / carry and global growth were folded into risk-off and growth because the sampler could not tell them apart reliably. Each estimate uses a 2-year rolling window, re-estimated every 21 trading days, starting in 2012. Contributions are averaged over accepted rotations (capped at 300 per window), so they add up exactly to the actual move. The design follows Jarociński &amp; Karadi (2020) for monetary vs information shocks, Cieslak &amp; Pang (2021) for using the curve to separate monetary from term-premium shocks, Brandt et al. (ECB WP 2560, 2021) for adding foreign and global shocks, and Ready (2018) for oil.</p>
+<details id="method" open>
+<summary>Method</summary>
+<ol class="xa-steps">
+<li><b>Data.</b> Daily changes in 13 variables: S&amp;P 500, semis (SOX net of its usual market beta), 2y yield, 30y−2y slope, 10y real yield, 10y breakeven, dollar (DXY), USDJPY, USDCNH, gold, Brent, copper and HY spreads.</li>
+<li><b>Fingerprints.</b> Each of nine shocks is defined only by the direction it must push some of these assets on the same day (table in the appendix). Everything else is left for the data to decide.</li>
+<li><b>Estimation.</b> In each rolling 2-year window, the model draws many ways of splitting the daily moves into independent shocks that fit how the assets move together. It keeps only the splits where every shock matches its fingerprint, and where the shock named on each of eight well-known days (appendix) has the right sign and is the largest driver of one asset. The numbers shown are the average over the kept splits (Rubio-Ramírez, Waggoner and Zha, 2010; Antolín-Díaz and Rubio-Ramírez, 2018).</li>
+<li><b>Output.</b> Each day's move in each asset = the sum of the nine shock contributions + an unexplained, asset-specific part. Windows and months are sums of days. Assets outside the model are regressed on the daily shocks.</li>
+</ol>
 <p><b>What each shock means.</b> Every shock is a <i>surprise</i> relative to what was priced, not a level. Positive values push in the direction named; negative values are the opposite (e.g. a negative monetary shock is a dovish surprise).</p>
 <ul>
-<li><b>Growth (US and global)</b>: better demand news. Equities, 2y yields, breakevens and copper up, HY spreads tighter.</li>
+<li><b>Growth (US)</b>: better US news. Equities, 2y yields and breakevens up, HY spreads tighter.</li>
 <li><b>Monetary (hawkish)</b>: the Fed path is repriced higher for reasons other than better growth. 2y and real yields up, curve flatter, breakevens down, dollar up, equities down.</li>
 <li><b>Risk-off / carry unwind</b>: flight to safety or a carry-trade unwind. Equities and yields down, yen up, HY wider; the dollar and gold are left free, because they rise in classic risk-off but can fall in a carry unwind.</li>
 <li><b>Liquidity / deleveraging</b>: a dash for cash. Equities and gold sold, long end sold while bills are bid (2y down, curve steeper, real yields up), breakevens down, dollar up, HY wider.</li>
@@ -156,6 +187,7 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 <li><b>Term premium</b>: the long end reprices on supply or fiscal risk. Curve steeper with 2y also up, real yields up, equities and gold down.</li>
 <li><b>Oil supply</b>: oil up, breakevens up, equities down.</li>
 <li><b>AI / tech</b>: semis outperform their usual market beta and equities rise.</li>
+<li><b>Global growth</b>: better world demand. Copper and oil up, the dollar weaker and other currencies (including the yuan) stronger, equities up.</li>
 </ul>
 <p><b>Sign restrictions.</b> The full table of signs that define each shock is in the <a href="#appendix">appendix</a> below.</p>
 <p><b>Data.</b> Yields are the US Treasury's daily par nominal and real (TIPS) curves, published the same evening; the breakeven is 10y nominal minus 10y real, as in FRED's T10YIE. Market prices are Yahoo Finance daily closes: S&amp;P 500, SOX, DXY, USDJPY, USDCNH (onshore USDCNY when Yahoo has no offshore series; the two move almost one for one), COMEX gold and copper, ICE Brent. FRED now carries only three years of ICE BofA HY spreads, so the HY variable is a proxy: the return of HYG minus that of IEI (similar-duration Treasuries), divided by a spread duration of 3.5, in bp of spread. Funding uses New York Fed SOFR and its 99th percentile, FRED IORB/IOER and NFCI, and the OFR Financial Stress Index. Two inputs have no public source and come from occasional Bloomberg checks: the UST liquidity index (GVLQUSD, a curve-fitting-error measure in the spirit of Hu, Pan and Wang, 2013) and the 3-month EUR and JPY cross-currency bases (computed from covered interest parity with forward points and SOFR, €STR and TONA OIS). They are shown as percentiles with their date and count in the ladder for 7 days.</p>
@@ -163,7 +195,7 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 </details>
 
 <h2 id="appendix">Appendix: what defines each shock</h2>
-<p class="xa-sub">Each shock is identified only by the direction it must push these assets on the same day: + up, − down, blank = left free for the model to estimate. For USDJPY and USDCNH, − means the yen or yuan strengthens; for HY, + means spreads widen. Any shock can also run in reverse on a given day (a negative monetary shock is a dovish surprise). The five 'other / unidentified' shocks have no signs.</p>
+<p class="xa-sub">Each shock is identified only by the direction it must push these assets on the same day: + up, − down, blank = left free for the model to estimate. For USDJPY and USDCNH, − means the yen or yuan strengthens; for HY, + means spreads widen. Any shock can also run in reverse on a given day (a negative monetary shock is a dovish surprise). The four unnamed shocks behind 'unexplained / asset-specific' have no signs.</p>
 <div class="xa-tw"><table data-source="restrictions" id="signtable">
   <thead><tr><th data-field="shock">Shock</th><th>SPX</th><th>Semis (β-adj.)</th><th>2y</th><th>30y−2y</th><th>10y real</th><th>10y BE</th><th>DXY</th><th>USDJPY</th><th>USDCNH</th><th>Gold</th><th>Brent</th><th>Copper</th><th>HY spread</th><th class="st">Story</th><th class="st">Tells it apart from</th></tr></thead>
   <tbody data-draw="signbody"></tbody>
@@ -180,17 +212,17 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
     <tr><td>3 Oct 2023</td><td>Term premium</td><td>+</td><td>30y − 2y slope</td><td>Long-end selloff: curve +9bp steeper</td></tr>
     <tr><td>27 Jan 2025</td><td>AI / tech</td><td>−</td><td>Semis (β-adj.)</td><td>DeepSeek: semis −6% beyond their market beta</td></tr>
     <tr><td>8 Mar 2022</td><td>Oil supply</td><td>+</td><td>Brent</td><td>US ban on Russian oil</td></tr>
-    <tr><td>11 Aug 2015</td><td>Growth</td><td>−</td><td>Copper</td><td>CNY devaluation: copper −2.9%</td></tr>
+    <tr><td>11 Aug 2015</td><td>Global growth</td><td>−</td><td>Copper</td><td>CNY devaluation: copper −2.9%</td></tr>
   </tbody>
 </table></div>
 </div>
 
 <script>
 window.XA = (function () {
-  const SH = ['Growth', 'Monetary', 'Risk-off / carry', 'Liquidity', 'US risk premium', 'Term premium', 'Oil supply', 'AI / tech', 'Other / unidentified'];
+  const SH = ['Growth', 'Monetary', 'Risk-off / carry', 'Liquidity', 'US risk premium', 'Term premium', 'Oil supply', 'AI / tech', 'Global growth', 'Unexplained / asset-specific'];
   const LV = { '-1': 'no signal (price, market-liquidity and funding indicators are all below their triggers)', '0': 'a crowded-position unwind (price signal only; funding and market-liquidity indicators are not flashing)', '1': 'market liquidity deteriorating', '2': 'funding stress', '3': 'safe assets failing' };
   function col(s) {
-    if (s === 'Unexplained by model') return 'var(--cds-chart-muted)';
+    if (s === 'Unexplained by model' || s === 'Unexplained / asset-specific') return 'var(--cds-chart-muted)';
     const i = SH.indexOf(s); const c = dash.colors || [];
     if (!c.length || i < 0) return 'gray';
     if (i < c.length) return c[i];
@@ -250,7 +282,7 @@ window.XA = (function () {
     el.appendChild(t);
   }
   const STORY = {
-    'Growth': ['Better US or global demand: stocks, copper and inflation expectations up, credit tighter.', 'Monetary: here breakevens rise and equities rise with yields.'],
+    'Growth': ['Better US data: demand and inflation expectations up, credit tighter.', 'Monetary: here breakevens rise and equities rise with yields.'],
     'Monetary': ['Fed path repriced higher for reasons other than growth.', 'Growth: equities fall and breakevens drop; term premium: the curve flattens.'],
     'Risk-off / carry': ['Flight to safety or carry unwind: Treasuries and the yen bought, risky assets sold.', 'Liquidity: here yields fall instead of real yields rising; US risk premium: real yields fall.'],
     'Liquidity': ['Dash for cash: levered holders sell even safe assets to raise dollars.', 'Risk-off / carry: gold is sold and the long end sold while bills are bid.'],
@@ -258,6 +290,7 @@ window.XA = (function () {
     'Term premium': ['Long end sold on supply or fiscal worries.', 'Monetary: the curve steepens; liquidity: the 2y rises rather than falls.'],
     'Oil supply': ['Oil supply shock lifts inflation expectations and hurts equities.', 'Growth / global growth: oil rises while equities fall.'],
     'AI / tech': ['AI-specific news: semis move beyond their usual market beta.', 'Growth: only semis need to outperform; yields are free.'],
+    'Global growth': ['World demand: metals and oil up, the dollar weaker, other currencies (incl. the yuan) stronger.', 'US growth: driven by copper, oil and FX, not US yields.'],
   };
   return { SH, LV, STORY, col, fmt, kpi, bars, tip, showTip, state: { day: null } };
 })();
@@ -312,14 +345,14 @@ XA.wf = function (el, rows) {
   if (!rows.length) { el.textContent = '—'; return; }
   const unit = rows[0].unit || '', act = rows[0].actual, asset = rows[0].asset;
   const keep = (r) => r.shock === 'Unexplained by model';
-  const named = rows.filter((r) => r.shock !== 'Other / unidentified' && !keep(r)).sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-  const other = rows.filter((r) => r.shock === 'Other / unidentified');
+  const named = rows.filter((r) => r.shock !== 'Unexplained / asset-specific' && !keep(r)).sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  const other = rows.filter((r) => r.shock === 'Unexplained / asset-specific');
   let items;
   if (XA.state.all) items = named.concat(other).map((r) => ({ n: r.shock, v: r.value || 0, c: XA.col(r.shock) }));
   else {
     const top = named.slice(0, 5), restRows = named.slice(5).concat(other);
     items = top.map((r) => ({ n: r.shock, v: r.value || 0, c: XA.col(r.shock) }));
-    items.push({ n: 'All other shocks', v: d3.sum(restRows, (r) => r.value || 0), c: 'var(--cds-chart-muted)', sub: restRows.map((r) => r.shock + ' ' + XA.fmt(r.value, unit)) });
+    items.push({ n: 'Other shocks + unexplained', v: d3.sum(restRows, (r) => r.value || 0), c: 'var(--cds-chart-muted)', sub: restRows.map((r) => r.shock + ' ' + XA.fmt(r.value, unit)) });
   }
   rows.filter(keep).forEach((r) => items.push({ n: r.shock, v: r.value || 0, c: 'color-mix(in srgb, var(--cds-chart-muted) 55%, var(--color-fg))' }));
   const force = d3.sum(rows, (r) => Math.abs(r.value || 0)) || 1;
@@ -403,6 +436,70 @@ document.querySelectorAll('.xa-all').forEach((c) => c.addEventListener('change',
   XA.state.all = c.checked; document.querySelectorAll('.xa-all').forEach((o) => { o.checked = c.checked; });
   ['daybars', 'cumbars', 'outbars'].forEach((n) => dash.draw(n));
 }));
+</script>
+
+<script>
+XA.UNEXP = 'Unexplained / asset-specific';
+XA.histAgg = function () {
+  const d = dash.data('contrib_history');
+  if (d.status !== 'ok') return { status: d.status };
+  const fr = document.querySelector('#histfreq'); const freq = fr ? fr.value : 'M';
+  const rows = d.data.filter((r) => r.asset === XA.state.asset);
+  const wk = (s) => { const t = new Date(s + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + ((5 - t.getUTCDay() + 7) % 7)); return t.toISOString().slice(0, 10); };
+  const per = new Map();
+  rows.forEach((r) => { const k = freq === 'M' ? r.date.slice(0, 7) : wk(r.date); if (!per.has(k)) per.set(k, {}); const o = per.get(k); o[r.shock] = (o[r.shock] || 0) + (r.value || 0); });
+  const keys = [...per.keys()].sort().slice(freq === 'M' ? -12 : -26);
+  const shocks = XA.SH.filter((s) => rows.some((r) => r.shock === s));
+  return { status: 'ok', keys, per, shocks, freq, unit: rows.length ? rows[0].unit : '' };
+};
+dash.draw('histbars', (el) => {
+  el.replaceChildren(); const h = XA.histAgg();
+  if (h.status === 'error') { el.textContent = 'Failed to load'; return; }
+  if (h.status !== 'ok' || !h.keys.length) { el.textContent = '—'; return; }
+  const cb = document.querySelector('#histunexp'); const showU = cb ? cb.checked : true;
+  const use = h.shocks.filter((s) => showU || s !== XA.UNEXP);
+  const bars = h.keys.map((k) => {
+    const o = h.per.get(k), act = d3.sum(h.shocks, (s) => o[s] || 0), expl = d3.sum(h.shocks.filter((s) => s !== XA.UNEXP), (s) => o[s] || 0);
+    let p = 0, n = 0; const seg = use.map((s) => { const v = o[s] || 0, a0 = v > 0 ? p : n + v, a1 = v > 0 ? p + v : n; if (v > 0) p += v; else n += v; return { s, v, a0, a1 }; });
+    return { k, o, act, expl, seg, top: p, bot: n };
+  });
+  const W = Math.max(320, el.clientWidth), H = 340, m = { l: 46, r: 10, t: 10, b: 24 };
+  const ext = d3.extent([0, ...bars.flatMap((b) => [b.top, b.bot, b.act, b.expl])]);
+  const y = d3.scaleLinear().domain(ext).nice().range([H - m.b, m.t]);
+  const x = d3.scaleBand().domain(h.keys).range([m.l, W - m.r]).padding(0.28);
+  const lab = (k) => (h.freq === 'M' ? d3.utcFormat('%b')(new Date(k + '-01T00:00:00Z')) : d3.utcFormat('%d %b')(new Date(k + 'T00:00:00Z')));
+  const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img')
+    .attr('aria-label', (h.freq === 'M' ? 'Monthly' : 'Weekly') + ' shock attribution for ' + XA.state.asset);
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickSize(-(W - m.l - m.r)).tickFormat((v) => v + (h.unit === '%' ? '%' : ' ' + h.unit)))
+    .call((g) => g.select('.domain').remove()).call((g) => g.selectAll('.tick line').style('stroke', 'var(--cds-chart-grid)'));
+  const every = Math.ceil(h.keys.length / Math.max(4, Math.floor(W / 60)));
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(h.keys.filter((_, i) => i % every === 0 || i === h.keys.length - 1)).tickFormat(lab).tickSize(0))
+    .call((g) => g.select('.domain').remove());
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).style('stroke', 'var(--cds-chart-axis)');
+  const tp = XA.tip(el), bw = x.bandwidth();
+  bars.forEach((b) => {
+    const g = svg.append('g');
+    b.seg.forEach((s) => { if (!s.v) return; g.append('rect').attr('x', x(b.k)).attr('width', bw).attr('y', y(s.a1)).attr('height', Math.max(0.5, y(s.a0) - y(s.a1)))
+      .style('fill', XA.col(s.s)).style('stroke', 'var(--color-panel)').style('stroke-width', 1); });
+    g.append('circle').attr('cx', x(b.k) + bw / 2).attr('cy', y(b.act)).attr('r', 4.5).style('fill', 'var(--color-fg)').style('stroke', 'var(--color-panel)').style('stroke-width', 2);
+    if (!showU) g.append('circle').attr('cx', x(b.k) + bw / 2).attr('cy', y(b.expl)).attr('r', 5.5).style('fill', 'none').style('stroke', 'var(--color-fg)').style('stroke-width', 1.5);
+    svg.append('rect').attr('x', x(b.k) - x.step() * x.paddingInner() / 2).attr('width', x.step()).attr('y', 0).attr('height', H - m.b).style('fill', 'transparent')
+      .on('mousemove', (ev) => {
+        const list = h.shocks.map((s) => [s, b.o[s] || 0]).sort((p, q) => Math.abs(q[1]) - Math.abs(p[1]));
+        XA.showTip(el, tp, ev, [(h.freq === 'M' ? d3.utcFormat('%B %Y')(new Date(b.k + '-01T00:00:00Z')) : 'Week to ' + d3.utcFormat('%d %b %Y')(new Date(b.k + 'T00:00:00Z'))) + ': actual ' + XA.fmt(b.act, h.unit),
+          'Explained by the nine shocks ' + XA.fmt(b.expl, h.unit)].concat(list.map(([s, v]) => s + ' ' + XA.fmt(v, h.unit))));
+      })
+      .on('mouseleave', () => { tp.hidden = true; });
+  });
+  el.appendChild(tp);
+});
+dash.draw('histnote2', (el) => {
+  const d = dash.data('contrib_history'); el.textContent = '';
+  if (d.status !== 'ok' || !d.data.length) return;
+  el.textContent = 'Data to ' + d.data[d.data.length - 1].date + '. The first and last bars can be part months or weeks.';
+});
+const xaHist2 = () => ['histbars', 'histnote2'].forEach((n) => dash.draw(n));
+document.addEventListener('change', (e) => { if (e.target.matches('select[data-draw="assetsel"], #histfreq, #histunexp')) xaHist2(); });
 </script>
 
 <script>
@@ -512,4 +609,78 @@ dash.draw('signbody', (tb) => {
     st.forEach((txt) => { const c = tr.insertCell(); c.className = 'st'; c.textContent = txt; });
   });
 });
+</script>
+<script>
+XA.FN = { 'Monetary': 'Monetary (hawkish)', 'Liquidity': 'Liquidity / deleveraging', 'Risk-off / carry': 'Risk-off / carry unwind', 'Growth': 'US growth' };
+XA.nm = (s) => XA.FN[s] || s;
+XA.NAMED = () => XA.SH.filter((s) => s !== 'Unexplained / asset-specific');
+XA.themes = function (rows) {
+  const assets = [...new Set(rows.map((r) => r.asset))], named = XA.NAMED();
+  const score = {}, count = {}, top = {}, val = {}, act = {}, unit = {}; let unexp = 0;
+  named.forEach((s) => { score[s] = 0; count[s] = 0; });
+  assets.forEach((a) => {
+    const rr = rows.filter((r) => r.asset === a), tot = d3.sum(rr, (r) => Math.abs(r.value || 0)) || 1;
+    val[a] = {}; rr.forEach((r) => { val[a][r.shock] = r.value || 0; }); act[a] = rr[0].actual; unit[a] = rr[0].unit;
+    named.forEach((s) => { score[s] += Math.abs(val[a][s] || 0) / tot / assets.length; });
+    unexp += Math.abs(val[a]['Unexplained / asset-specific'] || 0) / tot / assets.length;
+    top[a] = named.slice().sort((p, q) => Math.abs(val[a][q] || 0) - Math.abs(val[a][p] || 0))[0]; count[top[a]] += 1;
+  });
+  const order = named.slice().sort((p, q) => score[q] - score[p]);
+  return { assets, score, count, top, val, act, unit, unexp, order };
+};
+XA.pushed = function (T, s, n) {
+  const sh = (a) => Math.abs(T.val[a][s] || 0) / (d3.sum(Object.values(T.val[a]), Math.abs) || 1);
+  return T.assets.slice().sort((p, q) => sh(q) - sh(p)).slice(0, n).map((x) => x + ' ' + XA.fmt(T.val[x][s], T.unit[x])).join(', ');
+};
+dash.draw('summary', (el) => {
+  el.replaceChildren();
+  const c = dash.data('cum_decomp'), d = dash.data('daily_decomp');
+  if (c.status !== 'ok' || d.status !== 'ok') { el.textContent = c.status === 'error' || d.status === 'error' ? 'Failed to load' : '—'; return; }
+  const w = c.data.filter((r) => r.window === 'Last 20 trading days'); if (!w.length) return;
+  const T = XA.themes(w), t1 = T.order[0], t2 = T.order[1], t3 = T.order[2];
+  const last = [...new Set(d.data.map((r) => r.date))].sort().pop(), D = XA.themes(d.data.filter((r) => r.date === last));
+  const P = (html) => { const p = document.createElement('p'); p.innerHTML = html; el.appendChild(p); };
+  const b = (s) => '<b>' + XA.nm(s) + '</b>';
+  P(`Over the last 20 trading days (${w[0].start} to ${w[0].end}) the main theme was ${b(t1)}: the largest named driver for ${T.count[t1]} of ${T.assets.length} assets, and on average ${Math.round(T.score[t1] * 100)}% of the forces on each. It moved ${XA.pushed(T, t1, 4)}.`);
+  P(`Next came ${b(t2)} (largest for ${T.count[t2]} assets; it moved ${XA.pushed(T, t2, 3)}) and ${b(t3)} (${T.count[t3]} assets).`);
+  P(`On the latest day (${last}) the main theme was ${b(D.order[0])}, followed by ${b(D.order[1])}. About ${Math.round(T.unexp * 100)}% of the 20-day moves are left unexplained, i.e. asset-specific.`);
+});
+dash.draw('topchips', (el) => {
+  el.replaceChildren();
+  const c = dash.data('cum_decomp'); if (c.status !== 'ok') return;
+  const w = c.data.filter((r) => r.window === 'Last 20 trading days'); if (!w.length) return;
+  const T = XA.themes(w);
+  T.assets.forEach((a) => {
+    const s = T.top[a], chip = document.createElement('div'); chip.className = 'xa-chip';
+    const k = document.createElement('div'); k.className = 'k'; k.textContent = a + ' ' + XA.fmt(T.act[a], T.unit[a]);
+    const v = document.createElement('div'); v.className = 'v';
+    const sw = document.createElement('i'); sw.className = 'xa-sw'; sw.style.background = XA.col(s);
+    v.appendChild(sw); v.appendChild(document.createTextNode(' ' + XA.nm(s) + ' ' + XA.fmt(T.val[a][s], T.unit[a])));
+    chip.appendChild(k); chip.appendChild(v); el.appendChild(chip);
+  });
+});
+dash.draw('histread', (el) => {
+  el.textContent = '';
+  const d = dash.data('contrib_history'); if (d.status !== 'ok') return;
+  const rows = d.data.filter((r) => r.asset === XA.state.asset); if (!rows.length) return;
+  const dates = [...new Set(rows.map((r) => r.date))].sort(), rec = new Set(dates.slice(-63)), bef = new Set(dates.slice(0, -63));
+  const sum = (set) => { const o = {}; rows.forEach((r) => { if (set.has(r.date)) o[r.shock] = (o[r.shock] || 0) + (r.value || 0); }); return o; };
+  const A = sum(rec), B = sum(bef), u = rows[0].unit, named = XA.NAMED();
+  const rank = (o) => named.slice().sort((p, q) => Math.abs(o[q] || 0) - Math.abs(o[p] || 0));
+  const ra = rank(A), rb = rank(B), actA = d3.sum(Object.values(A)), actB = d3.sum(Object.values(B));
+  const ua = Math.abs(A['Unexplained / asset-specific'] || 0) / (d3.sum(Object.values(A), Math.abs) || 1);
+  let t = `Last 3 months: ${XA.state.asset} ${XA.fmt(actA, u)}, mainly from ${XA.nm(ra[0])} (${XA.fmt(A[ra[0]], u)}) and ${XA.nm(ra[1])} (${XA.fmt(A[ra[1]], u)}). `;
+  t += `In the ${Math.round(bef.size / 21)} months before (${XA.fmt(actB, u)}) the biggest driver was ${XA.nm(rb[0])} (${XA.fmt(B[rb[0]], u)}), `;
+  t += ra[0] === rb[0] ? 'so the same story has been in charge throughout.' : `so the story has shifted from ${XA.nm(rb[0])} to ${XA.nm(ra[0])}.`;
+  if (ua > 0.35) t += ` A large share of the recent move (${Math.round(ua * 100)}%) is asset-specific.`;
+  el.textContent = t;
+});
+XA.setView = function (v) {
+  const root = document.querySelector('.xa'); if (!root) return;
+  root.classList.toggle('v-dec', v === 'dec'); root.classList.toggle('v-liq', v === 'liq');
+  document.querySelectorAll('.xa-tab').forEach((b) => { const on = b.dataset.view === v; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  ['summary', 'topchips', 'assetsel', 'daysel', 'daybars', 'cumbars', 'histbars', 'histnote2', 'histread', 'outsel', 'outbars', 'roll', 'ladderchart', 'montbody', 'eptbody', 'calbody', 'signbody'].forEach((n) => dash.draw(n));
+};
+document.querySelectorAll('.xa-tab').forEach((b) => b.addEventListener('click', () => XA.setView(b.dataset.view)));
+document.addEventListener('change', (e) => { if (e.target.matches('select[data-draw="assetsel"]')) dash.draw('histread'); });
 </script>

@@ -129,8 +129,8 @@ EP = [('2013 taper tantrum', '2013-05-22', '2013-06-25', 'Monetary / term premiu
       ('Feb 2022 Ukraine oil shock', '2022-02-24', '2022-03-08', 'Oil supply / risk-off'),
       ('Jun 2022 75bp hike', '2022-06-10', '2022-06-16', 'Monetary'), ('Mar 2023 SVB', '2023-03-09', '2023-03-17', 'Risk-off'),
       ('Aug 2024 BOJ hike + carry unwind', '2024-07-31', '2024-08-05', 'Risk-off / carry'),
-      ('11 Aug 2015 CNY devaluation', '2015-08-11', '2015-08-11', 'Growth (negative)'),
-      ('Sep 2024 China stimulus', '2024-09-24', '2024-09-30', 'Growth'),
+      ('11 Aug 2015 CNY devaluation', '2015-08-11', '2015-08-11', 'Global growth (negative)'),
+      ('Sep 2024 China stimulus', '2024-09-24', '2024-09-30', 'Global growth'),
       ('27 Jan 2025 DeepSeek', '2025-01-27', '2025-01-27', 'AI / tech (negative)'),
       ('Apr 2025 Liberation Day', '2025-04-03', '2025-04-11', 'US risk premium'),
       ('Late Jan 2026 gold crash', '2026-01-29', '2026-02-03', 'Liquidity')]
@@ -140,7 +140,7 @@ def export(r: dict, m: dict, out: Path, calib: dict | None, source: str):
     out.mkdir(parents=True, exist_ok=True)
     idx, N, C = r['idx'], r['names'], r['contrib']
     OTH = [i for i, n in enumerate(N) if n.startswith('Other')]; NAM = [n for n in N if not n.startswith('Other')]
-    SH = NAM + ['Other / unidentified']
+    SH = NAM + ['Unexplained / asset-specific']
     LAB = dict(r['lab']); LAB['TECH'] = 'Semis, beta-adj. (SOX)'
     col = lambda a: np.concatenate([a[..., [N.index(n) for n in NAM]], np.nansum(a[..., OTH], axis=-1, keepdims=True)], axis=-1)
     code = [{'label': f, 'value': (HERE / f).read_text(), 'type': 'code', 'lang': 'python'} for f in ['model.py', 'data.py', 'pipeline.py']]
@@ -184,6 +184,12 @@ def export(r: dict, m: dict, out: Path, calib: dict | None, source: str):
             rows.append({'asset': OUTL[o][0], 'unit': OUTL[o][1], 'shock': s, 'value': num(np.nansum(occ[msk, k, j]), 3), 'actual': num(act, 3)})
         rows.append({'asset': OUTL[o][0], 'unit': OUTL[o][1], 'shock': 'Unexplained by model', 'value': num(np.nansum(OC[msk, k, len(N)]), 3), 'actual': num(act, 3)})
     dump('outside_20d', rows, [{'label': 'Method', 'value': 'Each asset regressed on the identified daily shocks over the same 2y window; the rest is unexplained.'}])
+    rows = []
+    for t in range(max(0, len(idx) - 252), len(idx)):
+        for i, v in enumerate(V):
+            for j, s in enumerate(SH):
+                rows.append({'date': D(idx[t]), 'asset': LAB[v], 'unit': UNIT[v], 'shock': s, 'value': num(CC[t, i, j], 3)})
+    dump('contrib_history', rows, [src, {'label': 'Units', 'value': 'Daily contributions in % (bp for yields, slope and HY); the page sums them by month or week.'}])
     sh = pd.DataFrame(r['shock'], index=idx, columns=N)[NAM]
     s20 = sh.rolling(20).sum()
     rows = [{'date': D(t), 'shock': s, 'value': num(s20.loc[t, s], 3)} for t in idx[-504:] for s in NAM]

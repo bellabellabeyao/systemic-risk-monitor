@@ -10,7 +10,7 @@ from xasset.pipeline import V
 
 def test_restrictions():
     shocks, SGN, names, _ = build(V)
-    assert len(shocks) == 8 and len(names) == 13 and SGN.shape == (8, 13)
+    assert len(shocks) == 9 and len(names) == 13 and SGN.shape == (9, 13)
     assert SGN[list(shocks).index('Liquidity'), V.index('AU')] == -1          # gold sold in a dash for cash
     assert SGN[list(shocks).index('Risk-off / carry'), V.index('JPY')] == -1  # yen bought
 
