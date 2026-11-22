@@ -10,9 +10,17 @@ from xasset.pipeline import V
 
 def test_restrictions():
     shocks, SGN, names, _ = build(V)
-    assert len(shocks) == 10 and len(names) == 13 and SGN.shape == (10, 13)
-    assert SGN[list(shocks).index('Liquidity'), V.index('AU')] == -1      # gold sold in a dash for cash
-    assert SGN[list(shocks).index('Risk-off'), V.index('AU')] == +1
+    assert len(shocks) == 8 and len(names) == 13 and SGN.shape == (8, 13)
+    assert SGN[list(shocks).index('Liquidity'), V.index('AU')] == -1          # gold sold in a dash for cash
+    assert SGN[list(shocks).index('Risk-off / carry'), V.index('JPY')] == -1  # yen bought
+
+
+def test_narrative_picks_days_in_window():
+    from xasset.model import narrative
+    _, _, names, _ = build(V)
+    idx = pd.bdate_range('2024-07-01', '2024-09-30')
+    nr = narrative(names, V, None, idx)
+    assert nr == [(idx.get_loc(pd.Timestamp('2024-08-05')), names.index('Risk-off / carry'), 1, V.index('JPY'))]
 
 
 def test_assemble_cuts_stale_rows():
@@ -46,5 +54,5 @@ def test_assemble_carries_late_hy_one_day():
 
 
 if __name__ == '__main__':
-    for f in [test_restrictions, test_assemble_cuts_stale_rows, test_assemble_carries_late_hy_one_day, test_identify_adds_up]:
+    for f in [test_restrictions, test_narrative_picks_days_in_window, test_assemble_cuts_stale_rows, test_assemble_carries_late_hy_one_day, test_identify_adds_up]:
         f(); print('ok', f.__name__)

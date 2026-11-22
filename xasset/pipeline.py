@@ -10,7 +10,7 @@ import argparse, json, os, time
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from xasset.model import build, changes, identify
+from xasset.model import build, changes, identify, narrative, NARR
 
 HERE = Path(__file__).parent
 V = ['EQ', 'TECH', 'Y2', 'SLOPE', 'RY', 'BE', 'USD', 'JPY', 'CNH', 'AU', 'OIL', 'CU', 'HY']
@@ -21,9 +21,9 @@ UNIT = {'EQ': '%', 'TECH': '%', 'Y2': 'bp', 'SLOPE': 'bp', 'RY': 'bp', 'BE': 'bp
 
 
 # ------------------------------------------------------------------ 1. rolling estimation
-def estimate(panel: pd.DataFrame, ndraw: int = 100000, log=print) -> dict:
+def estimate(panel: pd.DataFrame, ndraw: int = 100000, log=print, spec=None, use_narr=True, min_acc=300, max_mult=15) -> dict:
     """504-day windows re-estimated every 21 days. Contributions averaged over accepted rotations (max 300 per window)."""
-    shocks, SGN, NAMES, LAB = build(V)
+    shocks, SGN, NAMES, LAB = build(V, spec)
     d = changes(panel, V); idx = d.index; T = len(d)
     ends = list(range(T - 1, WIN - 1, -STEP))[::-1]
     if not ends:
@@ -39,9 +39,14 @@ def estimate(panel: pd.DataFrame, ndraw: int = 100000, log=print) -> dict:
     t0 = time.time(); prev = None
     for k, e in enumerate(ends):
         s = e - WIN + 1; X = d.iloc[s:e + 1].values; sd = X.std(axis=0)
-        acc, _ = identify(X / sd, SGN, ndraw=ndraw, seed=k)
+        nr = narrative(NAMES, V, None, idx[s:e + 1]) if use_narr else []
+        acc, _ = identify(X / sd, SGN, ndraw=ndraw, seed=k, narr=nr)
+        m_ = 1
+        while nr and len(acc) < min_acc and m_ < max_mult:     # narrative windows accept fewer rotations: draw more
+            more, _ = identify(X / sd, SGN, ndraw=ndraw, seed=1000 * m_ + k, narr=nr); m_ += 1
+            acc = more if len(acc) == 0 else (np.concatenate([acc, more]) if len(more) else acc)
         a = (prev + 1) if prev is not None else s; prev = e
-        meta.append(dict(end=idx[e], n_acc=len(acc)))
+        meta.append(dict(end=idx[e], n_acc=len(acc), n_narr=len(nr)))
         if len(acc) == 0:
             continue
         if len(acc) > MAXD:
@@ -123,9 +128,9 @@ EP = [('2013 taper tantrum', '2013-05-22', '2013-06-25', 'Monetary / term premiu
       ('Mar 2020 dash for cash', '2020-03-09', '2020-03-18', 'Liquidity'),
       ('Feb 2022 Ukraine oil shock', '2022-02-24', '2022-03-08', 'Oil supply / risk-off'),
       ('Jun 2022 75bp hike', '2022-06-10', '2022-06-16', 'Monetary'), ('Mar 2023 SVB', '2023-03-09', '2023-03-17', 'Risk-off'),
-      ('Aug 2024 BOJ hike + carry unwind', '2024-07-31', '2024-08-05', 'Yen / carry'),
-      ('11 Aug 2015 CNY devaluation', '2015-08-11', '2015-08-11', 'Global growth (negative)'),
-      ('Sep 2024 China stimulus', '2024-09-24', '2024-09-30', 'Global growth'),
+      ('Aug 2024 BOJ hike + carry unwind', '2024-07-31', '2024-08-05', 'Risk-off / carry'),
+      ('11 Aug 2015 CNY devaluation', '2015-08-11', '2015-08-11', 'Growth (negative)'),
+      ('Sep 2024 China stimulus', '2024-09-24', '2024-09-30', 'Growth'),
       ('27 Jan 2025 DeepSeek', '2025-01-27', '2025-01-27', 'AI / tech (negative)'),
       ('Apr 2025 Liberation Day', '2025-04-03', '2025-04-11', 'US risk premium'),
       ('Late Jan 2026 gold crash', '2026-01-29', '2026-02-03', 'Liquidity')]
@@ -207,10 +212,11 @@ def export(r: dict, m: dict, out: Path, calib: dict | None, source: str):
         s_ = pd.Series(np.nansum(r['shock'][msk], 0), index=N)[NAM]
         top = s_.abs().sort_values(ascending=False).index
         w = lad.loc[a:b]
-        rows.append({'episode': nm, 'start': a, 'end': b, 'expected': ex, 'top': top[0], 'top_val': round(float(s_[top[0]]), 1),
+        pin = any(a <= n[0] <= b for n in NARR)
+        rows.append({'episode': nm, 'start': a, 'end': b, 'expected': ex, 'pinned': 'yes' if pin else 'no', 'top': top[0], 'top_val': round(float(s_[top[0]]), 1),
                      'second': top[1], 'second_val': round(float(s_[top[1]]), 1), 'liq': round(float(s_['Liquidity']), 1),
                      'max_level': int(w.level.max()) if len(w) else -1})
-    dump('episodes', rows, [{'label': 'Reading', 'value': 'Two largest shocks by absolute size (sums of daily unit-variance shocks over the window); negative = opposite direction.'}])
+    dump('episodes', rows, [{'label': 'Reading', 'value': 'Two largest shocks by absolute size (sums of daily unit-variance shocks over the window); negative = opposite direction. Pinned = a narrative restriction falls in the window, so the episode is not an independent test.'}])
     rows = [{'shock': s, 'asset': LAB[v], 'sign': {1: '+', -1: '−', 0: '·'}[r['shocks'][s].get(v, 0)]} for s in NAM for v in V]
     dump('restrictions', rows)
     rows = [{'check': k, 'result': v} for k, v in (calib or {}).get('summary', {}).items()]

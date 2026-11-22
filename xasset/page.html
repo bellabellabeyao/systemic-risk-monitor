@@ -45,7 +45,7 @@
 
 <div class="xa" lang="en" data-read>
 <h1 id="top">Cross-asset shock decomposition + liquidity monitor</h1>
-<p class="xa-sub">Each day's moves in 13 market variables (US equities, semis, the Treasury curve, real yields, breakevens, the dollar, yen, yuan, gold, oil, copper and HY spreads) are split into ten shocks, and a four-layer monitor checks whether liquidity is breaking down. Built every weekday from public data; data to the <span data-draw="asof" data-source="kpi" data-field="value" data-where="metric=asof">—</span> close.</p>
+<p class="xa-sub">Each day's moves in 13 market variables (US equities, semis, the Treasury curve, real yields, breakevens, the dollar, yen, yuan, gold, oil, copper and HY spreads) are split into eight shocks, and a four-layer monitor checks whether liquidity is breaking down. Built every weekday from public data; data to the <span data-draw="asof" data-source="kpi" data-field="value" data-where="metric=asof">—</span> close.</p>
 
 <p class="xa-lead" id="takeaway">
 The liquidity ladder is at <b data-draw="lvl" data-source="kpi" data-field="value" data-where="metric=level">—</b>: <span data-draw="lvlname">—</span>.
@@ -61,16 +61,14 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 </div>
 
 <div class="xa-legend" id="legend">
-  <span><i class="xa-sw" data-k="Growth"></i>Growth</span>
+  <span><i class="xa-sw" data-k="Growth"></i>Growth (US and global)</span>
   <span><i class="xa-sw" data-k="Monetary"></i>Monetary (hawkish)</span>
-  <span><i class="xa-sw" data-k="Risk-off"></i>Risk-off</span>
+  <span><i class="xa-sw" data-k="Risk-off / carry"></i>Risk-off / carry unwind</span>
   <span><i class="xa-sw" data-k="Liquidity"></i>Liquidity / deleveraging</span>
   <span><i class="xa-sw" data-k="US risk premium"></i>US risk premium</span>
   <span><i class="xa-sw" data-k="Term premium"></i>Term premium</span>
   <span><i class="xa-sw" data-k="Oil supply"></i>Oil supply</span>
   <span><i class="xa-sw" data-k="AI / tech"></i>AI / tech</span>
-  <span><i class="xa-sw" data-k="Global growth"></i>Global (China) growth</span>
-  <span><i class="xa-sw" data-k="Yen / carry"></i>Yen / carry</span>
   <span><i class="xa-sw" data-k="Other / unidentified"></i>Other / unidentified</span>
   <span><i class="xa-sw" data-k="Unexplained by model"></i>Unexplained by model (outside assets only)</span>
 </div>
@@ -97,16 +95,14 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 <h2 id="roll">Shock intensity: 20-day sums over the last two years</h2>
 <p class="xa-sub">Each daily shock has unit variance; lines show their 20-day sum. The grey band is ±4.5, roughly a 1-in-100 reading.</p>
 <div class="xa-grid" data-source="shock_roll20" id="rollgrid">
-  <div class="xa-mini"><h4>Growth</h4><div class="xa-chart" data-draw="roll" data-shock="Growth" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Growth (US and global)</h4><div class="xa-chart" data-draw="roll" data-shock="Growth" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>Monetary (hawkish)</h4><div class="xa-chart" data-draw="roll" data-shock="Monetary" style="min-height:110px"></div></div>
-  <div class="xa-mini"><h4>Risk-off</h4><div class="xa-chart" data-draw="roll" data-shock="Risk-off" style="min-height:110px"></div></div>
+  <div class="xa-mini"><h4>Risk-off / carry unwind</h4><div class="xa-chart" data-draw="roll" data-shock="Risk-off / carry" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>Liquidity / deleveraging</h4><div class="xa-chart" data-draw="roll" data-shock="Liquidity" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>US risk premium</h4><div class="xa-chart" data-draw="roll" data-shock="US risk premium" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>Term premium</h4><div class="xa-chart" data-draw="roll" data-shock="Term premium" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>Oil supply</h4><div class="xa-chart" data-draw="roll" data-shock="Oil supply" style="min-height:110px"></div></div>
   <div class="xa-mini"><h4>AI / tech</h4><div class="xa-chart" data-draw="roll" data-shock="AI / tech" style="min-height:110px"></div></div>
-  <div class="xa-mini"><h4>Global (China) growth</h4><div class="xa-chart" data-draw="roll" data-shock="Global growth" style="min-height:110px"></div></div>
-  <div class="xa-mini"><h4>Yen / carry</h4><div class="xa-chart" data-draw="roll" data-shock="Yen / carry" style="min-height:110px"></div></div>
 </div>
 
 <h2 id="ladder">Liquidity escalation ladder</h2>
@@ -130,10 +126,10 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 </div>
 
 <h2 id="validation">Model check: past episodes</h2>
-<p class="xa-sub">The two largest shocks (by absolute size) in each episode window, and the highest ladder level reached. Shock values are sums of daily unit-variance shocks; a negative value means the shock ran in the opposite direction. The last two rows are the two latest days.</p>
+<p class="xa-sub">The two largest shocks (by absolute size) in each episode window, and the highest ladder level reached. Shock values are sums of daily unit-variance shocks; a negative value means the shock ran in the opposite direction. "Pinned" means a narrative restriction (see the appendix) falls inside the window, so the model was told the answer and the row is not an independent test. The last two rows are the two latest days.</p>
 <div class="xa-tw">
 <table data-source="episodes" data-row-key="episode" id="eptable">
-  <thead><tr><th data-field="episode">Episode</th><th data-field="expected">Expected driver</th><th data-field="top">Model: #1</th><th data-field="top_val">Value</th><th data-field="second">Model: #2</th><th data-field="second_val">Value</th><th data-field="liq">Liquidity shock</th><th data-field="max_level">Max ladder level</th></tr></thead>
+  <thead><tr><th data-field="episode">Episode</th><th data-field="expected">Expected driver</th><th data-field="pinned">Pinned</th><th data-field="top">Model: #1</th><th data-field="top_val">Value</th><th data-field="second">Model: #2</th><th data-field="second_val">Value</th><th data-field="liq">Liquidity shock</th><th data-field="max_level">Max ladder level</th></tr></thead>
   <tbody data-draw="eptbody"></tbody>
 </table>
 </div>
@@ -149,36 +145,49 @@ The dollar moved <b data-draw="u20" data-source="kpi" data-field="value" data-wh
 
 <details id="method">
 <summary>Method, shock definitions, data and limits</summary>
-<p><b>Model.</b> Daily changes in 13 variables: S&amp;P 500, semis (SOX, net of its rolling one-year beta to the S&amp;P), 2y UST yield, 30y–2y slope, 10y real yield (TIPS), 10y breakeven, the dollar (DXY), USDJPY, USDCNH, gold, Brent, copper and a HY spread proxy. Sign restrictions identify ten shocks; the remaining three are 'other / unidentified'. Rotations are drawn as in Rubio-Ramírez, Waggoner and Zha (2010) and accepted only if every named shock meets all of its signs; no penalty function is used. Each estimate uses a 2-year rolling window, re-estimated every 21 trading days, starting in 2012. Contributions are averaged over accepted rotations (capped at 300 per window), so they add up exactly to the actual move. The design follows Jarociński &amp; Karadi (2020) for monetary vs information shocks, Cieslak &amp; Pang (2021) for using the curve to separate monetary from term-premium shocks, Brandt et al. (ECB WP 2560, 2021) for adding foreign and global shocks, and Ready (2018) for oil.</p>
+<p><b>Model.</b> Daily changes in 13 variables: S&amp;P 500, semis (SOX, net of its rolling one-year beta to the S&amp;P), 2y UST yield, 30y–2y slope, 10y real yield (TIPS), 10y breakeven, the dollar (DXY), USDJPY, USDCNH, gold, Brent, copper and a HY spread proxy. Sign restrictions identify eight shocks; the remaining five are 'other / unidentified'. Rotations are drawn as in Rubio-Ramírez, Waggoner and Zha (2010) and accepted only if every named shock meets all of its signs; no penalty function is used. On eight well-known days a narrative restriction (Antolín-Díaz and Rubio-Ramírez, 2018) also requires the named shock to have the right sign and to be the largest contributor to one variable; windows that contain those days keep only rotations that pass. An earlier version had ten shocks: yen / carry and global growth were folded into risk-off and growth because the sampler could not tell them apart reliably. Each estimate uses a 2-year rolling window, re-estimated every 21 trading days, starting in 2012. Contributions are averaged over accepted rotations (capped at 300 per window), so they add up exactly to the actual move. The design follows Jarociński &amp; Karadi (2020) for monetary vs information shocks, Cieslak &amp; Pang (2021) for using the curve to separate monetary from term-premium shocks, Brandt et al. (ECB WP 2560, 2021) for adding foreign and global shocks, and Ready (2018) for oil.</p>
 <p><b>What each shock means.</b> Every shock is a <i>surprise</i> relative to what was priced, not a level. Positive values push in the direction named; negative values are the opposite (e.g. a negative monetary shock is a dovish surprise).</p>
 <ul>
-<li><b>Growth</b>: better US news. Equities, 2y yields and breakevens up, HY spreads tighter.</li>
+<li><b>Growth (US and global)</b>: better demand news. Equities, 2y yields, breakevens and copper up, HY spreads tighter.</li>
 <li><b>Monetary (hawkish)</b>: the Fed path is repriced higher for reasons other than better growth. 2y and real yields up, curve flatter, breakevens down, dollar up, equities down.</li>
-<li><b>Risk-off</b>: classic flight to safety. Equities down, yields down, gold, dollar and yen up, HY wider.</li>
+<li><b>Risk-off / carry unwind</b>: flight to safety or a carry-trade unwind. Equities and yields down, yen up, HY wider; the dollar and gold are left free, because they rise in classic risk-off but can fall in a carry unwind.</li>
 <li><b>Liquidity / deleveraging</b>: a dash for cash. Equities and gold sold, long end sold while bills are bid (2y down, curve steeper, real yields up), breakevens down, dollar up, HY wider.</li>
 <li><b>US risk premium</b>: 'sell America'. Equities down, real yields up, dollar down, gold up.</li>
 <li><b>Term premium</b>: the long end reprices on supply or fiscal risk. Curve steeper with 2y also up, real yields up, equities and gold down.</li>
 <li><b>Oil supply</b>: oil up, breakevens up, equities down.</li>
 <li><b>AI / tech</b>: semis outperform their usual market beta and equities rise.</li>
-<li><b>Global (China) growth</b>: copper and oil up, yuan and other currencies stronger against the dollar, equities up.</li>
-<li><b>Yen / carry</b>: yen strengthens and the dollar weakens while equities fall, as in carry-trade unwinds.</li>
 </ul>
 <p><b>Sign restrictions.</b> The full table of signs that define each shock is in the <a href="#appendix">appendix</a> below.</p>
 <p><b>Data.</b> Yields are the US Treasury's daily par nominal and real (TIPS) curves, published the same evening; the breakeven is 10y nominal minus 10y real, as in FRED's T10YIE. Market prices are Yahoo Finance daily closes: S&amp;P 500, SOX, DXY, USDJPY, USDCNH (onshore USDCNY when Yahoo has no offshore series; the two move almost one for one), COMEX gold and copper, ICE Brent. FRED now carries only three years of ICE BofA HY spreads, so the HY variable is a proxy: the return of HYG minus that of IEI (similar-duration Treasuries), divided by a spread duration of 3.5, in bp of spread. Funding uses New York Fed SOFR and its 99th percentile, FRED IORB/IOER and NFCI, and the OFR Financial Stress Index. Two inputs have no public source and come from occasional Bloomberg checks: the UST liquidity index (GVLQUSD, a curve-fitting-error measure in the spirit of Hu, Pan and Wang, 2013) and the 3-month EUR and JPY cross-currency bases (computed from covered interest parity with forward points and SOFR, €STR and TONA OIS). They are shown as percentiles with their date and count in the ladder for 7 days.</p>
-<p><b>Limits.</b> Sign restrictions identify a range of answers; the numbers shown are averages, not exact values. More shocks spread each move across more sources, so single-shock contributions are smaller than in a simpler model. Fingerprints shift across regimes, hence the rolling window. Public closes are not taken at the same moment, so single days are noisier than windows; see the accuracy table. The 2013 taper shows as US risk premium and monetary in roughly equal parts. The September 2024 China stimulus registers only a small global-growth shock, because semis and the yen moved at the same time. Positive AI / tech days include broad crisis rebounds, when semis rise more than their usual beta; the negative side (e.g. DeepSeek) is cleaner.</p>
+<p><b>Limits.</b> Sign restrictions identify a range of answers; the numbers shown are averages, not exact values. More shocks spread each move across more sources, so single-shock contributions are smaller than in a simpler model. Fingerprints shift across regimes, hence the rolling window. Public closes are not taken at the same moment, so single days are noisier than windows; see the accuracy table. The 2013 taper is split between liquidity, US risk premium and monetary. Liquidity and term premium are still the pair the model finds hardest to separate (both sell the long end with stocks and gold down); they are kept apart because the ladder needs the liquidity shock on its own. Episodes marked as pinned are not independent tests, and windows with several narrative days keep fewer rotations, so their numbers are noisier. Positive AI / tech days include broad crisis rebounds, when semis rise more than their usual beta; the negative side (e.g. DeepSeek) is cleaner.</p>
 </details>
 
 <h2 id="appendix">Appendix: what defines each shock</h2>
-<p class="xa-sub">Each shock is identified only by the direction it must push these assets on the same day: + up, − down, blank = left free for the model to estimate. For USDJPY and USDCNH, − means the yen or yuan strengthens; for HY, + means spreads widen. Any shock can also run in reverse on a given day (a negative monetary shock is a dovish surprise). The three 'other / unidentified' shocks have no signs.</p>
+<p class="xa-sub">Each shock is identified only by the direction it must push these assets on the same day: + up, − down, blank = left free for the model to estimate. For USDJPY and USDCNH, − means the yen or yuan strengthens; for HY, + means spreads widen. Any shock can also run in reverse on a given day (a negative monetary shock is a dovish surprise). The five 'other / unidentified' shocks have no signs.</p>
 <div class="xa-tw"><table data-source="restrictions" id="signtable">
   <thead><tr><th data-field="shock">Shock</th><th>SPX</th><th>Semis (β-adj.)</th><th>2y</th><th>30y−2y</th><th>10y real</th><th>10y BE</th><th>DXY</th><th>USDJPY</th><th>USDCNH</th><th>Gold</th><th>Brent</th><th>Copper</th><th>HY spread</th><th class="st">Story</th><th class="st">Tells it apart from</th></tr></thead>
   <tbody data-draw="signbody"></tbody>
+</table></div>
+<h3 id="narrative">Narrative restrictions</h3>
+<p class="xa-sub">On these days the named shock must have the sign shown and be the largest single contributor to the variable listed. They apply only in the 2-year windows that contain the day.</p>
+<div class="xa-tw"><table id="narrtable">
+  <thead><tr><th>Day</th><th>Shock</th><th>Sign</th><th>Largest contributor to</th><th>What happened</th></tr></thead>
+  <tbody>
+    <tr><td>18 Mar 2020</td><td>Liquidity</td><td>+</td><td>10y real yield</td><td>Dash for cash: real yields +18bp while stocks −5% and gold −3%</td></tr>
+    <tr><td>5 Aug 2024</td><td>Risk-off / carry</td><td>+</td><td>USDJPY</td><td>BOJ hike and carry unwind: yen +1.6%, stocks −3%</td></tr>
+    <tr><td>10 Apr 2025</td><td>US risk premium</td><td>+</td><td>Dollar (DXY)</td><td>Sell America: dollar −1.5%, real yields +22bp, gold +3%</td></tr>
+    <tr><td>13 Jun 2022</td><td>Monetary</td><td>+</td><td>2y yield</td><td>75bp repricing: 2y +29bp, curve flatter</td></tr>
+    <tr><td>3 Oct 2023</td><td>Term premium</td><td>+</td><td>30y − 2y slope</td><td>Long-end selloff: curve +9bp steeper</td></tr>
+    <tr><td>27 Jan 2025</td><td>AI / tech</td><td>−</td><td>Semis (β-adj.)</td><td>DeepSeek: semis −6% beyond their market beta</td></tr>
+    <tr><td>8 Mar 2022</td><td>Oil supply</td><td>+</td><td>Brent</td><td>US ban on Russian oil</td></tr>
+    <tr><td>11 Aug 2015</td><td>Growth</td><td>−</td><td>Copper</td><td>CNY devaluation: copper −2.9%</td></tr>
+  </tbody>
 </table></div>
 </div>
 
 <script>
 window.XA = (function () {
-  const SH = ['Growth', 'Monetary', 'Risk-off', 'Liquidity', 'US risk premium', 'Term premium', 'Oil supply', 'AI / tech', 'Global growth', 'Yen / carry', 'Other / unidentified'];
+  const SH = ['Growth', 'Monetary', 'Risk-off / carry', 'Liquidity', 'US risk premium', 'Term premium', 'Oil supply', 'AI / tech', 'Other / unidentified'];
   const LV = { '-1': 'no signal (price, market-liquidity and funding indicators are all below their triggers)', '0': 'a crowded-position unwind (price signal only; funding and market-liquidity indicators are not flashing)', '1': 'market liquidity deteriorating', '2': 'funding stress', '3': 'safe assets failing' };
   function col(s) {
     if (s === 'Unexplained by model') return 'var(--cds-chart-muted)';
@@ -241,16 +250,14 @@ window.XA = (function () {
     el.appendChild(t);
   }
   const STORY = {
-    'Growth': ['Better US data: demand and inflation expectations up, credit tighter.', 'Monetary: here breakevens rise and equities rise with yields.'],
+    'Growth': ['Better US or global demand: stocks, copper and inflation expectations up, credit tighter.', 'Monetary: here breakevens rise and equities rise with yields.'],
     'Monetary': ['Fed path repriced higher for reasons other than growth.', 'Growth: equities fall and breakevens drop; term premium: the curve flattens.'],
-    'Risk-off': ['Flight to safety: Treasuries, gold, the dollar and the yen are bought.', 'Liquidity: here gold and long Treasuries rise instead of being sold.'],
-    'Liquidity': ['Dash for cash: levered holders sell even safe assets to raise dollars.', 'Risk-off: gold is sold and the long end sold while bills are bid.'],
+    'Risk-off / carry': ['Flight to safety or carry unwind: Treasuries and the yen bought, risky assets sold.', 'Liquidity: here yields fall instead of real yields rising; US risk premium: real yields fall.'],
+    'Liquidity': ['Dash for cash: levered holders sell even safe assets to raise dollars.', 'Risk-off / carry: gold is sold and the long end sold while bills are bid.'],
     'US risk premium': ["'Sell America': US stocks, bonds and the dollar sold together, gold bought.", 'Monetary: here the dollar falls while US real yields rise.'],
     'Term premium': ['Long end sold on supply or fiscal worries.', 'Monetary: the curve steepens; liquidity: the 2y rises rather than falls.'],
     'Oil supply': ['Oil supply shock lifts inflation expectations and hurts equities.', 'Growth / global growth: oil rises while equities fall.'],
     'AI / tech': ['AI-specific news: semis move beyond their usual market beta.', 'Growth: only semis need to outperform; yields are free.'],
-    'Global growth': ['China and world demand: metals and oil up, yuan and others stronger.', 'US growth: driven by copper, oil and FX, not US yields.'],
-    'Yen / carry': ['Carry-trade unwind: yen bought back, risky assets sold.', 'Risk-off: here the dollar falls with equities instead of rising.'],
   };
   return { SH, LV, STORY, col, fmt, kpi, bars, tip, showTip, state: { day: null } };
 })();
@@ -476,7 +483,7 @@ dash.draw('eptbody', (tb) => {
   if (d.status !== 'ok') return;
   d.data.forEach((r) => {
     const tr = tb.insertRow();
-    [r.episode, r.expected || '—', r.top].forEach((s) => { tr.insertCell().textContent = s; });
+    [r.episode, r.expected || '—', r.pinned || '—', r.top].forEach((s) => { tr.insertCell().textContent = s; });
     const a = tr.insertCell(); a.className = 'num'; a.textContent = r.top_val.toFixed(1);
     tr.insertCell().textContent = r.second;
     const b = tr.insertCell(); b.className = 'num'; b.textContent = r.second_val.toFixed(1);

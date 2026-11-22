@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v4
 
@@ -45,7 +45,7 @@ jobs:
 
       - name: Cross-asset decomposition + liquidity ladder (public data; never blocks the main page)
         continue-on-error: true
-        timeout-minutes: 25
+        timeout-minutes: 45
         run: python -m xasset.pipeline --out site/xasset
 
       - name: Keep the data alongside the page
