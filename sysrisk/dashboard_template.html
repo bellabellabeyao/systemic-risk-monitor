@@ -200,6 +200,25 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
     </div>
   </section>
 
+  <!-- 1a. HIGHLIGHTS: three slide-ready charts -->
+  <section style="display:flex;flex-direction:column;gap:14px" id="highlights">
+    <div class="sec-head"><h2>The picture in three charts</h2>
+      <p class="prose muted">Slide-ready views of the whole monitor. Each title is written from today's data. Stage scores are the tested early-warning scores (4-week average); the theme ranking uses the all-in score.</p></div>
+    <div class="panel card"><h4 id="h1t"></h4>
+      <p class="what">Vertical: vulnerability, the average of the three slow-moving stages (fragility, amplifiers, buffers). Horizontal: stress, the fast-moving stage. Line: the last 12 months, month by month, ending at today. Grey dots: where each past episode peaked.</p>
+      <div id="c_map" class="chart" style="height:420px"></div>
+      <p class="src"><b>How to read it.</b> Top-left ("loaded gun"): excesses built up but no stress yet, the usual state before a crisis. Top-right: both high, as in late 2008. Bottom-right: stress without much underlying vulnerability, a correction. The 50 lines are the median of each score's own history. Descriptive: we could not test a vulnerability × stress model because the buffers data is too short before 2011.</p></div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="panel card"><h4 id="h2t"></h4>
+        <p class="what">The four stage scores today and on the eve of past episodes (the month before stress broke out).</p>
+        <div id="c_fp" class="chart" style="height:320px"></div>
+        <p class="src"><b>Note.</b> "Looks most like" = smallest average gap across the stages both dates have. Amplifier data starts in 2008, so the GFC comparison uses three stages.</p></div>
+      <div class="panel card"><h4 id="h3t"></h4>
+        <p class="what">Every theme on one 0–100 scale (all-in), ranked. Dark bars contain at least one series in the tested score; light bars are context or judgement only (for example fiscal room, which trends up for decades). Number at right: change over 3 months in the theme's model series.</p>
+        <div id="c_rank" class="chart" style="height:640px"></div></div>
+    </div>
+  </section>
+
   <!-- 1b. STAGE GRID -->
   <section style="display:flex;flex-direction:column;gap:12px" id="gridsec">
     <div class="sec-head"><h2>Where the risk sits: four stages, two lenses</h2>
@@ -525,6 +544,40 @@ const hbar = (obj, name) => { const e = Object.entries(obj); return {type:"bar",
 function renderCharts(){
   const mut=css("--muted"), ink=css("--ink"), acc=css("--accent"), bad=css("--bad"), warn=css("--warn"), vio=css("--violet"), ok=css("--ok"), rule=css("--rule");
   const C = LVc();
+  // highlights
+  if (D.highlights) { const H = D.highlights, M = H.map;
+    document.getElementById("h1t").textContent = M.title;
+    document.getElementById("h2t").textContent = H.fingerprint.title;
+    document.getElementById("h3t").textContent = H.themes.title;
+    const q = (x0,x1,y0,y1,c,op)=>({type:"rect", x0, x1, y0, y1, fillcolor:c, opacity:op, line:{width:0}, layer:"below"});
+    const lab = (x,y,t)=>({x, y, text:t, showarrow:false, font:{size:11, color:mut}});
+    Plotly.react("c_map", [
+      {x:M.episodes.map(e=>e.s), y:M.episodes.map(e=>e.v), text:M.episodes.map(e=>e.name), mode:"markers+text",
+       textposition:M.episodes.map(e=>(Math.abs(e.s-M.now.s)<9 && Math.abs(e.v-M.now.v)<6) ? "bottom center" : "top center"),
+       textfont:{size:10, color:mut}, marker:{size:9, color:mut, opacity:.7}, hovertemplate:"%{text} (%{customdata}): stress %{x:.0f}, vulnerability %{y:.0f}<extra></extra>", customdata:M.episodes.map(e=>e.date), name:"Past peaks"},
+      {x:M.trail.map(r=>r.s), y:M.trail.map(r=>r.v), text:M.trail.map(r=>r.d), mode:"lines+markers", line:{color:acc, width:1.5}, marker:{size:5, color:acc},
+       hovertemplate:"%{text}: stress %{x:.0f}, vulnerability %{y:.0f}<extra></extra>", name:"Last 12 months"},
+      {x:[M.now.s], y:[M.now.v], mode:"markers+text", text:["Today"], textposition:"top left", textfont:{size:12, color:ink},
+       marker:{size:14, color:bad, line:{color:ink, width:1}}, hovertemplate:"Today: stress %{x:.0f}, vulnerability %{y:.0f}<extra></extra>", name:"Today"}],
+      base({xaxis:{range:[0,100], title:{text:"Stress (fast) →", font:{size:11}}, gridcolor:rule, zeroline:false},
+            yaxis:{range:[0,100], title:{text:"Vulnerability (slow) →", font:{size:11}}},
+            margin:{l:52,r:14,t:10,b:44},
+            shapes:[q(0,50,50,100,warn,.08), q(50,100,50,100,bad,.08), q(50,100,0,50,acc,.05),
+              {type:"line", x0:50, x1:50, y0:0, y1:100, line:{color:rule, width:1}}, {type:"line", x0:0, x1:100, y0:50, y1:50, line:{color:rule, width:1}}],
+            annotations:[lab(25,96,"Loaded gun"), lab(75,96,"Crisis zone"), lab(75,4,"Correction"), lab(25,4,"Calm")]}), CFG);
+    const FP = H.fingerprint, fcol = [bad, mut, vio, acc, warn];
+    Plotly.react("c_fp", FP.profiles.map((f,i)=>({type:"bar", name:`${f.name} (${f.date})`, x:FP.stages, y:FP.stages.map(k=>f.p[k]),
+      marker:{color:fcol[i%fcol.length], opacity:i?0.55:1}, hovertemplate:"%{x}: %{y:.0f}<extra>"+f.name+"</extra>"})),
+      base({barmode:"group", showlegend:true, yaxis:{range:[0,100]}, legend:{orientation:"h", y:-0.18}, margin:{l:36,r:10,t:6,b:30}}), CFG);
+    const RW = H.themes.rows.slice().reverse(), scol = {Fragility:warn, Amplifiers:bad, Buffers:acc, Stress:vio};
+    Plotly.react("c_rank", [{type:"bar", orientation:"h", y:RW.map(r=>(r.lens==="ai"?"AI · ":"")+r.theme), x:RW.map(r=>r.score),
+      marker:{color:RW.map(r=>scol[r.stage]||mut), opacity:RW.map(r=>r.tested?1:.35)},
+      text:RW.map(r=>r.d13==null?"":(r.d13>=0?"+":"")+r.d13.toFixed(0)), textposition:"outside", cliponaxis:false,
+      customdata:RW.map(r=>r.stage), hovertemplate:"%{y} (%{customdata}): %{x:.0f}<extra></extra>"}],
+      base({xaxis:{range:[0,112], tickvals:[0,40,65,100], gridcolor:rule}, yaxis:{automargin:true, tickfont:{size:10.5}},
+            margin:{l:10,r:30,t:6,b:28},
+            shapes:[{type:"line", x0:40, x1:40, y0:-1, y1:RW.length, line:{color:rule, width:1, dash:"dot"}}, {type:"line", x0:65, x1:65, y0:-1, y1:RW.length, line:{color:bad, width:1, dash:"dot"}}]}), CFG);
+  }
   // history
   const pal = [acc, vio, warn, ok];
   const pills = Object.entries(D.pillars_hist).map(([k,s],i)=>ln(s,k,pal[i],{line:{width:1,color:pal[i]}, opacity:.35}));

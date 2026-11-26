@@ -595,6 +595,83 @@ def litmap_now(panel) -> list:
     return out
 
 
+# ==================================================================== highlights (slide-ready charts)
+EVES = [("Eve of GFC", "2007-07-27"), ("Eve of Covid", "2020-01-31"), ("Eve of SVB", "2023-02-24"),
+        ("Eve of Apr 2025 sell-off", "2025-02-28")]
+SLOW = ["Fragility", "Amplifiers", "Buffers"]
+
+
+def _quadrant(v, s):
+    return ("Loaded gun" if s < 50 else "Crisis zone") if v >= 50 else ("Calm" if s < 50 else "Correction")
+
+
+def highlights(R, U, asof) -> dict:
+    """Three charts for the top of the page and for slides. Tested stage scores (4-week EMA), all-in themes."""
+    P = R["pillars"].loc[:asof].ewm(span=4).mean()
+    V = P[SLOW].mean(axis=1).where(P[SLOW].notna().sum(axis=1) >= 2)
+    S = P["Stress"]
+    VS = pd.concat({"v": V, "s": S}, axis=1).dropna()
+    trail = VS.loc[asof - pd.DateOffset(months=12):].resample("ME").last()
+    trail = pd.concat([trail.iloc[:-1], VS.iloc[[-1]]])
+    eps = []
+    for d, n in CRISES:
+        a, z = CRISIS_WIN[n]
+        w = R["index"].loc[a:z].dropna()
+        if w.empty or w.idxmax() not in VS.index:
+            continue
+        t = w.idxmax()
+        eps.append({"name": n, "v": round(float(VS.v[t]), 1), "s": round(float(VS.s[t]), 1), "date": t.strftime("%b %Y")})
+    v0, s0 = float(VS.v.iloc[-1]), float(VS.s.iloc[-1])
+    v3, s3 = float(VS.v.loc[:asof - pd.DateOffset(months=3)].iloc[-1]), float(VS.s.loc[:asof - pd.DateOffset(months=3)].iloc[-1])
+    # fingerprint: four stages today vs the eve of past episodes
+    def prof(t):
+        row = P.loc[:pd.Timestamp(t)].iloc[-1]
+        return {k: (None if pd.isna(row[k]) else round(float(row[k]), 1)) for k in P.columns}
+    today = prof(asof)
+    fps = [{"name": "Today", "date": asof.strftime("%b %Y"), "p": today}]
+    sims = []
+    for n, t in EVES:
+        if pd.Timestamp(t) < P.dropna(how="all").index[0]:
+            continue
+        pr = prof(t)
+        fps.append({"name": n, "date": pd.Timestamp(t).strftime("%b %Y"), "p": pr})
+        both = [k for k in P.columns if pr[k] is not None and today[k] is not None]
+        if len(both) >= 3:
+            sims.append((n, sum(abs(pr[k] - today[k]) for k in both) / len(both)))
+    near = min(sims, key=lambda x: x[1]) if sims else None
+    # theme ranking: all-in score now; 3-month change from the model series inside the theme
+    sc = R["scores"].loc[:asof]
+    stage_name = {st["key"]: st["name"] for st in U["stages"]}
+    rows = []
+    for t in U["themes"]:
+        if t["stage"] not in stage_name or t["score"] is None:
+            continue
+        ids = [r["id"] for r in t["rows"] if r.get("kind") == "model" and r.get("id") in sc]
+        ch = None
+        if ids:
+            now, ago = sc[ids].iloc[-1].mean(), sc[ids].loc[:asof - pd.DateOffset(weeks=13)].iloc[-1].mean()
+            ch = None if pd.isna(now) or pd.isna(ago) else round(float(now - ago), 1)
+        tested = any(r.get("tier") == "screened" for r in t["rows"])
+        rows.append({"theme": t["theme"].split(" (")[0], "stage": stage_name[t["stage"]], "lens": t["lens"],
+                     "score": t["score"], "d13": ch, "tested": tested})
+    rows.sort(key=lambda r: -r["score"])
+    top = [r for r in rows if r["score"] >= 65]
+    quad = _quadrant(v0, s0)
+    lvl = lambda x: "high" if x >= 65 else "elevated" if x >= 52 else "moderate" if x >= 40 else "low"
+    t1 = (f"Vulnerability is {lvl(v0)} ({v0:.0f}) and stress is {lvl(s0)} ({s0:.0f}): the system is in the "
+          f"'{quad.lower()}' corner" + (f", and stress has risen {s0 - s3:+.0f} in 3 months" if abs(s0 - s3) >= 5 else "") + ".")
+    t2 = (f"Today's profile looks most like the {near[0][0].lower() + near[0][1:]} ({near[1]:.0f} points apart on average)." if near else
+          "Today's profile against the eve of past episodes.")
+    tt = [r for r in rows if r["tested"]]
+    t3 = (f"{len(top)} of {len(rows)} themes score red. Among themes with tested series, the highest are "
+          + "; ".join(r['theme'] for r in tt[:3]) + ".")
+    return {"map": {"trail": [{"d": i.strftime("%b %y"), "v": round(float(r.v), 1), "s": round(float(r.s), 1)} for i, r in trail.iterrows()],
+                    "episodes": eps, "now": {"v": round(v0, 1), "s": round(s0, 1)}, "ago": {"v": round(v3, 1), "s": round(s3, 1)},
+                    "quadrant": quad, "title": t1},
+            "fingerprint": {"profiles": fps, "stages": list(P.columns), "title": t2},
+            "themes": {"rows": rows, "title": t3}}
+
+
 def payload(R: dict) -> dict:
     apply_screen_flags(R)
     st = Story(R)
@@ -654,7 +731,7 @@ def payload(R: dict) -> dict:
         "litmap": litmap_now(R["panel"]),
         "narrative": {"asof": NW_ASOF, "not_covered": NOT_COVERED,
                       "items": [dict(c, stage=STAGE_OF.get(c["link"], (None, None, c["link"]))[2]) for c in NARRATIVE]},
-        "board": U, "xlsx": XLSX_NAME,
+        "board": U, "xlsx": XLSX_NAME, "highlights": highlights(R, U, asof),
         "hist": hist_payload(R, asof, [r["id"] for l in links for r in l["rows"] if not r.get("missing")]),
     }
 
