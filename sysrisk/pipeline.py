@@ -351,7 +351,13 @@ def run(provider, p: Params = Params(), log=print) -> dict:
     dd = dds[12]
     R["equal_weight_index"] = R["index"].copy()
     sel = screen(R["scores"], dds)
-    R.update(apply_screen(R["scores"], sel))
+    # Decision 26 Nov 2026: the score is the simple average of every eligible series (gate 1: published evidence,
+    # no structural break), with no monthly screen. Out of sample it did as well as or better than the screened
+    # version (0.33 vs 0.27 on 12-month drawdowns, Bloomberg build), keeps more indicators and has no early-sample
+    # jumps. The screen still runs and is reported per series and in the validation panel.
+    scr = apply_screen(R["scores"], sel)
+    R["screened_pillars"], R["screened_index"] = scr["pillars"], scr["index"]
+    R["allin_pillars"], R["allin_index"] = scr["allin_pillars"], scr["allin_index"]
     R["screen"] = {"history": sel, "latest": sel[max(sel)] if sel else {},
                    "eligible": [c for c in R["scores"] if REG_BY_ID[c].scored and REG_BY_ID[c].pillar in PILLARS],
                    "n_train": {c: int(pd.concat({"x": R["scores"][c].resample("ME").mean(),
@@ -368,7 +374,7 @@ def run(provider, p: Params = Params(), log=print) -> dict:
         yip = (ip.shift(-12) - ip) * 100
         I = m(R["index"])
         preds = {"Systemic Risk Index": I, "All-in (every series, no screen)": m(R["allin_index"]),
-                 "Simple average of eligible series, no screen": m(R["equal_weight_index"]),
+                 "Screened version (only series that pass the monthly test)": m(R["screened_index"]),
                  "Chicago Fed NFCI alone": m(panel["nfci"]), "St. Louis Fed stress index alone": m(panel["stlfsi"])}
         idx_m = I.index.union(dd.index)
         R["validation"] = {

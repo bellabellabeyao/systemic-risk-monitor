@@ -328,6 +328,7 @@ class Story:
                          "why": ind.why, "transmits": ind.transmits, "src": ind.src,
                          "scored": ind.scored, "not_scored_why": ind.not_scored_why, "ns_tag": ind.ns_tag,
                          "fit": None if getattr(ind, "fit", None) is None else round(ind.fit, 2),
+                         "screen_note": getattr(ind, "screen_note", ""),
                          "charted": i in CHARTED})
         stg = STAGE_OF[name]
         return {"name": name, "q": PILLAR_Q[[k for k, n in PILLARS.items() if n == name][0]],
@@ -476,7 +477,7 @@ class Story:
         summary = (f"The Systemic Risk Index is {x:.0f} out of 100, {trend} over the past 3 months ({d13:+.0f}), "
                    f"and higher than {pct:.0f}% of weeks since {idx.index[0].year}. "
                    + (f"That is below the peak of every stress episode since 2008. " if not [n for n, p in peaks if p <= x] else
-                      f"That is already above the peak reached in {', '.join(n for n, p in peaks if p <= x)}. ") +
+                      f"That is already above the peak reached in {(lambda xs: xs[0] if len(xs) == 1 else ', '.join(xs[:-1]) + ' and ' + xs[-1])([n for n, p in peaks if p <= x])}. ") +
                    f"In that model, {hi['stage'].lower()} is the riskiest stage ({hi['score']:.0f}); {lo['stage'].lower()} is the "
                    f"calmest ({lo['score']:.0f}).")
         # what to watch: biggest 13-week deteriorations among scored indicators
@@ -545,29 +546,19 @@ class Story:
 
 
 def apply_screen_flags(R: dict):
-    """Indicators that are eligible but fail the real-time evidence screen are shown as context, with the reason."""
+    """The score uses every eligible series. The monthly evidence test is shown per series for information only."""
     sc = R.get("screen")
     if not sc:
         return
     for c in sc["eligible"]:
         ind = REG[c]
-        r2 = sc["latest"].get(c)
-        ind.fit = r2
-        if r2 is not None:
-            continue
-        ind.scored = False
-        if sc["n_train"].get(c, 0) < sc["min_train"]:
-            ind.ns_tag = "too new"
-            ind.not_scored_why = ("Not enough history yet to test whether it predicts financial-sector drawdowns "
-                                  f"(needs {sc['min_train']} months of realised outcomes). It joins the score "
-                                  "automatically once it passes the test. It still counts in the all-in score.")
-        else:
-            ind.ns_tag = "failed test"
+        ind.fit = sc["latest"].get(c)
+        if ind.fit is None:
             hz = sc.get("horizon", {}).get(c, 12)
-            ind.not_scored_why = ("Has published support, but in our data it did not flag deep drawdowns in "
-                                  f"financial stocks over the following {'two years' if hz == 24 else 'year'}, using only "
-                                  "data available at the time. It is re-tested every month and rejoins the score if it "
-                                  "starts to work. It still counts in the all-in score.")
+            ind.screen_note = ("too new to test on its own (needs " + str(sc["min_train"]) + " months of outcomes)"
+                               if sc["n_train"].get(c, 0) < sc["min_train"] else
+                               "on its own it does not pass the evidence test at a " +
+                               ("two-year" if hz == 24 else "one-year") + " horizon")
 
 
 STRAND_IDS = {

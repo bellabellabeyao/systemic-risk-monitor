@@ -25,7 +25,7 @@ from sysrisk import unified  # noqa: E402
 NAVY, BLUE, WHITE, VIOLET = "1B1E3C", "1F3BFF", "FFFFFF", "5B3E96"
 FILL = {"GREEN": ("C6EFCE", "006100"), "AMBER": ("FFEB9C", "7F6000"), "RED": ("FFC7CE", "9C0006")}
 LENS_FILL = {"broad": ("E8ECF7", "1B1E3C"), "ai": ("EEE8F7", VIOLET)}
-TIER = {"screened": "Model · passes test", "context": "Model · context", "judgement": "Judgement"}
+TIER = {"screened": "Model · in tested score", "context": "Model · context", "judgement": "Judgement"}
 F = "Arial"
 thin = Side(style="thin", color="B7BEC9")
 BOX = Border(left=thin, right=thin, top=thin, bottom=thin)

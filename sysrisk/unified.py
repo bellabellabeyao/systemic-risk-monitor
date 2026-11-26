@@ -11,8 +11,8 @@ Colour       = GREEN below 40, AMBER 40-65, RED 65 and above (the index's own Mo
 
 Two aggregates, two jobs:
   All-in (this module): how stretched each stage is today, using everything we track. Descriptive.
-  Early warning (sysrisk.pipeline): the evidence-screened index. The only number tested out of sample.
-Out of sample, adding the context series to the early-warning index makes its drawdown forecasts worse
+  Early warning (sysrisk.pipeline): simple average of every eligible series. The only number tested out of sample.
+Out of sample, adding the context and judgement series makes drawdown forecasts worse
 (negative quantile R2), which is why all-in and early warning are kept as separate numbers.
 """
 from __future__ import annotations
@@ -35,14 +35,13 @@ def _model_rows(R, story, ids):
         if i not in S or S[i].dropna().empty:
             continue
         s = S[i].dropna()
-        screened = bool(mask is not None and i in mask and mask[i].loc[:story.asof].iloc[-1])
-        tier = "screened" if screened else "context"
+        tier = "screened" if REG[i].scored else "context"      # "screened" = in the tested score
         sc = float(s.iloc[-1])
         out.append({"id": i, "metric": REG[i].name, "kind": "model", "tier": tier, "weight": SB.WEIGHTS[tier],
                     "score": round(sc, 1), "signal": SB.colour(sc),
                     "d13": None if len(s) < 14 else round(float(s.iloc[-1] - s.iloc[-14]), 1),
                     "reading": story.reading(i), "asof": "weekly model, " + s.index[-1].strftime("%d %b %Y"),
-                    "note": REG[i].not_scored_why if tier == "context" else "Passes the evidence screen this month.",
+                    "note": REG[i].not_scored_why if tier == "context" else "In the tested score.",
                     "source": REG[i].src or REG[i].source, "code": f"model: {i}", "refreshed": True})
     return out
 
@@ -88,7 +87,7 @@ def evaluate(R=None, story=None) -> dict:
     if R is not None:
         for sk, n, nm, q, link in SB.STAGES:
             P = R["pillars"][link].loc[:story.asof].dropna()
-            kept = [i for i in R["screen"]["latest"] if PILLARS.get(REG[i].pillar) == link]
+            kept = [i for i in R["scores"] if REG[i].scored and PILLARS.get(REG[i].pillar) == link and R["scores"][i].loc[:story.asof].notna().any()]
             ew[sk] = {"score": round(float(P.iloc[-1]), 1), "n": len(kept), "series": [REG[i].name for i in kept]}
     return {"asof": SB.AS_OF, "prev_asof": SB.PREV_ASOF, "sources": SB.SOURCES, "bands": SB.BANDS,
             "weights": SB.WEIGHTS, "judgement_score": SB.JUDGEMENT_SCORE,
