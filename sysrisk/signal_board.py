@@ -1,7 +1,7 @@
 """
 Signal board: the judgement layer of the monitor (traffic lights), organised on the same spine as the model.
 
-Spine: 4 stages (Fragility -> Stress -> Amplifiers -> Buffers) x 2 lenses (Broad, AI).
+Spine: 4 stages (Fragility -> Amplifiers -> Buffers, slow; then Stress, fast) x 2 lenses (Broad, AI).
 Themes with stage "watch" are trigger events (AI financing, private credit): shown in the narrative section, never scored.
 The model's four links map onto the stages (see STAGES). The signal board is NOT scored.
 
@@ -19,10 +19,11 @@ PREV_ASOF = "29 Jul 2026"
 
 # key, number, display name, question, model link (sysrisk.config.PILLARS value)
 STAGES = [
-    ("fragility", "1", "Fragility", "Why is the system vulnerable?", "Fragility"),
-    ("triggers", "2", "Stress", "Is stress showing up now?", "Stress"),
-    ("amplifiers", "3", "Amplifiers", "What would force selling and spread the loss?", "Amplifiers"),
-    ("threshold", "4", "Buffers", "Can the system absorb it?", "Buffers"),
+    # order: the three slow-moving, structural stages first (how fragile is the system), then the fast one (is it being hit)
+    ("fragility", "1", "Fragility", "Slow-moving · How much risk has built up?", "Fragility"),
+    ("amplifiers", "2", "Amplifiers", "Structural · What would force selling and spread a loss?", "Amplifiers"),
+    ("threshold", "3", "Buffers", "Structural · Can capital, liquidity and backstops absorb it?", "Buffers"),
+    ("triggers", "4", "Stress", "Fast-moving · Is stress showing up now?", "Stress"),
 ]
 LENSES = [("broad", "Broad system"), ("ai", "AI channel")]
 

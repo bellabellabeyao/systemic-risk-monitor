@@ -107,6 +107,7 @@ def headline_text(U, level):
         "losses would spread quickly" if a >= 65 else "amplifiers are elevated" if a >= 40 else "amplifiers are quiet",
         "buffers are thin" if th >= 65 else "some buffers are thinning" if th >= 40 else "buffers are intact",
     ]
+    parts = [parts[0], parts[2], parts[3], parts[1]]           # same order as the page: fragility, amplifiers, buffers, stress
     title = f"Systemic risk is {level.lower()}: " + ", ".join(parts[:-1]) + " and " + parts[-1]
     ai, br = U["condition"].get("ai"), U["condition"].get("broad")
     if ai is not None and br is not None and ai >= br + 5:
