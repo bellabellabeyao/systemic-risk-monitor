@@ -100,75 +100,81 @@ REG = {i.id: i for i in REGISTRY}
 LINK_IDS = {PILLARS[k]: [i.id for i in REGISTRY if i.pillar == k] for k in PILLARS}
 CRISES = [("2008-11-07", "GFC"), ("2011-10-14", "Euro crisis"), ("2016-01-22", "2015-16 oil / China"),
           ("2018-12-28", "Dec 2018"), ("2020-03-27", "Covid"), ("2023-04-07", "SVB"), ("2025-04-25", "Apr 2025 tariffs")]
+# Each episode's peak is the index's highest weekly reading over the whole episode, not around one date:
+# a real-time index can flag a crisis before its most famous week (it peaked in Feb 2008, before Lehman).
+CRISIS_WIN = {"GFC": ("2007-08-01", "2009-03-31"), "Euro crisis": ("2011-07-01", "2011-12-31"),
+              "2015-16 oil / China": ("2015-08-01", "2016-02-29"), "Dec 2018": ("2018-10-01", "2019-01-31"),
+              "Covid": ("2020-02-15", "2020-04-30"), "SVB": ("2023-03-01", "2023-05-31"),
+              "Apr 2025 tariffs": ("2025-03-15", "2025-05-15")}
 
 
 # Literature map: every strand of the systemic-risk literature, where it sits on the dashboard, and what is missing.
 # status: "in" scored in the index | "context" shown, not scored | "gap" not covered (reason given)
 LITMAP = [
-    {"strand": "Credit booms and early warning", "link": "Build-up", "status": "in",
+    {"strand": "Credit booms and early warning", "link": "Fragility", "status": "in",
      "papers": "Borio & Drehmann (2009); Schularick & Taylor (2012); Jordà, Schularick & Taylor (2013); Mian, Sufi & Verner (2017); Drehmann & Juselius (2014)",
      "here": "Credit-to-GDP gap, household and corporate debt/GDP, household debt service"},
-    {"strand": "Credit and asset-price booms together", "link": "Build-up", "status": "in",
+    {"strand": "Credit and asset-price booms together", "link": "Fragility", "status": "in",
      "papers": "Greenwood, Hanson, Shleifer & Sørensen (2022)", "here": "R-zone"},
-    {"strand": "Credit-market sentiment", "link": "Build-up", "status": "in",
+    {"strand": "Credit-market sentiment", "link": "Fragility", "status": "in",
      "papers": "Gilchrist & Zakrajšek (2012); López-Salido, Stein & Zakrajšek (2017); Krishnamurthy & Muir (2017)",
      "here": "Baa-10y spread tightness. Gap: the excess bond premium itself (Fed CSV) would be cleaner."},
-    {"strand": "Asset-price bubbles and valuations", "link": "Build-up", "status": "in",
+    {"strand": "Asset-price bubbles and valuations", "link": "Fragility", "status": "in",
      "papers": "Borio & Lowe (2002); Shiller (2000); Jordà, Schularick & Taylor (2015, 'Leveraged bubbles')",
      "here": "House prices vs trend (scored); equity market value/GDP and margin credit (context: non-stationary or no crisis-prediction evidence)"},
-    {"strand": "Volatility paradox", "link": "Build-up", "status": "in",
+    {"strand": "Volatility paradox", "link": "Fragility", "status": "in",
      "papers": "Brunnermeier & Sannikov (2014); Danielsson, Valenzuela & Zer (2018)", "here": "Volatility too low for too long (new)"},
-    {"strand": "Market-based tail measures", "link": "Contagion", "status": "in",
+    {"strand": "Market-based tail measures", "link": "Amplifiers", "status": "in",
      "papers": "Adrian & Brunnermeier (2016); Acharya, Pedersen, Philippon & Richardson (2017); Brownlees & Engle (2017). Critiques: Benoit, Colliard, Hurlin & Pérignon (2017); Löffler & Raupach (2018)",
      "here": "dCoVaR by sector incl. private credit, SRISK"},
-    {"strand": "Connectedness and correlation", "link": "Contagion", "status": "in",
+    {"strand": "Connectedness and correlation", "link": "Amplifiers", "status": "in",
      "papers": "Diebold & Yilmaz (2012, 2014); Billio, Getmansky, Lo & Pelizzon (2012); Kritzman, Li, Page & Rigobon (2011)",
      "here": "Spillover index, Granger network, absorption ratio"},
-    {"strand": "Intermediary leverage and capital", "link": "Contagion", "status": "context",
+    {"strand": "Intermediary leverage and capital", "link": "Buffers", "status": "context",
      "papers": "Adrian & Shin (2010); Adrian, Etula & Muir (2014); He, Kelly & Manela (2017)",
      "here": "Broker-dealer leverage (Fed Financial Accounts) and He-Kelly-Manela dealer capital ratio (Bloomberg build), both context."},
-    {"strand": "Diversification breakdown", "link": "Contagion", "status": "context",
+    {"strand": "Diversification breakdown", "link": "Amplifiers", "status": "context",
      "papers": "Campbell, Pflueger & Viceira (2020)", "here": "Stock-bond correlation (context)"},
-    {"strand": "Crowding and positioning", "link": "Contagion", "status": "context",
+    {"strand": "Crowding and positioning", "link": "Amplifiers", "status": "context",
      "papers": "Brunnermeier, Nagel & Pedersen (2008); Pedersen (2009, 'When everyone runs for the exit'); Barth & Kahn (2021)",
      "here": "Leveraged funds' Treasury futures short (CFTC via OFR) covers the basis trade. Gap: other CFTC positioning and credit fund flows (EPFR)."},
-    {"strand": "Market concentration", "link": "Contagion", "status": "context",
+    {"strand": "Market concentration", "link": "Fragility", "status": "context",
      "papers": "Practitioner measure; Fed Financial Stability Report on equity concentration", "here": "Cap-weighted vs equal-weighted S&P 500 (context)"},
-    {"strand": "Fire sales and common holdings", "link": "Contagion", "status": "gap",
+    {"strand": "Fire sales and common holdings", "link": "Amplifiers", "status": "gap",
      "papers": "Greenwood, Landier & Thesmar (2015); Duarte & Eisenbach (2021); Cont & Schaanning (2017)",
      "here": "Not covered: needs regulatory or 13F holdings data. The largest amplification channel empirically."},
-    {"strand": "Interbank exposure networks", "link": "Contagion", "status": "gap",
+    {"strand": "Interbank exposure networks", "link": "Amplifiers", "status": "gap",
      "papers": "Eisenberg & Noe (2001); Battiston et al. (2012, DebtRank); Glasserman & Young (2016)",
      "here": "Not covered: bilateral exposures are supervisory data. Glasserman & Young find direct contagion small, so low priority."},
-    {"strand": "Funding liquidity, repo and runs", "link": "Shock absorbers", "status": "in",
+    {"strand": "Funding liquidity, repo and runs", "link": "Buffers", "status": "in",
      "papers": "Brunnermeier & Pedersen (2009); Gorton & Metrick (2012); Copeland, Duffie & Yang (2021); Afonso et al. (2022)",
      "here": "Reserves / bank assets, ON RRP, SOFR-IORB, Standing Repo Facility, CP-bill spread (scored); tri-party repo, A2/P2 CP spread, financial CP outstanding, Fed swap lines (context). Gap: NY Fed repo volumes by segment, prime vs government MMF assets (ICI)."},
-    {"strand": "Fiscal space and bank capital", "link": "Shock absorbers", "status": "context",
+    {"strand": "Fiscal space and bank capital", "link": "Buffers", "status": "context",
      "papers": "Romer & Romer (2018); Jordà, Schularick & Taylor (2016); Jordà, Richter, Schularick & Taylor (2021)",
      "here": "Federal debt/GDP (context: non-stationary); bank CET1 ratios (context, Bloomberg build)."},
-    {"strand": "Global dollar funding", "link": "Shock absorbers", "status": "context",
+    {"strand": "Global dollar funding", "link": "Buffers", "status": "context",
      "papers": "Rey (2013); Bruno & Shin (2015); Du, Tepper & Verdelhan (2018); Avdjiev, Du, Koch & Shin (2019)",
      "here": "USD/JPY OIS basis (scored, Bloomberg build); EUR/USD basis, broad dollar, Fed swap lines and FIMA usage (context). Gap: BIS cross-border USD claims, TIC holdings by country."},
-    {"strand": "Bank interest-rate risk and deposit runs", "link": "Trigger", "status": "context",
+    {"strand": "Bank interest-rate risk and deposit runs", "link": "Stress", "status": "context",
      "papers": "Drechsler, Savov & Schnabl (2021); Jiang, Matvos, Piskorski & Seru (2024)",
      "here": "Regional banks vs market (scored). Gap: unrealised securities losses and uninsured deposits (FDIC Quarterly Banking Profile)."},
-    {"strand": "Credit supply and realised losses", "link": "Trigger", "status": "context",
+    {"strand": "Credit supply and realised losses", "link": "Stress", "status": "context",
      "papers": "Lown & Morgan (2006); Bassett, Chosak, Driscoll & Zakrajšek (2014); Ivashina & Scharfstein (2010); Acharya & Steffen (2020)",
      "here": "Credit-line draws via C&I loan growth (scored); SLOOS tightening, CRE delinquencies (context: lagging)"},
-    {"strand": "Non-bank and private credit, hidden leverage", "link": "Contagion / Trigger", "status": "context",
+    {"strand": "Non-bank and private credit, hidden leverage", "link": "Amplifiers / Stress", "status": "context",
      "papers": "FSB NBFI monitoring reports; IMF GFSR (Apr 2024, ch. 2) on private credit; Fed Financial Stability Report",
      "here": "Alt-manager and BDC dCoVaR (scored); BDC vs HY mark, hedge fund repo and leverage (OFR Form PF), bank lending to non-banks (H.8), net margin debt (FINRA), all context. Gap: BDC discount to NAV, NAV-loan leverage."},
-    {"strand": "Credit-spread shocks", "link": "Trigger", "status": "in",
+    {"strand": "Credit-spread shocks", "link": "Stress", "status": "in",
      "papers": "Gilchrist & Zakrajšek (2012)", "here": "13-week change in the Baa-10y spread (scored)"},
-    {"strand": "Market volatility", "link": "Trigger", "status": "context",
+    {"strand": "Market volatility", "link": "Stress", "status": "context",
      "papers": "Whaley (2000); Bekaert & Hoerova (2014); Menkhoff et al. (2012)",
      "here": "VIX, MOVE, dollar volatility (context: already inside the St. Louis Fed index)"},
-    {"strand": "Capital-flow reversals", "link": "Trigger", "status": "context",
+    {"strand": "Capital-flow reversals", "link": "Stress", "status": "context",
      "papers": "Forbes & Warnock (2012); Rey (2013)", "here": "EM dollar bonds vs Treasuries (context)"},
-    {"strand": "Market liquidity", "link": "Trigger", "status": "in",
+    {"strand": "Market liquidity", "link": "Buffers", "status": "in",
      "papers": "Brunnermeier & Pedersen (2009); Hu, Pan & Wang (2013); Pinter (2023) on the 2022 gilt crisis",
      "here": "Bloomberg Treasury liquidity index (scored, Bloomberg build); JGB and gilt liquidity (context). Gap: IG corporate bond liquidity."},
-    {"strand": "Composite stress indices", "link": "Trigger", "status": "in",
+    {"strand": "Composite stress indices", "link": "Stress", "status": "in",
      "papers": "Holló, Kremer & Lo Duca (2012, CISS); Kliesen & Smith (2010); Brave & Butters (2011)",
      "here": "St. Louis Fed FSI, Chicago Fed NFCI"},
     {"strand": "Macro tail risk and recession signals", "link": "Consequence", "status": "in",
@@ -327,6 +333,8 @@ class Story:
         return {"name": name, "q": PILLAR_Q[[k for k, n in PILLARS.items() if n == name][0]],
                 "stage_key": stg[0], "stage_n": stg[1], "stage": stg[2], "stage_q": stg[3],
                 "score": score, "d13": d13, "level": level_of(score), "head": head, "bullets": bullets,
+                "allin": None if "allin_pillars" not in self.R else
+                round(float(self.R["allin_pillars"][name].loc[:self.asof].ewm(span=4).mean().dropna().iloc[-1]), 1),
                 "lede": head,
                 "drivers": drivers, "offsets": offsets, "rows": rows,
                 "spark": [round(float(z), 1) for z in P.loc[self.asof - pd.DateOffset(years=3):].iloc[::2]]}
@@ -339,7 +347,7 @@ class Story:
         g = lambda k, d=0: sc.get(k, d) if pd.notna(sc.get(k, np.nan)) else d
         B = []
         add = lambda lab, txt, i: B.append({"label": lab, "text": txt, "scored": REG[i].scored})
-        if name == "Build-up":
+        if name == "Fragility":
             boom = v.get("credit_gap", 0) >= 2 or g("rzone") >= 80
             frothy = g("ebp_sentiment") >= 80
             eq = g("eq_val") >= 95
@@ -365,19 +373,16 @@ class Story:
                     "percentile), where AI capex and private credit financing sit.", "corp_debt")
             if g("low_vol") >= 65:
                 add("Calm breeds leverage", f"{self.reading('low_vol')}; long calm spells precede risk-taking.", "low_vol")
-        elif name == "Contagion":
+        elif name == "Amplifiers":
             coupled = g("absorption") >= 70 or g("dcovar_max") >= 70
-            thin = g("srisk_gdp") >= 60
+            levered = g("hf_repo") >= 80 or g("hf_rv_lev") >= 80
             head = ("Losses would spread quickly" if coupled else "Losses would not spread easily") + \
-                   (", and capital is thin." if thin else ", but capital buffers are thick enough to absorb them." if coupled
-                    else ".")
+                   (", and leveraged funds would be forced to sell." if levered else ".")
             if g("absorption") >= 60:
                 add("Moving as one trade", f"{self.reading('absorption')} ({ordn(g('absorption'))} percentile).", "absorption")
             add("Where it would start", f"Distress at {self.worst_sector} adds the most to the system's worst weeks "
                 f"(+{v['dcovar_max']:.1f}% a week); private credit's listed proxies sit mid-pack "
                 f"(+{v['dcovar_private']:.1f}%).", "dcovar_max")
-            add("Capital buffer", f"{self.reading('srisk_gdp')} after a 40% crash, "
-                f"{'low' if g('srisk_gdp') < 40 else 'high'} by history ({ordn(g('srisk_gdp'))} percentile).", "srisk_gdp")
             if g("hf_repo") >= 90:
                 add("Hedge funds levered up", f"Hedge fund repo borrowing is {self.reading('hf_repo')} and leveraged funds "
                     f"are ${v['lf_ust_short']:.2f}tn net short Treasury futures. Repo borrowing is "
@@ -386,7 +391,7 @@ class Story:
             if g("stock_bond") >= 85:
                 add("Hedge not working", f"Stocks and bonds are moving together ({v['stock_bond']:+.2f} correlation), "
                     "so diversified portfolios would lose on both legs.", "stock_bond")
-        elif name == "Shock absorbers":
+        elif name == "Buffers":
             no_cushion = g("rrp_buffer") >= 80
             squeeze = v.get("sofr_iorb", -1) > 0
             head = ("The liquidity cushion is gone" if no_cushion else "Liquidity buffers are intact") + \
@@ -397,9 +402,11 @@ class Story:
                     "straight out of bank reserves.", "rrp_buffer")
             add("Floor still holds", f"Reserves are {self.reading('reserves_gdp')} and repo trades "
                 f"{abs(v['sofr_iorb']):.1f}bp {'above' if squeeze else 'below'} the Fed's floor.", "sofr_iorb")
-            if g("cp_spread") <= 30:
-                add("Bank funding cheap", f"3-month financial CP costs {v['cp_spread']:.0f}bp over bills, "
-                    f"lower than {100 - g('cp_spread'):.0f}% of weeks.", "cp_spread")
+            add("Capital buffer", f"{self.reading('srisk_gdp')} after a 40% crash, "
+                f"{'low' if g('srisk_gdp') < 40 else 'high'} by history ({ordn(g('srisk_gdp'))} percentile).", "srisk_gdp")
+            if g("intl_liq") >= 90:
+                add("Foreign bond markets", f"JGB and gilt markets are less liquid than {g('intl_liq'):.0f}% of weeks since "
+                    f"2007, while Treasuries are {'normal' if g('ust_liq', 50) < 70 else 'also strained'}.", "intl_liq")
             if pd.notna(v.get("xccy_basis", np.nan)):
                 add("Offshore dollars", f"The USD/JPY basis is {v['xccy_basis']:.0f}bp, "
                     f"{'wider' if g('xccy_basis') >= 70 else 'no wider'} than usual since 2010 "
@@ -407,11 +414,11 @@ class Story:
                     f"{self.panel['xccy_basis'].loc['2020-03'].min():.0f}bp.", "xccy_basis")
             if v.get("srf_usage", 0) >= 1:
                 add("Backstop in use", f"Standing Repo Facility take-up is {self.reading('srf_usage')}.", "srf_usage")
-        else:  # Trigger
+        else:  # Stress
             tested = score >= 65
             cracks = []
-            if g("intl_liq") >= 90:
-                cracks.append("foreign bond liquidity")
+            if g("vix") >= 80:
+                cracks.append("equity volatility")
             if g("bdc_pb") >= 80:
                 cracks.append("private-credit marks")
             if g("move") >= 65 and g("vix", 100) < 50:
@@ -420,7 +427,7 @@ class Story:
                 cracks.append("private-credit marks")
             if g("bank_rel_dd") >= 75:
                 cracks.append("regional banks")
-            head = ("The system is being tested" if tested else "Nothing is testing the system yet") + \
+            head = ("Stress is broad" if tested else "Stress is not broad yet") + \
                    (f"; {(', '.join(cracks[:-1]) + ' and ' + cracks[-1]) if len(cracks) > 1 else cracks[0]} {'are' if len(cracks) > 1 else 'is'} the "
                     f"crack{'s' if len(cracks) > 1 else ''} to watch." if cracks else ".")
             add("Stress below normal" if v["stlfsi"] < 0 else "Stress above normal",
@@ -432,15 +439,18 @@ class Story:
             if "private-credit marks" in cracks and g("bdc_pb") < 80:
                 add("Private credit", f"Listed BDCs are {v['pc_mark']:.0f}% behind HY bonds from their 1-year high; "
                     "the market is marking direct loans down faster than reported NAVs.", "pc_mark")
-            if g("intl_liq") >= 90:
-                add("Foreign bond markets", f"JGB and gilt markets are less liquid than {g('intl_liq'):.0f}% of weeks since "
-                    f"2007, while Treasuries are {'normal' if g('ust_liq', 50) < 70 else 'also strained'}.", "intl_liq")
+            if g("vix") >= 80:
+                add("Equity volatility", f"VIX {v['vix']:.0f}, higher than {g('vix'):.0f}% of weeks since "
+                    f"{self.since['vix']}.", "vix")
+            add("Funding", f"3-month financial CP costs {v['cp_spread']:.0f}bp over bills "
+                f"({ordn(g('cp_spread'))} percentile): {'no sign of a funding squeeze' if g('cp_spread') < 70 else 'funding is getting dearer'}.",
+                "cp_spread")
             if g("bdc_pb") >= 80:
                 add("Private credit marks", f"Listed BDCs trade {v['bdc_pb']:.0f}% below reported NAV, wider than "
                     f"{g('bdc_pb'):.0f}% of months since 2008: the market doubts the loan marks.", "bdc_pb")
             if g("bank_rel_dd") >= 60:
                 add("Regional banks", f"{self.reading('bank_rel_dd')}.", "bank_rel_dd")
-        return head, B[:5 if name in ("Contagion", "Trigger") else 4]
+        return head, B[:5 if name in ("Amplifiers", "Stress") else 4]
 
     # ------------------------------------------------------------- headline
     def headline(self, links):
@@ -449,19 +459,18 @@ class Story:
         idx = idx.loc["2005":]                       # all four links observed from here
         pct = float((idx <= x).mean() * 100)
         trend = "rising" if d13 > 3 else "falling" if d13 < -3 else "broadly unchanged"
-        peaks = [(n, float(idx.loc[pd.Timestamp(d) - pd.Timedelta(days=21):pd.Timestamp(d) + pd.Timedelta(days=21)].max()))
-                 for d, n in CRISES]
+        peaks = [(n, float(self.R["index"].loc[CRISIS_WIN[n][0]:CRISIS_WIN[n][1]].max())) for d, n in CRISES]
         below = [n for n, p in peaks if p > x]
         hi = max(links, key=lambda l: l["score"])
         lo = min(links, key=lambda l: l["score"])
         gar = self.R["gar"].dropna().iloc[-1]
         sc = {l["name"]: l["score"] for l in links}
         calm, risk = [], []
-        b_, c_, s_, t_ = sc["Build-up"], sc["Contagion"], sc["Shock absorbers"], sc["Trigger"]
+        b_, c_, s_, t_ = sc["Fragility"], sc["Amplifiers"], sc["Buffers"], sc["Stress"]
         (risk if b_ >= 55 else calm).append("excesses are building" if b_ >= 55 else "leverage is low" if b_ <= 35 else "excesses are modest")
-        (risk if c_ >= 50 else calm).append("losses would spread quickly" if c_ >= 50 else "contagion channels are quiet")
+        (risk if c_ >= 50 else calm).append("losses would spread quickly" if c_ >= 50 else "amplifiers are quiet")
         if s_ >= 55: risk.append("liquidity buffers are thin")
-        (risk if t_ >= 55 else calm).append("stress is starting to show" if t_ >= 55 else "nothing is testing the system yet")
+        (risk if t_ >= 55 else calm).append("stress is starting to show" if t_ >= 55 else "stress is not broad yet")
         j = lambda xs: xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
         title = f"Systemic risk is {level_of(x).lower()}: " + (j(calm) + (", but " + j(risk) if risk else "") if calm else j(risk))
         summary = (f"The Systemic Risk Index is {x:.0f} out of 100, {trend} over the past 3 months ({d13:+.0f}), "
@@ -551,24 +560,29 @@ def apply_screen_flags(R: dict):
             ind.ns_tag = "too new"
             ind.not_scored_why = ("Not enough history yet to test whether it predicts financial-sector drawdowns "
                                   f"(needs {sc['min_train']} months of realised outcomes). It joins the score "
-                                  "automatically once it passes the test.")
+                                  "automatically once it passes the test. It still counts in the all-in score.")
         else:
             ind.ns_tag = "failed test"
+            hz = sc.get("horizon", {}).get(c, 12)
             ind.not_scored_why = ("Has published support, but in our data it did not flag deep drawdowns in "
-                                  "financial stocks over the following year, using only data available at the time. "
-                                  "It is re-tested every month and rejoins the score if it starts to work.")
+                                  f"financial stocks over the following {'two years' if hz == 24 else 'year'}, using only "
+                                  "data available at the time. It is re-tested every month and rejoins the score if it "
+                                  "starts to work. It still counts in the all-in score.")
 
 
 STRAND_IDS = {
     "Credit booms and early warning": ["credit_gap", "hh_debt", "corp_debt", "hh_dsr", "nbfi_leverage"],
     "Credit and asset-price booms together": ["rzone"], "Credit-market sentiment": ["ebp_sentiment"],
     "Asset-price bubbles and valuations": ["house_gap"], "Volatility paradox": ["low_vol"],
-    "Market-based tail measures": ["dcovar_max", "dcovar_private", "srisk_gdp"],
+    "Market-based tail measures": ["dcovar_max", "dcovar_private"], "Fiscal space and bank capital": ["srisk_gdp", "bank_capital"],
+    "Intermediary leverage and capital": ["hkm"],
     "Connectedness and correlation": ["dy_total", "granger_dgc", "absorption"],
-    "Funding liquidity, repo and runs": ["reserves_gdp", "rrp_buffer", "sofr_iorb", "srf_usage", "cp_spread"],
-    "Global dollar funding": ["xccy_basis"], "Bank interest-rate risk and deposit runs": ["bank_rel_dd"],
+    "Funding liquidity, repo and runs": ["reserves_gdp", "rrp_buffer", "sofr_iorb", "tgcr_iorb", "srf_usage", "cp_spread", "a2p2"],
+    "Global dollar funding": ["xccy_basis", "eur_basis", "usd_6m"], "Bank interest-rate risk and deposit runs": ["bank_rel_dd"],
     "Credit supply and realised losses": ["ci_draw"], "Non-bank and private credit, hidden leverage": ["dcovar_private"],
-    "Credit-spread shocks": ["credit_widen"], "Market liquidity": ["ust_liq"], "Composite stress indices": ["stlfsi", "nfci"],
+    "Credit-spread shocks": ["credit_widen"], "Market liquidity": ["ust_liq", "intl_liq"], "Composite stress indices": ["stlfsi", "nfci"],
+    "Market volatility": ["vix", "move", "fx_vol"], "Capital-flow reversals": ["em_stress"],
+    "Credit-market sentiment": ["ebp_sentiment", "hy_oas"],
 }
 
 
@@ -598,6 +612,9 @@ def payload(R: dict) -> dict:
     U = unified.evaluate(R, st)
     head["title"], cond = unified.headline_text(U, head["level"])
     head["summary"] = cond + head["summary"].replace("The Systemic Risk Index is", "The tested early-warning index is")
+    for l in links:      # all-in stage score = the broad-system row of the grid (every series, equal weights)
+        l["allin"] = U["grid"][l["stage_key"] + "|broad"]["score"]
+    head["allin"] = U["condition"].get("broad")
     asof = st.asof
     fred = R["fred"]
     idx = R["index"].loc[:asof]
@@ -615,6 +632,8 @@ def payload(R: dict) -> dict:
                  "levels": LEVELS},
         "head": head, "links": links, "titles": st.chart_titles(), "context": ctx,
         "index": _s(idx, "2005"),
+        "allin": None if "allin_index" not in R else {"value": round(float(R["allin_index"].loc[:asof].dropna().iloc[-1]), 1),
+                                                       "hist": _s(R["allin_index"].loc[:asof], "2005")},
         "crises": [{"x": d, "name": n} for d, n in CRISES],
         "pillars_hist": {c: _s(R["pillars"][c].loc[:asof].ewm(span=4).mean(), "2005", 2) for c in R["pillars"]},
         "spread": _s(fred["BAA10Y"].resample("W-FRI").last(), "1990"),

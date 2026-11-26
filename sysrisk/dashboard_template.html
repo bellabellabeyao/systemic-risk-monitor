@@ -211,14 +211,14 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
   <section class="panel" style="display:flex;flex-direction:column;gap:6px">
     <h4 id="rulertitle">Today against the peak of every stress episode since 2008</h4>
     <div class="ruler-wrap"><div class="ruler" id="ruler"></div></div>
-    <p class="src"><b>Note.</b> Each episode's value is this index's own weekly peak within three weeks of the dated event. Bands are calibrated to those peaks.</p>
+    <p class="src"><b>Note.</b> Each episode's value is this index's highest weekly reading during the episode (for the GFC, Aug 2007 to Mar 2009). Bands are calibrated to those peaks.</p>
   </section>
 
   <!-- 2. CHAIN -->
   <section style="display:flex;flex-direction:column;gap:14px">
     <div class="sec-head">
       <h2>How a loss becomes systemic</h2>
-      <p class="prose muted">A systemic event needs four stages to line up: fragility (an excess that can unwind), a trigger that tests it, amplifiers that spread the loss, and buffers that give way at the systemic threshold. The model scores each stage 0–100 against its own history; the index is their average. Each stage below then adds the analyst signal board for the broad system and for the AI channel.</p>
+      <p class="prose muted">A systemic event needs four things to line up: fragility (an excess that can unwind), stress that tests it, amplifiers (leverage and links) that spread the loss, and buffers (capital, liquidity, backstops) too thin to absorb it. Each stage scores 0–100 against its own history. The first number is the tested early-warning score; the number in brackets is the all-in score, which counts every series we track. Each stage below then adds the analyst signal board for the broad system and for the AI channel.</p>
     </div>
     <div class="chain" id="chain"></div>
   </section>
@@ -226,7 +226,7 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
   <!-- 3. HISTORY -->
   <section class="panel card">
     <h4 id="histtitle">The index through past crises</h4>
-    <p class="what">Weekly Systemic Risk Index, with each link shown faintly behind it. Shading marks the level bands. Before 2009 it rests on two or three links, because few contagion and liquidity measures existed earlier.</p>
+    <p class="what">Weekly Systemic Risk Index, with each link shown faintly behind it. Shading marks the level bands. Before 2010 it rests on two stages and the evidence test had little history, so early readings jump as indicators enter and leave the score. The dotted line is the all-in view (every model series, untested).</p>
     <div id="hist" class="chart tall"></div>
     <p class="src"><b>Source and method.</b> Average of the four link scores. Each link averages only the indicators that pass a real-time evidence test: using data available at the time, a higher score must have come before deeper drawdowns in US financial stocks. Each indicator is ranked against its own history, also using only data available at the time. Composite design follows Holló, Kremer &amp; Lo Duca (2012, ECB CISS) and the survey in Bisias, Flood, Lo &amp; Valavanis (2012); out-of-sample evaluation follows Giglio, Kelly &amp; Pruitt (2016). Data: FRED, BIS via FRED, Yahoo Finance.</p>
   </section>
@@ -236,8 +236,12 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
 
   <!-- 4b. NARRATIVE WATCH -->
   <section style="display:flex;flex-direction:column;gap:14px" id="narrative" hidden>
-    <div class="sec-head"><h2>Narrative watch: risks the numbers cannot see yet</h2>
+    <div class="sec-head"><h2>Narrative watch: trigger events and risks the numbers cannot see yet</h2>
       <p class="prose muted" id="nwintro"></p></div>
+    <div id="trig" hidden><h3 style="margin:4px 0 0">Trigger events to watch</h3>
+      <p class="prose muted" style="margin:4px 0 10px">Discrete events that could set off the stages above. They are tracked here rather than scored, because an event cannot be measured on its own history. Updated by the daily analyst task.</p>
+      <div class="nw" id="triggrid"></div></div>
+    <h3 style="margin:8px 0 0">Background cards</h3>
     <div class="nw" id="nwgrid"></div>
     <p class="src" id="nwnot"></p>
   </section>
@@ -260,7 +264,7 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);paddin
   <section style="display:flex;flex-direction:column;gap:14px">
     <div class="sec-head"><h2>How this monitor works</h2></div>
     <div class="how">
-      <div><h4>Four stages, two lenses, three kinds of evidence</h4><p>Stages: Fragility (why the system is vulnerable), Triggers (what sets it off), Amplifiers (why it spreads), Systemic threshold (when buffers give way). Lenses: the broad system, and the AI channel (circular financing, off-balance-sheet commitments, concentration, AI credit). Evidence: (1) the scored model, evidence-screened and refreshed daily; (2) the signal board, judgement traffic lights with sources, refreshed daily by an analyst task; (3) the narrative watch, sourced cards for risks with no time series. Only (1) feeds the index. A high reading in one stage alone is rarely a crisis; 2008 had all four.</p></div>
+      <div><h4>Four stages, two lenses, three kinds of evidence</h4><p>Stages: Fragility (is an excess building), Stress (is stress showing up now), Amplifiers (what would force selling and spread the loss), Buffers (can capital, liquidity and backstops absorb it). Indicators sit where their economic meaning puts them; contested cases follow official monitors (IMF GFSR, BIS, OFR). Discrete trigger events (AI financing, private credit) are tracked in the narrative section, not scored. Lenses: the broad system, and the AI channel (circular financing, off-balance-sheet commitments, concentration, AI credit). Evidence: (1) the scored model, evidence-screened and refreshed daily; (2) the signal board, judgement traffic lights with sources, refreshed daily by an analyst task; (3) the narrative watch, sourced cards and trigger events for risks with no time series. Only (1) feeds the tested score; (1) and (2) together make the all-in score. Within a stage, each theme counts once however many series it has. The evidence test looks two years ahead for Fragility and one year ahead elsewhere. A high reading in one stage alone is rarely a crisis; 2008 had all four.</p></div>
       <div><h4>How scores work</h4><p>Every indicator is ranked against its own history (0 = calmest week on record, 100 = most dangerous), using only data available at the time. To feed the score, an indicator must pass two tests. First, published work must show it predicts crises, with no known structural break in our data. Second, each month it must pass an evidence test on our own data, using only what was known then: its past readings must have come before deeper drawdowns in US financial stocks over the next 12 months. Indicators that fail either test are shown as context. The data is real, but adding it would add noise. Each context row says why: failed test, too new to test, double counts, trends up, lags, global, or no evidence. Each link averages its scored indicators, and the index averages the four links. Bands come from the index's own crisis peaks (see the ruler above).</p></div>
       <div><h4>What is not here yet</h4><p>Everything in the literature map marked as a gap. These need data the free feed does not carry (supervisory, holdings, CFTC or Bloomberg):</p><ul id="manual"></ul></div>
     </div>
@@ -291,15 +295,13 @@ function spark(vals, color, w=96, h=24){
 const meter = s => `<span class="meter"><i style="width:${s||0}%;background:${scoreVar(s)}"></i></span>`;
 
 const SECTIONS = {
-  "Build-up": {charts:[["spread","spread","Moody's Baa corporate yield minus 10-year Treasury, weekly. Lower = investors demand less for credit risk.",
+  "Fragility": {charts:[["spread","spread","Moody's Baa corporate yield minus 10-year Treasury, weekly. Lower = investors demand less for credit risk.",
                     "López-Salido, Stein & Zakrajšek (2017, QJE): tight credit pricing predicts wider spreads and weaker growth ~2 years out; Gilchrist & Zakrajšek (2012, AER) for the excess bond premium this proxies. Data: FRED BAA10Y."],
                    ["gap","gap","Private non-financial credit/GDP minus its one-sided trend (BIS method). Shaded: Basel buffer zone, 2 to 10pp.",
                     "Borio & Drehmann (2009, BIS QR); Drehmann, Borio & Tsatsaronis (2011); Basel Committee (2010) countercyclical buffer guidance. One-sided HP filter, λ = 400,000. Data: BIS via FRED QUSPAM770A."],
                    ["valuation","valuation","Equity market value as % of GDP (left) and real house prices vs their long-run trend, % (right).",
                     "Borio & Lowe (2002) on asset-price gaps; Jordà, Schularick & Taylor (2015) on why credit-fuelled housing booms are costlier than equity booms. Data: Fed Financial Accounts via FRED NCBEILQ027S, GDP; BIS via FRED QUSR628BIS (one-sided HP)."]]},
-  "Contagion": {charts:[["srisk","srisk","Capital US financials would need to raise after a 40% equity fall, by sector, $bn. Starts when free balance-sheet data begins.",
-                           "Brownlees & Engle (2017, RFS); Acharya, Engle & Richardson (2012, AER P&P). k = 8%, LRMES = 1 − exp(ln(0.6)·β) (NYU V-Lab approximation), EWMA β in place of GARCH-DCC. Data: Yahoo prices and balance sheets."],
-                          ["dcovar","dcovar","Extra loss in the financial system's worst 5% of weeks when each sector is in distress, % per week, 4-week average.",
+  "Amplifiers": {charts:[["dcovar","dcovar","Extra loss in the financial system's worst 5% of weeks when each sector is in distress, % per week, 4-week average.",
                            "Adrian & Brunnermeier (2016, AER). 5% quantile regressions on VIX, term spread, Baa−10y and S&P return; expanding window, refit yearly. Data: Yahoo weekly returns, FRED."],
                           ["dy","dy","Net spillover of volatility: positive = sends shocks to other assets, negative = receives them. Last 200 trading days.",
                            "Diebold & Yilmaz (2012, IJF; 2014, JoE). VAR(2) on log Parkinson range volatility, 10-day generalised variance decomposition (Pesaran & Shin 1998). Data: Yahoo ETFs."],
@@ -307,13 +309,15 @@ const SECTIONS = {
                            "Barth & Kahn (2021, OFR WP 21-01); Schrimpf, Shin & Sushko (2020, BIS Bulletin 2) on the March 2020 unwind; Fed Financial Stability Report. Data: OFR Hedge Fund Monitor (FPF-BORROW_REPO_SUM, TFF-LF_TREAS_NET_POSITION)."],
                           ["stockbond","stockbond","3-month correlation of daily S&P 500 and 7-10y Treasury returns. Above zero = bonds no longer hedge stocks.",
                            "Campbell, Pflueger & Viceira (2020, JPE) on why the stock-bond correlation flips with the inflation regime. Data: Yahoo SPY, IEF."]], cols:2},
-  "Shock absorbers": {charts:[["xccy","xccy","Cost of borrowing dollars by swapping out of yen (3-month OIS basis) and euros (1-year basis), bp. More negative = dollars scarcer offshore.",
+  "Buffers": {charts:[["xccy","xccy","Cost of borrowing dollars by swapping out of yen (3-month OIS basis) and euros (1-year basis), bp. More negative = dollars scarcer offshore.",
                                "Du, Tepper & Verdelhan (2018, JF); Avdjiev, Du, Koch & Shin (2019). Data: Bloomberg .JYCCBS3M G Index; EUXOQQ1 Curncy spliced to EUBS1 Curncy (LIBOR era to 2021).", "bbg"],
                               ["plumb","plumb","Bank reserves and ON RRP balances ($tn, right axis) and the overnight repo rate minus the Fed's interest on reserves (bp, left axis).",
-                               "Copeland, Duffie & Yang (2021, NY Fed SR 974) on the Sept-2019 repo spike; Afonso, Giannone, La Spada & Williams (2022, NY Fed SR 1019) on the reserve demand curve. Data: FRED WRESBAL, RRPONTSYD, SOFR, IORB/IOER."]], cols:1},
-  "Trigger": {charts:[["liq","liq","Bloomberg government bond liquidity indices: average gap between bond yields and a fitted curve, bp. Higher = less liquid.",
-                        "Hu, Pan & Wang (2013, JF) on yield-curve noise as illiquidity; Pinter (2023) on the 2022 gilt crisis. Data: Bloomberg GVLQUSD, GVLQJPY, GVLQGBP, GVLQDE Index.", "bbg"],
-                       ["stress","stress","St. Louis Fed Financial Stress Index (zero = normal) and regional banks' shortfall vs the S&P 500 from their 1-year high (%, right axis).",
+                               "Copeland, Duffie & Yang (2021, NY Fed SR 974) on the Sept-2019 repo spike; Afonso, Giannone, La Spada & Williams (2022, NY Fed SR 1019) on the reserve demand curve. Data: FRED WRESBAL, RRPONTSYD, SOFR, IORB/IOER."],
+                              ["srisk","srisk","Capital US financials would need to raise after a 40% equity fall, by sector, $bn. Starts when free balance-sheet data begins.",
+                           "Brownlees & Engle (2017, RFS); Acharya, Engle & Richardson (2012, AER P&P). k = 8%, LRMES = 1 − exp(ln(0.6)·β) (NYU V-Lab approximation), EWMA β in place of GARCH-DCC. Data: Yahoo prices and balance sheets."],
+                              ["liq","liq","Bloomberg government bond liquidity indices: average gap between bond yields and a fitted curve, bp. Higher = less liquid.",
+                        "Hu, Pan & Wang (2013, JF) on yield-curve noise as illiquidity; Pinter (2023) on the 2022 gilt crisis. Data: Bloomberg GVLQUSD, GVLQJPY, GVLQGBP, GVLQDE Index.", "bbg"]], cols:1},
+  "Stress": {charts:[["stress","stress","St. Louis Fed Financial Stress Index (zero = normal) and regional banks' shortfall vs the S&P 500 from their 1-year high (%, right axis).",
                         "Kliesen & Smith (2010), St. Louis Fed FSI v4; Jiang, Matvos, Piskorski & Seru (2024, JFE) on the 2023 regional bank runs. Data: FRED STLFSI4; Yahoo KRE, SPY."],
                        ["vol","vol","VIX and MOVE (left) and the Baa−10y corporate spread, pp (right).",
                         "Whaley (2000) on VIX; Bekaert & Hoerova (2014) on VIX as risk aversion plus uncertainty; Gilchrist & Zakrajšek (2012) on credit-spread shocks. Data: FRED VIXCLS, BAA10Y; Yahoo ^MOVE."],
@@ -337,7 +341,7 @@ function boardFor(stage){
   B.lenses.forEach(L=>{
     const ts = B.themes.filter(t=>t.stage===stage && t.lens===L.key); if (!ts.length) return;
     const g = B.grid[stage+"|"+L.key];
-    h += `<tr class="grp"><td colspan="5"><span class="bdlens ${L.key==="ai"?"lens-ai":""}">${esc(L.name)}</span> &nbsp;condition ${sc1(g.score)} · ${rag(g.signal)}</td></tr>`;
+    h += `<tr class="grp"><td colspan="5"><span class="bdlens ${L.key==="ai"?"lens-ai":""}">${esc(L.name)}</span> &nbsp;all-in ${sc1(g.score)} · ${rag(g.signal)}</td></tr>`;
     ts.forEach(t=>{
       const id = "bd_"+t.key;
       h += `<tr class="bdrow" data-t="${id}"><td><b>${esc(t.theme)}</b> <span class="tag">${t.rows.length} series ▾</span></td><td><div class="sbar">${meter(t.score)}<span class="num" style="font-size:12px">${sc1(t.score)}</span></div></td><td>${rag(t.signal)}</td><td>${rag(t.prev,true)} ${chg(t.signal,t.prev)}</td><td>${esc(t.comment)}</td></tr>`;
@@ -360,20 +364,20 @@ function gapNote(l){ const g=(l.rows||[]).filter(r=>r.missing); return g.length?
 function stageChips(l){
   const B=D.board; if(!B) return `<span class="lvl L-${l.level}">${l.level} · ${fmt(l.score)}</span>`;
   const e=(B.early_warning||{})[l.stage_key];
-  return B.lenses.map(L=>{const g=B.grid[l.stage_key+"|"+L.key]; return `<span class="${L.key==="ai"?"lens-ai":""}" style="font-size:13.5px">Condition, ${esc(L.name.toLowerCase())}: <b class="num">${sc1(g.score)}</b> ${rag(g.signal)}</span>`;}).join("")
+  return B.lenses.map(L=>{const g=B.grid[l.stage_key+"|"+L.key]; return `<span class="${L.key==="ai"?"lens-ai":""}" style="font-size:13.5px">All-in, ${esc(L.name.toLowerCase())}: <b class="num">${sc1(g.score)}</b> ${rag(g.signal)}</span>`;}).join("")
     + `<span style="font-size:13.5px">Early warning (tested): <span class="lvl L-${l.level}" style="font-size:11px;padding:3px 7px">${fmt(l.score)} · ${l.level}</span> <span class="muted" style="font-size:12px">${e?e.n+" series"+(e.n<2?", thin":""):""}</span></span>`;
 }
 function renderGrid(){
   const B = D.board; if (!B) { document.getElementById("gridsec").hidden = true; return; }
   const link = Object.fromEntries(D.links.map(l=>[l.stage_key,l]));
-  document.getElementById("gridintro").textContent = `Columns follow the chain from fragility to a systemic event. Condition rows score everything we track in each stage, for the broad system and for the AI channel, on one 0–100 scale with one colour rule. The bottom row is the early-warning model: only the series that pass the out-of-sample evidence test.`;
+  document.getElementById("gridintro").textContent = `Columns follow the chain from fragility to a systemic event. All-in rows score everything we track in each stage, for the broad system and for the AI channel, on one 0–100 scale with one colour rule. The bottom row is the tested early-warning model: only the series that pass the out-of-sample evidence test.`;
   let h = `<thead><tr><th class="lens"></th>${B.stages.map(s=>`<th><a href="#${(link[s.key]||{name:""}).name.replace(/\s/g,'')}"><div class="stg">${s.n} ${esc(s.name)}</div><div class="stq">${esc(s.q)}</div></a></th>`).join("")}<th><div class="stg">Overall</div></th></tr></thead><tbody>`;
   B.lenses.forEach(L=>{
-    h += `<tr><td class="lens ${L.key==="ai"?"lens-ai":""}">Condition: ${esc(L.name)}</td>${B.stages.map(s=>{const g=B.grid[s.key+"|"+L.key]; return `<td><div class="cell"><span class="num" style="font-size:18px;font-weight:600">${sc1(g.score)}</span>${rag(g.signal)}<span class="muted">${g.themes} theme${g.themes>1?"s":""} · ${g.series} series</span></div></td>`;}).join("")}<td><div class="cell"><span class="num" style="font-size:18px;font-weight:600">${sc1(B.condition[L.key])}</span>${rag(B.condition[L.key]==null?"":(B.condition[L.key]>=B.bands[1]?"RED":B.condition[L.key]>=B.bands[0]?"AMBER":"GREEN"))}</div></td></tr>`;
+    h += `<tr><td class="lens ${L.key==="ai"?"lens-ai":""}">All-in: ${esc(L.name)}</td>${B.stages.map(s=>{const g=B.grid[s.key+"|"+L.key]; return `<td><div class="cell"><span class="num" style="font-size:18px;font-weight:600">${sc1(g.score)}</span>${rag(g.signal)}<span class="muted">${g.themes} theme${g.themes>1?"s":""} · ${g.series} series</span></div></td>`;}).join("")}<td><div class="cell"><span class="num" style="font-size:18px;font-weight:600">${sc1(B.condition[L.key])}</span>${rag(B.condition[L.key]==null?"":(B.condition[L.key]>=B.bands[1]?"RED":B.condition[L.key]>=B.bands[0]?"AMBER":"GREEN"))}</div></td></tr>`;
   });
   h += `<tr><td class="lens">Early warning (tested model)</td>${B.stages.map(s=>{const l=link[s.key], e=(B.early_warning||{})[s.key]; return `<td>${l?`<div class="cell"><span class="lvl L-${l.level}" style="font-size:11px;padding:3px 7px">${fmt(l.score)} · ${l.level}</span><span class="muted">${e?e.n+" series pass the test":""}${e&&e.n<2?" · thin":""}</span></div>`:"–"}</td>`;}).join("")}<td><div class="cell"><span class="lvl L-${D.head.level}" style="font-size:11px;padding:3px 7px">${fmt(D.head.value)} · ${D.head.level}</span></div></td></tr>`;
   document.getElementById("sgrid").innerHTML = h + "</tbody>";
-  document.getElementById("gridnote").innerHTML = `How the condition score is built: every series scores 0–100 (model series: percentile of its own history, real time; judgement series: green 25, amber 52, red 80). Theme = weighted average (series passing the evidence test 1.0, other model series 0.5, judgement 0.5). Stage = average of its themes. Colour: green below 40, amber 40–65, red 65+. Why two numbers: out of sample, adding the untested series to the early-warning model made its drawdown forecasts worse, so the tested model stays separate and the condition score is descriptive, not a forecast. A stage resting on one tested series is marked "thin". <a href="${esc(D.xlsx||"#")}" download>Download everything as Excel</a>.`;
+  document.getElementById("gridnote").innerHTML = `How the all-in score is built: every series scores 0–100 (model series: percentile of its own history, real time; judgement series: green 25, amber 52, red 80). Theme = simple average of all its series. Stage = average of its themes. Colour: green below 40, amber 40–65, red 65+. Why two numbers: out of sample, adding the untested series to the early-warning model made its drawdown forecasts worse, so the tested model stays separate and the all-in score is descriptive, not a forecast. A stage resting on one tested series is marked "thin". <a href="${esc(D.xlsx||"#")}" download>Download everything as Excel</a>.`;
 }
 document.addEventListener("click", e=>{ const tr = e.target.closest(".bdtbl .bdrow"); if (!tr) return;
   const rows=[...document.querySelectorAll(".bdtbl tr."+tr.dataset.t)], open=rows.length&&rows[0].hidden;
@@ -383,13 +387,13 @@ document.addEventListener("click", e=>{ const tr = e.target.closest(".bdtbl .bdr
 function renderStatic(){
   renderGrid();
   if (D.board) { const B=D.board, col=v=>v>=B.bands[1]?"RED":v>=B.bands[0]?"AMBER":"GREEN";
-    document.getElementById("condline").innerHTML = `<p class="eyebrow" style="margin:0">Condition today (everything tracked)</p>` + B.lenses.map(L=>`<div style="display:flex;gap:10px;align-items:center"><span class="num" style="font-size:22px;font-weight:600">${sc1(B.condition[L.key])}</span>${rag(col(B.condition[L.key]))}<span class="${L.key==="ai"?"lens-ai":""}" style="font-size:13.5px">${esc(L.name)}</span></div>`).join("") + `<p class="muted" style="font-size:12px;margin:0">Same 0–100 scale. <a href="#gridsec">How the two numbers differ ↓</a></p>`; }
+    document.getElementById("condline").innerHTML = `<p class="eyebrow" style="margin:0">All-in today (everything tracked)</p>` + B.lenses.map(L=>`<div style="display:flex;gap:10px;align-items:center"><span class="num" style="font-size:22px;font-weight:600">${sc1(B.condition[L.key])}</span>${rag(col(B.condition[L.key]))}<span class="${L.key==="ai"?"lens-ai":""}" style="font-size:13.5px">${esc(L.name)}</span></div>`).join("") + `<p class="muted" style="font-size:12px;margin:0">Same 0–100 scale. <a href="#gridsec">How the two numbers differ ↓</a></p>`; }
   const H = D.head;
   document.getElementById("asof").textContent = D.meta.asof;
   document.getElementById("run").textContent = D.meta.run;
   document.getElementById("src").textContent = D.meta.source;
   document.getElementById("demo").hidden = !D.meta.demo;
-  document.getElementById("idx").textContent = fmt(H.value);
+  document.getElementById("idx").innerHTML = fmt(H.value) + (H.allin!=null?` <span class="muted" style="font-size:.28em;font-weight:500;letter-spacing:0">(all-in ${fmt(H.allin)})</span>`:"");
   const lv = document.getElementById("lvl"); lv.textContent = H.level; lv.className = "lvl L-"+H.level;
   document.getElementById("idxsub").textContent = `${sgn(H.d13)} over 3 months · higher than ${fmt(H.pct)}% of weeks since 2005`;
   document.getElementById("title").textContent = H.title;
@@ -416,7 +420,7 @@ function renderStatic(){
       <span class="step">Stage ${l.stage_n} of 4</span>
       <span class="nm">${esc(l.stage)}</span>
       <span class="q">${esc(l.stage_q)}</span>
-      <div class="sc"><span class="v num">${fmt(l.score)}</span>${meter(l.score)}<span class="lvl L-${l.level}" style="font-size:10.5px;padding:4px 6px">${l.level}</span></div>
+      <div class="sc"><span class="v num">${fmt(l.score)}${l.allin!=null?`<span class="muted" style="font-size:.5em;font-weight:500"> (${fmt(l.allin)})</span>`:""}</span>${meter(l.score)}<span class="lvl L-${l.level}" style="font-size:10.5px;padding:4px 6px">${l.level}</span></div>
       <span class="muted num" style="font-size:12px">${sgn(l.d13)} over 3 months</span>
       <p class="lede">${esc(l.head)}</p>
       <a href="#${l.name.replace(/\s/g,'')}">See the evidence ↓</a>
@@ -437,20 +441,20 @@ function renderStatic(){
       ${boardFor(l.stage_key)}
       <details class="morecharts"><summary>More charts for this stage (${S.charts.length})</summary>
         <div class="${cols}" style="margin-top:12px">${S.charts.map(([id,tk,what,src])=>`<div class="panel card"><h4>${esc(T[tk])}</h4><p class="what">${what}</p><div id="c_${id}" class="chart"></div><p class="src"><b>Source.</b> ${esc(src)}</p></div>`).join("")}</div>
-        ${l.name==="Contagion" ? firmTable() : ""}
+        ${l.name==="Buffers" ? firmTable() : ""}
       </details>
     </section>`;}).join("");
 
   // validation
   if (D.validation) {
     const lab = {drawdown:"Worst 12-month drawdown in US financial stocks (XLF), trained from 1999",
-                 drawdown_2003:"Same test, trained from 2003 only (robustness)", ip:"12-month industrial production growth"};
+                 drawdown_2003:"Same test, trained from 2003 only (robustness)", drawdown_24:"Worst 24-month drawdown in US financial stocks (the Fragility horizon)", ip:"12-month industrial production growth"};
     const f = x => (x>=0?"+":"−")+Math.abs(x).toFixed(2);
     const row = (k,n) => D.validation[k].find(r=>r.name.startsWith(n));
     const read = {};
-    for (const k of ["drawdown","drawdown_2003"]) { if (!D.validation[k]) continue;
-      const me=row(k,"Systemic"), old=row(k,"Old"), fed=D.validation[k].filter(r=>/Fed|NFCI/.test(r.name)), best=Math.max(...fed.map(r=>r.r2));
-      read[k] = `The index scores ${f(me.r2)}, vs ${f(old.r2)} for the old equal-weight version and ${f(best)} for the better of the two Fed stress indices. `
+    for (const k of ["drawdown","drawdown_2003","drawdown_24"]) { if (!D.validation[k]) continue;
+      const me=row(k,"Systemic"), old=row(k,"All-in"), fed=D.validation[k].filter(r=>/Fed|NFCI/.test(r.name)), best=Math.max(...fed.map(r=>r.r2));
+      read[k] = `The index scores ${f(me.r2)}, vs ${f(old.r2)} for the all-in version (every series, no test) and ${f(best)} for the better of the two Fed stress indices. `
         + (me.r2 > best ? "It beats both Fed indices on this window." : "It does not beat the best Fed index on this window.")
         + (k==="drawdown" ? " The test window holds only a few stress episodes (2011, 2015-16, 2018, Covid, SVB), so differences of 0.05 are within noise." : " Scores move a lot with the training start, which is why both are shown.");
     }
@@ -478,6 +482,15 @@ function renderStatic(){
       <p style="margin:0;font-size:13.5px"><b>What would make it worse.</b> ${esc(c.watch)}</p>
       <p class="src" style="margin:0"><b>Sources.</b> ${c.sources.map(x=>`<a href="${esc(x[1])}" target="_blank" rel="noopener">${esc(x[0])}</a>`).join(" · ")}</p></div>`).join("");
     document.getElementById("nwnot").textContent = N.not_covered;
+    const TW = ((D.board||{}).themes||[]).filter(t=>t.stage==="watch");
+    if (TW.length) { document.getElementById("trig").hidden = false;
+      const part = t => t.lens==="ai" ? "AI financing" : "Private credit";
+      document.getElementById("triggrid").innerHTML = TW.map(t=>`<div class="panel card">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><h4 style="margin:0">${t.theme.startsWith(part(t))?esc(t.theme):esc(part(t))+": "+esc(t.theme)}</h4>${rag(t.signal)}</div>
+        <p style="margin:0;font-size:13.5px">${esc(t.comment)}</p>
+        ${t.rows.map(r=>`<details><summary style="font-size:13.5px"><b>${esc(r.metric)}</b> ${rag(r.signal)} <span class="muted">as of ${esc(r.asof)}${r.refreshed?"":" · carried"}</span></summary>
+          <p style="font-size:13px;margin:6px 0">${esc(r.reading)}</p><p style="font-size:13px;margin:6px 0"><b>What to watch.</b> ${esc(r.note)}</p>
+          <p class="src" style="margin:0"><b>Sources.</b> ${esc(r.source)}</p></details>`).join("")}</div>`).join(""); }
     const warn = N.items.filter(c=>c.signal==="warning");
     if (warn.length) { const el = document.getElementById("nwflag"); el.hidden = false;
       el.innerHTML = `<b>Outside the score:</b> the narrative watch flags ${warn.length===1?"a warning":warn.length+" warnings"} on ${warn.map(c=>esc(c.short)).join(" and ")}. <a href="#narrative">See below.</a>`; }
@@ -516,7 +529,7 @@ function renderCharts(){
   const pal = [acc, vio, warn, ok];
   const pills = Object.entries(D.pillars_hist).map(([k,s],i)=>ln(s,k,pal[i],{line:{width:1,color:pal[i]}, opacity:.35}));
   const crisis = D.crises.map(c=>({x:c.x, y:105, text:c.name, showarrow:false, font:{size:10, color:mut}, textangle:0, yanchor:"bottom"}));
-  Plotly.react("hist", [...pills, ln(D.index,"Systemic Risk Index",ink,{line:{width:2.4,color:ink}})], base({
+  Plotly.react("hist", [...pills, ...(D.allin?[ln(D.allin.hist,"All-in (model series, untested)",mut,{line:{width:1.6,color:mut,dash:"dot"}})]:[]), ln(D.index,"Early-warning index (tested)",ink,{line:{width:2.4,color:ink}})], base({
     showlegend:true, yaxis:{range:[0,112], tickvals:[0,40,52,65,100]}, margin:{l:36,r:12,t:20,b:30},
     shapes:[hrect(0,40,C.Low,.07),hrect(40,52,C.Moderate,.09),hrect(52,65,C.Elevated,.10),hrect(65,100,C.High,.10),
       ...D.crises.map(c=>({type:"line", x0:c.x, x1:c.x, y0:0, y1:104, line:{color:rule, width:1, dash:"dot"}}))],

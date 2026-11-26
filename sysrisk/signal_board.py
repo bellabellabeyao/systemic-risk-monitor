@@ -1,7 +1,8 @@
 """
 Signal board: the judgement layer of the monitor (traffic lights), organised on the same spine as the model.
 
-Spine: 4 stages (Fragility -> Triggers -> Amplifiers -> Systemic threshold) x 2 lenses (Broad, AI).
+Spine: 4 stages (Fragility -> Stress -> Amplifiers -> Buffers) x 2 lenses (Broad, AI).
+Themes with stage "watch" are trigger events (AI financing, private credit): shown in the narrative section, never scored.
 The model's four links map onto the stages (see STAGES). The signal board is NOT scored.
 
 This module is the single source for the dashboard grid, the per-stage tables and the Excel workbook
@@ -10,18 +11,18 @@ This module is the single source for the dashboard grid, the per-stage tables an
 reading carried over from an earlier update.
 
 signal / prev: "GREEN" | "AMBER" | "RED"; prev "" = not tracked at PREV_ASOF (new row).
-Rule to place a row: level of an excess = Fragility; a shock or fast change = Triggers;
-a mechanism that forces selling or spreads losses = Amplifiers; a buffer, and whether it gives way = Threshold.
+Rule to place a row: level of an excess = Fragility; stress showing up now = Stress; leverage or links that force
+selling or spread losses = Amplifiers; a buffer, and whether it gives way = Buffers; a discrete event that could set it off = watch.
 """
 AS_OF = "25 Nov 2026 (US close)"
 PREV_ASOF = "29 Jul 2026"
 
 # key, number, display name, question, model link (sysrisk.config.PILLARS value)
 STAGES = [
-    ("fragility", "1", "Fragility", "Why is the system vulnerable?", "Build-up"),
-    ("triggers", "2", "Triggers", "What sets it off?", "Trigger"),
-    ("amplifiers", "3", "Amplifiers", "Why does it spread?", "Contagion"),
-    ("threshold", "4", "Systemic threshold", "When is it systemic?", "Shock absorbers"),
+    ("fragility", "1", "Fragility", "Why is the system vulnerable?", "Fragility"),
+    ("triggers", "2", "Stress", "Is stress showing up now?", "Stress"),
+    ("amplifiers", "3", "Amplifiers", "What would force selling and spread the loss?", "Amplifiers"),
+    ("threshold", "4", "Buffers", "Can the system absorb it?", "Buffers"),
 ]
 LENSES = [("broad", "Broad system"), ("ai", "AI channel")]
 
@@ -29,50 +30,37 @@ LENSES = [("broad", "Broad system"), ("ai", "AI channel")]
 # key, stage, lens, theme, model series ids (sysrisk.config), comment, July board signal (for "change")
 # The theme score is computed (see sysrisk/unified.py) from its model series and judgement series below.
 THEMES = [
-    ("agg_lev", "fragility", "broad", "Aggregate leverage (household, corporate, government, credit gap)",
-     ["credit_gap", "hh_dsr", "hh_debt", "corp_debt", "rzone", "fiscal"],
-     "Households deleveraged; corporate and government debt high. Total non-financial debt flat at 2.59x GDP.", "AMBER"),
-    ("nonbank", "fragility", "broad", "Non-bank leverage (margin, hedge funds, private credit)",
-     ["nbfi_leverage", "margin", "hf_repo", "hf_rv_lev", "bank_nbfi"],
-     "Hedge-fund leverage highest since 2013 (Fed FSR); private-credit defaults near a record (Fitch 6.2% in Oct, from 6.3%) and named by the Fed; Q3 tenders only ~40% met and non-traded BDC outflows $4.1bn; sub-scale BDCs consolidating; margin debt near record.", "AMBER"),
-    ("valuation", "fragility", "broad", "Valuation stretch (credit pricing, equities, housing)",
-     ["ebp_sentiment", "eq_val", "house_gap", "low_vol"],
-     "Credit priced for perfection, equities near record valuations (CAPE ~40); the Fed calls house prices substantially above fundamentals; 30y mortgage 7.21% (25 Nov), from 7.28%, and homebuilder sentiment at its lowest since 2012.", "RED"),
-    ("em_imb", "fragility", "broad", "EM imbalances and reserve adequacy", [],
-     "EM corporate spreads resilient; dollar at a 19-month high and Argentina's spread jumped, so weak sovereigns and energy importers are the soft spots.", "AMBER"),
-    ("ai_fin", "fragility", "ai", "AI financing structure (off-balance-sheet, circular, debt-funded capex)", [],
-     "The Fed's stability report puts AI debt above $1.1tn and off-balance-sheet leases and commitments above $3tn, and flags circular financing; Nvidia's own cloud and lease commitments rose to $102bn and it is now 'rigorously evaluating' further guarantees; Anthropic's IPO ($83, suppliers buying ~$26bn) closed below its price on 24 Nov ($81.90) and again on 25 Nov ($82.79, after an intraday low near $75.6), with share unlocks due from 15 Dec; Nvidia's board reinstated Huang as CEO on 23 Nov while an SEC probe and a preliminary California AG probe continue, and Nvidia says it will be far more selective on AI financing.", ""),
-    ("vol", "triggers", "broad", "Volatility shock (VIX, MOVE, FX vol)", ["vix", "move", "fx_vol"],
-     "VIX 28.0 on 25 Nov (+6%) on hot PCE and new tariff proposals; 26.4 on 24 Nov, after falling 26% to 26.6 on 23 Nov as stocks rebounded, from 35.9 on 20 Nov (intraday 40.0), the highest close since spring 2025; ~19.3 on 13 Nov; MOVE peaked at 114 in Oct (no newer print).", "GREEN"),
-    ("spread_chg", "triggers", "broad", "Credit spread widening", ["credit_widen", "em_stress"],
-     "HY 372bp on 24 Nov (+9bp) as the rally faded, after 363bp on 23 Nov and the 376bp 52-week high on 20 Nov (+116bp from the Aug low); CCC 1,402bp (20 Nov). Still below the ~400bp line. French-German 10y ~147bp (12 Nov).", "AMBER"),
-    ("stress", "triggers", "broad", "Realised stress (stress indices, bank equity, credit-line draws, lending)",
-     ["stlfsi", "nfci", "bank_rel_dd", "ci_draw", "pc_mark", "sloos_ci", "cre_delinq"],
-     "Stress indices still below normal; companies drawing credit lines fast; private-credit marks lagging HY; Oct loan survey: tighter standards for small firms, CRE and loans to non-banks.", "GREEN"),
-    ("curve", "triggers", "broad", "Term spreads / yield curve", [],
-     "2s10s ~+24bp on 25 Nov (10y 4.85%, -6bp; 2y ~4.61% early, approximate) as bonds rallied despite hot Oct PCE (3.8% headline, core 3.3% vs 3.2% expected). A December hike is fully priced on CME FedWatch, with two more seen in 2027.", "AMBER"),
-    ("ai_trig", "triggers", "ai", "AI repricing triggers (AI credit, demand signals, project stress)", [],
-     "Fired on 20 Nov (SOX -10.7%, Nvidia -14% on a reported SEC accounting probe, Broadcom -12% on a report that Google cut 2027 TPU orders ~20%; CoreWeave CDS ~1,233bp, Oracle ~328bp), then a relief rally on 23 Nov after Huang's reinstatement (Nvidia +31%) that faded on 24-25 Nov (Nvidia -5.9% then -3.9% to $149.30; CoreWeave 5y CDS a record ~1,314bp on 25 Nov, bonds at new lows ~74c; Reuters reports record CDS at Oracle and Alphabet too). No hyperscaler capex guidance cut yet.", ""),
-    ("crowded", "amplifiers", "broad", "Crowded trades and positioning", ["lf_ust_short"],
-     "Rout then whiplash: S&P -3.7% on 20 Nov (seventh straight fall, into correction; -8.6% on the week, Nasdaq -10%), then +4.7% on 23 Nov, its best day since Apr 2025, and out of correction; Nasdaq +6.5%, Nvidia +31% on one headline; on 24-25 Nov the AI names gave back part of it (Nasdaq -1.5% then -0.6%, Nvidia -5.9% then -3.9%) while the Dow set records above 50,000 (50,183 on 25 Nov). Swings this size in both directions show how crowded the AI trade still is.", "AMBER"),
-    ("corr", "amplifiers", "broad", "Correlation and common drivers", ["absorption", "stock_bond", "dy_total", "granger_dgc"],
-     "Financials driven by a few common factors; Treasuries now hedge properly (10y -12bp as the S&P fell 3.7% on 20 Nov; +5bp as it rose 4.7% on 23 Nov; -6bp as it slipped 0.25% on 25 Nov), but other risk assets and gold moved together in the selloff.", "GREEN"),
-    ("sifi", "amplifiers", "broad", "Spillovers from large institutions", ["srisk_gdp", "dcovar_max", "dcovar_private", "dealer_lev"],
-     "Capital shortfall in a crash still low; tail spillovers mid-range; FSB 2026 G-SIB list (25 Nov) keeps the same 29 banks, BNP Paribas up a bucket, MUFG down.", "AMBER"),
-    ("ai_amp", "amplifiers", "ai", "AI concentration and leverage on AI exposure", ["concentration"],
-     "Top 10 stocks ~39% of the S&P 500 (before this week's chip crash); leverage sits on the same names; margin debt eased only 2.1% in Oct to $1.45tn.", ""),
-    ("bank_cap", "threshold", "broad", "Bank capital and liquidity", [],
-     "Large banks well capitalised and liquid (Fed FSR; Q3 CET1 10.0-13.9% at the big four), but unrealised securities losses grow with yields; IMF's weak-bank tail 22% of assets.", "GREEN"),
-    ("mm_spreads", "threshold", "broad", "Short-term funding (CP, cross-currency basis)", ["cp_spread", "a2p2", "fin_cp"],
-     "Bank and corporate short-term funding cheap; no dollar shortage; the yen firmed on safe-haven demand on 20 Nov and the dollar eased from its 19-month high.", "GREEN"),
-    ("repo", "threshold", "broad", "Repo, reserves and the reverse-repo cushion", ["reserves_gdp", "rrp_buffer", "sofr_iorb", "tgcr_iorb"],
-     "Reverse-repo cushion gone; repo traded above the Fed floor around month-end, easing since (SOFR ~2bp below IORB on 9 Nov).", "AMBER"),
-    ("cb_fac", "threshold", "broad", "Central bank backstops (repo facility, swap lines)", ["srf_usage", "swap_lines"],
-     "Backstops ready and barely used.", "AMBER"),
-    ("mkt_liq", "threshold", "broad", "Market liquidity and dollar funding", ["usd_6m"],
-     "Dollar just off its 19-month high (DXY 103.8); Treasury demand at auctions softer (weakest foreign share at a 10y auction since Oct 2023) and front-end depth thinner per the Fed, but the safe-haven bid took the 10y back to 4.92% on 20 Nov with no reported dysfunction.", "GREEN"),
-    ("ai_abs", "threshold", "ai", "Absorption of AI credit losses (banks, insurers, credit supply)", [],
-     "The Fed counts close to $1tn of AI-linked exposure at the largest banks; ING's ~$500m data-centre loan auction stalled on low bids and moved to one-on-one sales (20 Nov), and HSBC sold a ~$300m slice of the $18bn Project Jupiter loan in the mid-80s (Bloomberg, 17 Nov), so banks can sell down only at a loss; the unsecured AI high-yield window has shut and CoreWeave's bonds fell to new record lows on 25 Nov (2031s 74.23c, yield 17.91%) as it shifts to prepayments and asset-backed loans; Apollo warns neocloud funding depends on Nvidia support.", ""),
+    ('hh', 'fragility', 'broad', 'Household borrowing (debt, debt service)', ['hh_debt', 'hh_dsr'], 'Households deleveraged.', 'GREEN'),
+    ('corp', 'fragility', 'broad', 'Business borrowing', ['corp_debt'], 'Corporate debt high.', 'AMBER'),
+    ('agg_lev', 'fragility', 'broad', 'Aggregate credit boom (credit gap, credit and asset prices together, total debt)', ['credit_gap', 'rzone'], 'Total non-financial debt flat at 2.59x GDP.', 'AMBER'),
+    ('finlev', 'fragility', 'broad', 'Financial-sector leverage (NFCI leverage, broker-dealers)', ['nbfi_leverage', 'dealer_lev'], 'Leverage across the financial sector as measured by the Chicago Fed and broker-dealer balance sheets.', ''),
+    ('pricing', 'fragility', 'broad', 'Risk pricing (credit spreads, volatility)', ['ebp_sentiment', 'hy_oas', 'low_vol'], 'Credit priced for perfection.', ''),
+    ('valuation', 'fragility', 'broad', 'Asset valuations (equities, housing, concentration)', ['eq_val', 'house_gap', 'concentration'], 'Equities near record valuations (CAPE ~40); the Fed calls house prices substantially above fundamentals; 30y mortgage 7.21% (25 Nov), from 7.28%, and homebuilder sentiment at its lowest since 2012.', 'RED'),
+    ('em_imb', 'fragility', 'broad', 'EM imbalances and reserve adequacy', [], "EM corporate spreads resilient; dollar at a 19-month high and Argentina's spread jumped, so weak sovereigns and energy importers are the soft spots.", 'AMBER'),
+    ('ai_fin', 'fragility', 'ai', 'AI financing structure (off-balance-sheet, circular, debt-funded capex)', [], "The Fed's stability report puts AI debt above $1.1tn and off-balance-sheet leases and commitments above $3tn, and flags circular financing; Nvidia's own cloud and lease commitments rose to $102bn and it is now 'rigorously evaluating' further guarantees; Anthropic's IPO ($83, suppliers buying ~$26bn) closed below its price on 24 Nov ($81.90) and again on 25 Nov ($82.79, after an intraday low near $75.6), with share unlocks due from 15 Dec; Nvidia's board reinstated Huang as CEO on 23 Nov while an SEC probe and a preliminary California AG probe continue, and Nvidia says it will be far more selective on AI financing.", ''),
+    ('vol', 'triggers', 'broad', 'Market stress (volatility, stress indices, dollar)', ['vix', 'move', 'fx_vol', 'stlfsi', 'nfci', 'usd_6m'], 'VIX 28.0 on 25 Nov (+6%) on hot PCE and new tariff proposals; 26.4 on 24 Nov, after falling 26% to 26.6 on 23 Nov as stocks rebounded, from 35.9 on 20 Nov (intraday 40.0), the highest close since spring 2025; ~19.3 on 13 Nov; MOVE peaked at 114 in Oct (no newer print).', 'GREEN'),
+    ('spread_chg', 'triggers', 'broad', 'Credit spread widening', ['credit_widen'], 'HY 372bp on 24 Nov (+9bp) as the rally faded, after 363bp on 23 Nov and the 376bp 52-week high on 20 Nov (+116bp from the Aug low); CCC 1,402bp (20 Nov). Still below the ~400bp line. French-German 10y ~147bp (12 Nov).', 'AMBER'),
+    ('mm_spreads', 'triggers', 'broad', 'Funding stress (bank and company CP spreads, financial CP)', ['cp_spread', 'a2p2', 'fin_cp'], 'Bank and corporate short-term funding cheap.', 'GREEN'),
+    ('stress', 'triggers', 'broad', 'Bank stress (bank equity, credit-line draws)', ['bank_rel_dd', 'ci_draw'], 'Companies drawing credit lines fast.', 'GREEN'),
+    ('pc', 'triggers', 'broad', 'Private-credit marks (listed BDCs)', ['pc_mark', 'bdc_pb'], 'Private-credit marks lagging HY.', ''),
+    ('glob', 'triggers', 'broad', 'Global stress (EM dollar bonds)', ['em_stress'], '', ''),
+    ('curve', 'triggers', 'broad', 'Term spreads / yield curve', [], '2s10s ~+24bp on 25 Nov (10y 4.85%, -6bp; 2y ~4.61% early, approximate) as bonds rallied despite hot Oct PCE (3.8% headline, core 3.3% vs 3.2% expected). A December hike is fully priced on CME FedWatch, with two more seen in 2027.', 'AMBER'),
+    ('lagging', 'triggers', 'broad', 'Credit tightening and realised losses (lagging; shown, a consequence)', ['sloos_ci', 'cre_delinq'], 'Oct loan survey: tighter standards for small firms, CRE and loans to non-banks.', ''),
+    ('nonbank', 'amplifiers', 'broad', 'Forced sellers (hedge-fund repo and leverage, Treasury basis, margin debt)', ['hf_repo', 'hf_rv_lev', 'lf_ust_short', 'margin', 'fire_sale'], 'Hedge-fund leverage highest since 2013 (Fed FSR); margin debt near record.', 'AMBER'),
+    ('crowded', 'amplifiers', 'broad', 'Crowded trades and positioning', [], 'Rout then whiplash: S&P -3.7% on 20 Nov (seventh straight fall, into correction; -8.6% on the week, Nasdaq -10%), then +4.7% on 23 Nov, its best day since Apr 2025, and out of correction; Nasdaq +6.5%, Nvidia +31% on one headline; on 24-25 Nov the AI names gave back part of it (Nasdaq -1.5% then -0.6%, Nvidia -5.9% then -3.9%) while the Dow set records above 50,000 (50,183 on 25 Nov). Swings this size in both directions show how crowded the AI trade still is.', 'AMBER'),
+    ('corr', 'amplifiers', 'broad', 'Market interconnectedness (common drivers, spillovers, tail links)', ['absorption', 'dy_total', 'granger_dgc', 'dcovar_max', 'dcovar_private'], 'Financials driven by a few common factors; tail spillovers mid-range.', 'GREEN'),
+    ('divers', 'amplifiers', 'broad', 'Diversification (stocks and bonds falling together)', ['stock_bond'], 'Treasuries now hedge properly, but other risk assets and gold moved together in the selloff.', ''),
+    ('sifi', 'amplifiers', 'broad', 'Links between banks, non-banks and large institutions', ['bank_nbfi'], 'FSB 2026 G-SIB list (25 Nov) keeps the same 29 banks, BNP Paribas up a bucket, MUFG down.', 'AMBER'),
+    ('ai_amp', 'amplifiers', 'ai', 'Leverage on AI exposure', [], "Top 10 stocks ~39% of the S&P 500 (before this week's chip crash); leverage sits on the same names; margin debt eased only 2.1% in Oct to $1.45tn.", ''),
+    ('bank_cap', 'threshold', 'broad', 'Capital (bank CET1, dealer capital, capital shortfall in a crash)', ['srisk_gdp', 'bank_capital', 'hkm'], "Large banks well capitalised and liquid (Fed FSR; Q3 CET1 10.0-13.9% at the big four), but unrealised securities losses grow with yields; IMF's weak-bank tail 22% of assets.", 'GREEN'),
+    ('repo', 'threshold', 'broad', 'Repo, reserves and the reverse-repo cushion', ['reserves_gdp', 'rrp_buffer', 'sofr_iorb', 'tgcr_iorb'], 'Reverse-repo cushion gone; repo traded above the Fed floor around month-end, easing since (SOFR ~2bp below IORB on 9 Nov).', 'AMBER'),
+    ('cb_fac', 'threshold', 'broad', 'Central bank backstops (repo facility, swap lines)', ['srf_usage', 'swap_lines'], 'Backstops ready and barely used.', 'AMBER'),
+    ('fiscal', 'threshold', 'broad', 'Fiscal room for a backstop', ['fiscal'], 'Government debt high.', ''),
+    ('offshore', 'threshold', 'broad', 'Offshore dollar funding (cross-currency basis)', ['xccy_basis', 'eur_basis'], 'No dollar shortage.', ''),
+    ('mkt_liq', 'threshold', 'broad', 'Market liquidity (Treasury, JGB, gilt)', ['ust_liq', 'intl_liq'], 'Treasury demand at auctions softer (weakest foreign share at a 10y auction since Oct 2023) and front-end depth thinner per the Fed, but the safe-haven bid took the 10y back to 4.92% on 20 Nov with no reported dysfunction.', 'GREEN'),
+    ('ai_abs', 'threshold', 'ai', 'Absorption of AI credit losses (banks, insurers, credit supply)', [], "The Fed counts close to $1tn of AI-linked exposure at the largest banks; ING's ~$500m data-centre loan auction stalled on low bids and moved to one-on-one sales (20 Nov), and HSBC sold a ~$300m slice of the $18bn Project Jupiter loan in the mid-80s (Bloomberg, 17 Nov), so banks can sell down only at a loss; the unsecured AI high-yield window has shut and CoreWeave's bonds fell to new record lows on 25 Nov (2031s 74.23c, yield 17.91%) as it shifts to prepayments and asset-backed loans; Apollo warns neocloud funding depends on Nvidia support.", ''),
+    ('ai_trig', 'watch', 'ai', 'AI repricing triggers (AI credit, demand signals, project stress)', [], "Fired on 20 Nov (SOX -10.7%, Nvidia -14% on a reported SEC accounting probe, Broadcom -12% on a report that Google cut 2027 TPU orders ~20%; CoreWeave CDS ~1,233bp, Oracle ~328bp), then a relief rally on 23 Nov after Huang's reinstatement (Nvidia +31%) that faded on 24-25 Nov (Nvidia -5.9% then -3.9% to $149.30; CoreWeave 5y CDS a record ~1,314bp on 25 Nov, bonds at new lows ~74c; Reuters reports record CDS at Oracle and Alphabet too). No hyperscaler capex guidance cut yet.", ''),
+    ('pc_watch', 'watch', 'broad', 'Private credit: defaults, PIK, gates and redemptions', [], 'Defaults near a record; gates hold, so stress shows in defaults, non-accruals, PIK and consolidation.', ''),
 ]
 
 # ---------------------------------------------------------------- underlying series
@@ -84,7 +72,7 @@ DETAIL = [
      "2.59x GDP in Q2, flat; $84.1tn outstanding.", "Stable in aggregate; mix tilting to government.",
      "Fed Z.1, 11 Sep 2026", "Q2 2026", "Z.1 table D.3", False),
     # nonbank
-    ("nonbank", "Private credit", "RED", "AMBER",
+    ("pc_watch", "Private credit", "RED", "AMBER",
      "Fitch US private-credit default rate 6.2% (trailing 12m, Oct), down from the record 6.3% in Sep; 6 defaults in Oct vs 8 in Sep; firms with EBITDA under $25m 10.7%; Proskauer index 2.41% (from 2.51%). Fed FSR (13 Nov): private-credit loan default rate at the upper end of its short history, elevated PIK use signals repayment strain, perpetual BDCs still limit redemptions and net flows negative; hedge-fund leverage highest since 2013. Non-traded BDCs: Q3 redemptions exceeded new capital by $4.1bn (Stanger, preliminary). Q3 tenders: NAV BDCs asked $13.8bn (11.5% of NAV), ~40% met (BCRED 49.9% paid, Apollo ADS 33.9%, Blue Owl OTIC 12.8%); Goldman Sachs Private Credit Corp met all (~2% asked). GSBD Q3 non-accruals 4.2% at fair value (2.9% Q2). Consolidation: Investcorp Credit BDC to merge into BCIC at 90% of NAV; BCIC Q3 non-accruals 6.0% at cost, NAV/share -9.4%; Ares to buy Apollo's MidCap Financial (~$2.6bn EV).",
      "One month's easing does not change the picture: defaults stay near the record and small borrowers are worst. Gates hold, so stress shows in defaults, non-accruals, gates, PIK and consolidation of sub-scale BDCs. The Fed now names it in its stability report. Watch Q4 tender announcements.",
      "Fed Financial Stability Report 13 Nov 2026; Fitch via Investment Executive 17 Nov; Proskauer 27 Oct; Stanger via AltsWire 12 Nov; GSBD Q3 results 6 Nov; SEC Schedule TO-I/A tracker; ICMB/BCIC release 11 Nov; Reuters via Fixed Income News Australia 16 Nov", "17 Nov 2026", "manual_overlay: bdc_nonaccrual", False),
@@ -186,7 +174,7 @@ DETAIL = [
      "Deposit stability better than 2023.",
      "Fed Financial Stability Report 13 Nov 2026", "13 Nov 2026", "-", False),
     # mm_spreads
-    ("mm_spreads", "Cross-currency basis (EUR, JPY)", "GREEN", "GREEN",
+    ("offshore", "Cross-currency basis (EUR, JPY)", "GREEN", "GREEN",
      "Basis not refreshed (no public print). 20 Nov: the yen firmed ~0.7% on safe-haven demand (no level reported); dollar index 103.84, just off Thursday's 19-month high. USD/JPY 159.31 on 18 Nov (159.94 on 12 Nov), close to 160 where Japan's Mimura warned moves are 'excessively rapid'; 163.9 high of 29 Jul; dollar index 103.80 on 18 Nov, a year-to-date high intraday.",
      "Basis widening + yen squeeze = stress trigger. A sharp yen rebound (e.g. after intervention) is the squeeze to watch.",
      "BBG (carried); Reuters via NST 12 Nov; US Market Report (note.com) 19 Nov; Capp Notes 20 Nov (citing Barchart)", "20 Nov 2026", "BBG: .JYCCBS3M G Index", False),
@@ -217,7 +205,8 @@ RANK = {"GREEN": 0, "AMBER": 1, "RED": 2}
 # One scale for every row: 0-100, higher = riskier. Colour bands match the index levels.
 BANDS = (40, 65)                                   # GREEN < 40 <= AMBER < 65 <= RED
 JUDGEMENT_SCORE = {"GREEN": 25, "AMBER": 52, "RED": 80}   # analyst traffic light -> score (mid-band)
-WEIGHTS = {"screened": 1.0, "context": 0.5, "judgement": 0.5}
+# All-in score: every series counts equally inside its theme (tested, context and judgement alike).
+WEIGHTS = {"screened": 1.0, "context": 1.0, "judgement": 1.0}
 
 
 def colour(score):

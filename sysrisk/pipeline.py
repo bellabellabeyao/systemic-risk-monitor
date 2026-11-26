@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from . import models as M
-from .config import (DY_PANEL, FIN_UNIVERSE, FRED_SERIES, MARKET_PROXY, PILLARS, REGISTRY,
+from .config import (SCREEN_HORIZON, DY_PANEL, FIN_UNIVERSE, FRED_SERIES, MARKET_PROXY, PILLARS, REGISTRY,
                      SYSTEM_PROXY)
 
 
@@ -347,15 +347,19 @@ def run(provider, p: Params = Params(), log=print) -> dict:
     xlf_long = _try(lambda: provider.ohlc([SYSTEM_PROXY], "1998-12-01")["close"][SYSTEM_PROXY].dropna())
     xlf_long = xlf_long if xlf_long is not None and len(xlf_long) else close[SYSTEM_PROXY].dropna()
     xlf_long = xlf_long.loc[:close.index[-1]]
-    dd = drawdown_target(xlf_long)
+    dds = {h: drawdown_target(xlf_long, h) for h in sorted(set(SCREEN_HORIZON.values()))}
+    dd = dds[12]
     R["equal_weight_index"] = R["index"].copy()
-    sel = screen(R["scores"], dd)
+    sel = screen(R["scores"], dds)
     R.update(apply_screen(R["scores"], sel))
     R["screen"] = {"history": sel, "latest": sel[max(sel)] if sel else {},
                    "eligible": [c for c in R["scores"] if REG_BY_ID[c].scored and REG_BY_ID[c].pillar in PILLARS],
-                   "n_train": {c: int(pd.concat({"x": R["scores"][c].resample("ME").mean(), "y": dd}, axis=1)
-                                       .loc[:dd.index[-1] - pd.offsets.MonthEnd(SCREEN_H)].dropna().shape[0])
-                               for c in R["scores"]}, "min_train": SCREEN_MIN, "thr": SCREEN_THR}
+                   "n_train": {c: int(pd.concat({"x": R["scores"][c].resample("ME").mean(),
+                                                  "y": dds[SCREEN_HORIZON[REG_BY_ID[c].pillar]]}, axis=1)
+                                       .loc[:dd.index[-1] - pd.offsets.MonthEnd(SCREEN_HORIZON[REG_BY_ID[c].pillar])]
+                                       .dropna().shape[0]) for c in R["scores"]},
+                   "horizon": {c: SCREEN_HORIZON[REG_BY_ID[c].pillar] for c in R["scores"]},
+                   "min_train": SCREEN_MIN, "thr": SCREEN_THR}
     log("   selected now: " + ", ".join(R["screen"]["latest"]))
     log("[model] out-of-sample validation")
     try:
@@ -363,12 +367,14 @@ def run(provider, p: Params = Params(), log=print) -> dict:
         ip = np.log(fred["INDPRO"].dropna()); ip.index = ip.index.to_period("M").to_timestamp("M")
         yip = (ip.shift(-12) - ip) * 100
         I = m(R["index"])
-        preds = {"Systemic Risk Index": I, "Old version (equal weights, no screen)": m(R["equal_weight_index"]),
+        preds = {"Systemic Risk Index": I, "All-in (every series, no screen)": m(R["allin_index"]),
+                 "Simple average of eligible series, no screen": m(R["equal_weight_index"]),
                  "Chicago Fed NFCI alone": m(panel["nfci"]), "St. Louis Fed stress index alone": m(panel["stlfsi"])}
         idx_m = I.index.union(dd.index)
         R["validation"] = {
             "drawdown": M.oos_quantile_test(dd.reindex(idx_m), preds, 0.10, "2010-01-01"),
             "drawdown_2003": M.oos_quantile_test(dd.loc["2003":].reindex(idx_m), preds, 0.10, "2010-01-01"),
+            "drawdown_24": M.oos_quantile_test(dds[24].reindex(idx_m), preds, 0.10, "2010-01-01"),
             "ip": M.oos_quantile_test(yip.reindex(idx_m), preds, 0.10, "2010-01-01")}
     except Exception as e:
         log(f"   validation failed: {e}")
@@ -431,29 +437,60 @@ SCREEN_H, SCREEN_TAU, SCREEN_MIN, SCREEN_THR = 12, 0.10, 36, 0.02
 REG_BY_ID = {i.id: i for i in REGISTRY}
 
 
-def drawdown_target(px: pd.Series) -> pd.Series:
-    """Worst XLF drawdown over the next 12 months (%), monthly. NaN for the last 12 months."""
+def drawdown_target(px: pd.Series, h: int = SCREEN_H) -> pd.Series:
+    """Worst XLF drawdown over the next h months (%), monthly. NaN for the last h months."""
     x = px.resample("ME").last()
-    dd = (pd.concat([x.shift(-k) for k in range(1, SCREEN_H + 1)], axis=1).min(axis=1) / x - 1) * 100
-    dd.iloc[-SCREEN_H:] = np.nan
+    dd = (pd.concat([x.shift(-k) for k in range(1, h + 1)], axis=1).min(axis=1) / x - 1) * 100
+    dd.iloc[-h:] = np.nan
     return dd
 
 
-def screen(S: pd.DataFrame, dd: pd.Series) -> dict:
+def theme_ids() -> dict:
+    """{pillar name: {theme key: [model series ids]}} from the signal board, the single theme list for the page,
+    the Excel and the score. Trigger-event themes (stage 'watch') carry no model series."""
+    from . import signal_board as SB
+    link = {k: l for k, *_, l in SB.STAGES}
+    out = {n: {} for n in PILLARS.values()}
+    for key, stage, lens, name, ids, *_ in SB.THEMES:
+        if stage in link and ids:
+            out[link[stage]][key] = list(ids)
+    return out
+
+
+def stage_scores(S: pd.DataFrame, mask: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Theme = mean of its (kept) series; stage = mean of its themes, so a theme with many series gets no more
+    weight than a theme with one. mask=None uses every series (the all-in view)."""
+    X = S if mask is None else S.where(mask.reindex(index=S.index, columns=S.columns, fill_value=False))
+    cols = {}
+    for stage, themes in theme_ids().items():
+        th = [X[[i for i in ids if i in X]].mean(axis=1) for ids in themes.values() if any(i in X for i in ids)]
+        cols[stage] = pd.concat(th, axis=1).mean(axis=1) if th else pd.Series(np.nan, index=S.index)
+    return pd.DataFrame(cols)[list(PILLARS.values())]
+
+
+def _level(idx: pd.Series) -> pd.Series:
+    r = idx.round()
+    return pd.Series(np.select([r >= LEVELS[2][0], r >= LEVELS[1][0], r >= LEVELS[0][0]],
+                               [LEVELS[2][1], LEVELS[1][1], LEVELS[0][1]], "Low"), index=idx.index).where(idx.notna())
+
+
+def screen(S: pd.DataFrame, dd: dict) -> dict:
     """
-    Real-time evidence screen (pre-specified: tau 0.10, 12-month horizon, >= 36 months of training pairs,
-    in-sample quantile pseudo-R2 > 0.02 with the right sign). At each month-end t, each eligible indicator is
-    fitted only on pairs (x_s, worst drawdown over s+1..s+12) already realised by t. An indicator is kept if
-    a higher risk score went with a deeper 10th-percentile drawdown. Returns {month_end: {id: pseudo_R2}}.
+    Real-time evidence screen (pre-specified: tau 0.10, >= 36 months of training pairs, in-sample quantile
+    pseudo-R2 > 0.02 with the right sign). The horizon follows the stage (SCREEN_HORIZON): 24 months for
+    Fragility, whose measures predict trouble 2-3 years out, 12 months otherwise. At each month-end t, each eligible
+    indicator is fitted only on pairs (x_s, worst drawdown over s+1..s+h) already realised by t. An indicator is
+    kept if a higher risk score went with a deeper 10th-percentile drawdown. dd = {h: drawdown target}.
+    Returns {month_end: {id: pseudo_R2}}.
     """
     cand = [c for c in S if REG_BY_ID[c].scored and REG_BY_ID[c].pillar in PILLARS]
     Sm = S[cand].resample("ME").mean()
     out = {}
     for t in Sm.index:
-        tr_end = t - pd.offsets.MonthEnd(SCREEN_H)
         keep = {}
         for c in cand:
-            d = pd.concat({"x": Sm[c], "y": dd}, axis=1).loc[:tr_end].dropna()
+            h = SCREEN_HORIZON[REG_BY_ID[c].pillar]
+            d = pd.concat({"x": Sm[c], "y": dd[h]}, axis=1).loc[:t - pd.offsets.MonthEnd(h)].dropna()
             if len(d) < SCREEN_MIN:
                 continue
             X = np.column_stack([np.ones(len(d)), d.x.values])
@@ -479,15 +516,15 @@ def apply_screen(S: pd.DataFrame, sel: dict) -> dict:
         pos = months.searchsorted(w, side="left") - 1          # latest month-end strictly before this week
         if pos >= 0:
             mask.loc[w, list(sel[months[pos]])] = True
-    pill = pd.DataFrame({PILLARS[k]: S[[c for c in S if REG_BY_ID[c].pillar == k]].where(
-        mask[[c for c in S if REG_BY_ID[c].pillar == k]]).mean(axis=1) for k in PILLARS})
+    pill = stage_scores(S, mask)
     # at least two links: before 2009 few contagion/liquidity indicators have a track record, and requiring three
     # would cut the history to Aug 2008 and leave the screen nothing pre-crisis to learn from
     idx = pill.mean(axis=1).where(pill.notna().sum(axis=1) >= 2).ewm(span=4).mean()
-    r = idx.round()
-    level = pd.Series(np.select([r >= LEVELS[2][0], r >= LEVELS[1][0], r >= LEVELS[0][0]],
-                                [LEVELS[2][1], LEVELS[1][1], LEVELS[0][1]], "Low"), index=idx.index).where(idx.notna())
-    return {"pillars": pill, "index": idx.rename("Systemic Risk Index"), "regime": level, "screen_mask": mask}
+    # all-in view: every model series with data, same theme averaging, no screen (descriptive, not a forecast)
+    allp = stage_scores(S[[c for c in S if REG_BY_ID[c].pillar in PILLARS]])
+    alli = allp.mean(axis=1).where(allp.notna().sum(axis=1) >= 2).ewm(span=4).mean()
+    return {"pillars": pill, "index": idx.rename("Systemic Risk Index"), "regime": _level(idx), "screen_mask": mask,
+            "allin_pillars": allp, "allin_index": alli.rename("All-in index")}
 
 def save(R: dict, out: Path):
     out.mkdir(parents=True, exist_ok=True)

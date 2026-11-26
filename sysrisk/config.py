@@ -419,17 +419,36 @@ FRED_SERIES = sorted({i.series for i in REGISTRY if i.source in ("fred",) and i.
                       "RIFSPPNA2P2D30NB", "RIFSPPNAAD30NB", "FINCP", "SWPT", "H41RESPPALGTRFNWW",
                       "BOGZ1FL664090005Q", "BOGZ1FL665080003Q"})
 
-# The story: a systemic event needs FUEL (an excess to unwind), FAULT LINES (a way for losses to spread),
-# weak SHOCK ABSORBERS (no liquidity to absorb forced selling) and IGNITION (a shock actually happening).
+# The story (v7, agreed 26 Nov 2026): a systemic event needs FRAGILITY (an excess that can unwind), AMPLIFIERS
+# (leverage and links that spread a loss), thin BUFFERS (capital, liquidity, backstops) and STRESS (a test actually
+# under way). Indicators sit where their economic meaning puts them, not by data type; contested cases follow the
+# consensus in official monitors (IMF GFSR: concentration is valuation; BIS: the dollar is a stress barometer;
+# OFR FSVM: market liquidity is a funding-and-liquidity buffer).
 PILLARS = {
-    "A": "Build-up",
-    "B": "Contagion",
-    "C": "Shock absorbers",
-    "D": "Trigger",
+    "A": "Fragility",
+    "B": "Amplifiers",
+    "C": "Buffers",
+    "D": "Stress",
 }
 PILLAR_Q = {
     "A": "Are excesses building that could unwind?",
-    "B": "If something breaks, would the loss spread to the rest of the system?",
-    "C": "Does the system have the liquidity to absorb forced selling?",
-    "D": "Is the system being tested right now?",
+    "B": "If something breaks, what would force selling and spread the loss?",
+    "C": "Does the system have the capital, liquidity and backstops to absorb it?",
+    "D": "Is stress showing up right now?",
 }
+# Evidence-screen horizon by stage (months): build-up measures predict trouble 2-3 years out, the rest within a year.
+SCREEN_HORIZON = {"A": 24, "B": 12, "C": 12, "D": 12}
+# Pillar moves agreed on 26 Nov 2026 (economic meaning, see above).
+_MOVES = {"dealer_lev": "A", "concentration": "A", "margin": "B",
+          "srisk_gdp": "C", "hkm": "C", "ust_liq": "C", "intl_liq": "C",
+          "cp_spread": "D", "a2p2": "D", "fin_cp": "D", "usd_6m": "D"}
+# Excluded before only for double counting or for being global: each theme now averages its series, so overlap no
+# longer adds weight. They become eligible and face the same evidence screen as everything else.
+_RELAX = {"double counts", "global"}
+
+
+for _i in REGISTRY:
+    if _i.id in _MOVES:
+        _i.pillar = _MOVES[_i.id]
+    if _i.ns_tag in _RELAX and _i.pillar in PILLARS:
+        _i.scored, _i.not_scored_why, _i.ns_tag = True, "", ""

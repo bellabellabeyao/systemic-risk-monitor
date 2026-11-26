@@ -7,7 +7,7 @@ AS_OF = "16 Oct 2026"
 
 NARRATIVE = [
     {
-        "id": "ai_obs", "title": "AI off-balance-sheet obligations", "short": "AI off-balance-sheet financing", "link": "Build-up", "signal": "warning",
+        "id": "ai_obs", "title": "AI off-balance-sheet obligations", "short": "AI off-balance-sheet financing", "link": "Fragility", "signal": "warning",
         "head": "AI capex is moving off balance sheet into SPVs and leases, and the first project has stumbled.",
         "facts": [
             ("Hidden size", "Moody's puts hyperscaler lease commitments at about $970bn, of which about $660bn is not yet on "
@@ -34,7 +34,7 @@ NARRATIVE = [
                      "https://www.nakedcapitalism.com/2026/10/banks-struggle-to-digest-the-mounting-debt-driving-the-ai-boom.html")],
     },
     {
-        "id": "pc_stress", "title": "Private credit: defaults, PIK and redemptions", "short": "private credit", "link": "Trigger", "signal": "warning",
+        "id": "pc_stress", "title": "Private credit: defaults, PIK and redemptions", "short": "private credit", "link": "Stress", "signal": "warning",
         "head": "Private credit defaults are at a record and retail money is trying to leave; gates are holding so far.",
         "facts": [
             ("Defaults", "Fitch's private credit default rate was about 6.1% (12-month) in July, a record and more than "
@@ -56,7 +56,7 @@ NARRATIVE = [
                     ("Fitch US default rates, July 2026 (Crypto Briefing)", "https://cryptobriefing.com/fitch-us-corporate-default-rates-july-2026/")],
     },
     {
-        "id": "bank_ul", "title": "Bank unrealised securities losses", "short": "bank unrealised losses", "link": "Shock absorbers", "signal": "watch",
+        "id": "bank_ul", "title": "Bank unrealised securities losses", "short": "bank unrealised losses", "link": "Buffers", "signal": "watch",
         "head": "Unrealised losses are rising again, but bank profits are strong and deposits are growing.",
         "facts": [
             ("Size", "US banks held $325bn of unrealised securities losses at end-Q1 2026, up $19bn on the quarter and the "
@@ -72,7 +72,7 @@ NARRATIVE = [
                     ("FDIC Q2 2026 Quarterly Banking Profile (Crane Data)", "https://cranedata.com/archives/all-articles/11492/")],
     },
     {
-        "id": "flows", "title": "Fund flows and money funds", "short": "fund flows", "link": "Trigger", "signal": "calm",
+        "id": "flows", "title": "Fund flows and money funds", "short": "fund flows", "link": "Stress", "signal": "calm",
         "head": "No sign of a rush for the exit in public funds: bond funds are taking money in.",
         "facts": [
             ("Bonds", "Global bond funds took in $7.8bn in the week to 14 Oct, a fourth straight week of inflows; corporate "

@@ -5,16 +5,15 @@ Every series gets a 0-100 score (higher = riskier) and a colour from the same ba
   - model series: expanding-window percentile vs its own history (sysrisk.pipeline.score), real time;
   - judgement series (no usable time series): analyst traffic light mapped to the middle of its band.
 
-Theme score  = weighted mean of its series. Weights: model series that pass the evidence screen this month 1.0,
-               other model series 0.5 (context), judgement series 0.5.
+Theme score  = mean of its series, every series weighted equally (the all-in view).
 Stage score  = mean of its theme scores, per lens (broad system, AI channel).
 Colour       = GREEN below 40, AMBER 40-65, RED 65 and above (the index's own Moderate / High cut-offs).
 
 Two aggregates, two jobs:
-  Condition (this module): how stretched each stage is today, using everything we track. Descriptive.
+  All-in (this module): how stretched each stage is today, using everything we track. Descriptive.
   Early warning (sysrisk.pipeline): the evidence-screened index. The only number tested out of sample.
 Out of sample, adding the context series to the early-warning index makes its drawdown forecasts worse
-(negative quantile R2), which is why condition and early warning are kept as separate numbers.
+(negative quantile R2), which is why all-in and early warning are kept as separate numbers.
 """
 from __future__ import annotations
 
@@ -105,8 +104,8 @@ def headline_text(U, level):
     f, t, a, th = g("fragility"), g("triggers"), g("amplifiers"), g("threshold")
     parts = [
         "fragility is high" if f >= 65 else "fragility is building" if f >= 40 else "fragility is low",
-        "the system is being tested" if t >= 65 else "early stress is showing" if t >= 40 else "nothing is testing the system yet",
-        "losses would spread quickly" if a >= 65 else "spillover channels are elevated" if a >= 40 else "spillover channels are quiet",
+        "stress is broad" if t >= 65 else "early stress is showing" if t >= 40 else "stress is not broad yet",
+        "losses would spread quickly" if a >= 65 else "amplifiers are elevated" if a >= 40 else "amplifiers are quiet",
         "buffers are thin" if th >= 65 else "some buffers are thinning" if th >= 40 else "buffers are intact",
     ]
     title = f"Systemic risk is {level.lower()}: " + ", ".join(parts[:-1]) + " and " + parts[-1]
@@ -114,5 +113,5 @@ def headline_text(U, level):
     if ai is not None and br is not None and ai >= br + 5:
         title += "; the AI channel is the hot spot"
     sent = (f"Across everything we track, the broad system scores {br:.0f} and the AI channel {ai:.0f} out of 100 "
-            f"(condition score; judgement readings as of {SB.AS_OF}). ")
+            f"(all-in score; judgement readings as of {SB.AS_OF}). ")
     return title, sent

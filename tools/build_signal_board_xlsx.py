@@ -2,7 +2,7 @@
 Build the Systemic Risk Monitor workbook from the same evaluation as the website (sysrisk/unified.py).
 
 One scale and one colour rule for every row, with a live formula chain:
-  Detailed series score -> theme score (weighted average) -> stage condition (average of themes) -> overall.
+  Detailed series score -> theme score (weighted average) -> stage all-in score (average of themes) -> overall.
 Editing a judgement score (blue) on the Detailed sheet updates every theme, stage and colour.
 
 Sheets: Summary Dashboard · Detailed Index Breakdown · Model Scores (with --results) · Sources & Codes
@@ -32,6 +32,7 @@ BOX = Border(left=thin, right=thin, top=thin, bottom=thin)
 WRAP = Alignment(wrap_text=True, vertical="center")
 CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
 STAGE = {s[0]: s for s in SB.STAGES}
+STAGE["watch"] = ("watch", "–", "Trigger events (not scored)", "Discrete events tracked in the narrative section", "")
 LENS = dict(SB.LENSES)
 G, R_ = SB.BANDS
 DET = "'Detailed Index Breakdown'"
@@ -129,9 +130,9 @@ def method_note(ws, row, ncol, c0):
         ("Legend:  GREEN < 40 ≤ AMBER < 65 ≤ RED, on one 0-100 scale for every series, theme and stage.   "
          f"▲ worse / ▼ better = vs the {SB.PREV_ASOF} board.   Blue scores = judgement inputs you can edit.", True),
         (f"Series score: model series = percentile of its own history (real time); judgement series = GREEN {SB.JUDGEMENT_SCORE['GREEN']}, "
-         f"AMBER {SB.JUDGEMENT_SCORE['AMBER']}, RED {SB.JUDGEMENT_SCORE['RED']}. Theme = weighted average (series passing the evidence test "
-         f"{W['screened']}, other model series {W['context']}, judgement {W['judgement']}). Stage condition = average of its themes.", False),
-        ("Condition describes how stretched each stage is today using everything tracked. Early warning is the tested model "
+         f"AMBER {SB.JUDGEMENT_SCORE['AMBER']}, RED {SB.JUDGEMENT_SCORE['RED']}. Theme = average of its series (weights: tested "
+         f"{W['screened']}, other model series {W['context']}, judgement {W['judgement']}). Stage all-in score = average of its themes.", False),
+        ("All-in describes how stretched each stage is today using everything tracked. Early warning is the tested model "
          "(only series that pass the out-of-sample test); adding untested series to it made its drawdown forecasts worse, "
          "so the two numbers are kept separate.", False),
     ]
@@ -203,7 +204,7 @@ def build_summary(wb, U, det_rng):
     ws.cell(6, 8).border = BOX
     r = 7
     for lk, ln in SB.LENSES:
-        lens_cell(ws.cell(r, 3), lk); ws.cell(r, 3).value = f"Condition: {ln}"
+        lens_cell(ws.cell(r, 3), lk); ws.cell(r, 3).value = f"All-in: {ln}"
         lens_cell(ws.cell(r + 1, 3), lk); ws.cell(r + 1, 3).value = "signal"
         for j, s in enumerate(SB.STAGES):
             col = chr(ord("D") + j)
